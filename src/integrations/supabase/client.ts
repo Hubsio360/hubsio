@@ -21,3 +21,13 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     }
   }
 });
+
+// Fonction utilitaire pour vérifier l'authentification
+export const checkAuth = async () => {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) {
+    console.error('Erreur de vérification d\'authentification:', error);
+    return null;
+  }
+  return data.session;
+};

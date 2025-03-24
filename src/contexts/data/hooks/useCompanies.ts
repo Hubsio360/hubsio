@@ -1,17 +1,27 @@
 
 import { useState, useEffect } from 'react';
 import { Company } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, checkAuth } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const useCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
+        setLoading(true);
         console.log('Fetching companies...');
+        
+        // Vérifier l'authentification avant de récupérer les données
+        const session = await checkAuth();
+        if (!session) {
+          console.warn('Session non authentifiée lors de la récupération des entreprises');
+          // Continuer quand même, car la lecture peut être autorisée pour les utilisateurs non authentifiés
+        }
+        
         const { data, error } = await supabase
           .from('companies')
           .select('*');
@@ -23,6 +33,7 @@ export const useCompanies = () => {
             description: "Impossible de charger les entreprises: " + error.message,
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
 
@@ -45,6 +56,8 @@ export const useCompanies = () => {
           description: "Une erreur est survenue lors du chargement des entreprises",
           variant: "destructive",
         });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -56,8 +69,9 @@ export const useCompanies = () => {
       console.log('Adding new company:', company);
       
       // Vérifier que l'utilisateur est authentifié
-      const { data: { session } } = await supabase.auth.getSession();
+      const session = await checkAuth();
       if (!session) {
+        console.error('Tentative d\'ajout d\'entreprise sans authentification');
         throw new Error("Vous devez être connecté pour ajouter une entreprise");
       }
       
@@ -72,6 +86,10 @@ export const useCompanies = () => {
       };
       
       console.log('Prepared data for insertion:', companyData);
+      console.log('Current auth session:', session);
+      
+      // Tenter d'insérer avec un délai (pour s'assurer que la session est bien établie)
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       const { data, error } = await supabase
         .from('companies')
@@ -144,6 +162,7 @@ export const useCompanies = () => {
 
   return {
     companies,
+    loading,
     addCompany,
     enrichCompanyData,
     getCompanyById,

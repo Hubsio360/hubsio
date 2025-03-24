@@ -1,5 +1,4 @@
-
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Plus, 
@@ -30,6 +29,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 
 const Home = () => {
   const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId } = useData();
@@ -40,6 +40,26 @@ const Home = () => {
   const [isEnriching, setIsEnriching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+
+  // Vérifier l'authentification lors du chargement du composant
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const { data } = await supabase.auth.getSession();
+      setIsAuthenticated(!!data.session);
+    };
+    
+    checkAuthentication();
+    
+    // Configurer l'écouteur des changements d'état d'authentification
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(!!session);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -52,6 +72,15 @@ const Home = () => {
 
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentification requise",
+        description: "Vous devez être connecté pour ajouter une entreprise",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!newCompany.name.trim()) {
       toast({
@@ -75,10 +104,11 @@ const Home = () => {
       
       setNewCompany({ name: '', activity: '' });
       setIsDialogOpen(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erreur lors de l\'ajout de l\'entreprise:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'ajouter l'entreprise",
+        description: error.message || "Impossible d'ajouter l'entreprise",
         variant: "destructive",
       });
     }
@@ -123,8 +153,26 @@ const Home = () => {
     }
   };
 
+  // Ajouter un message d'authentification si nécessaire
+  const renderAuthMessage = () => {
+    if (!isAuthenticated) {
+      return (
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+            <p className="text-sm text-yellow-700">
+              Vous n'êtes pas connecté. Certaines fonctionnalités comme l'ajout d'entreprises ne seront pas disponibles.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 animate-fade-in">
+      {renderAuthMessage()}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Clients</h1>
