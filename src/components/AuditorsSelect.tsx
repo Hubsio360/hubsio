@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { Check, PlusCircle, UserRound } from 'lucide-react';
+import { Check, PlusCircle, UserRound, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -79,46 +79,48 @@ export const AuditorsSelect: React.FC<AuditorsSelectProps> = ({
           <PopoverContent className="w-[260px] p-0" align="start">
             <Command>
               <CommandInput placeholder="Rechercher un auditeur..." />
-              <CommandEmpty>Aucun auditeur trouvé.</CommandEmpty>
-              <CommandGroup heading="Rôle dans l'audit">
-                <div className="flex gap-2 p-2">
-                  <Button 
-                    size="sm" 
-                    variant={selectedRole === 'lead' ? 'default' : 'outline'}
-                    onClick={() => setSelectedRole('lead')}
-                    className="flex-1"
-                  >
-                    Lead
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant={selectedRole === 'participant' ? 'default' : 'outline'}
-                    onClick={() => setSelectedRole('participant')}
-                    className="flex-1"
-                  >
-                    Participant
-                  </Button>
-                </div>
-              </CommandGroup>
-              <CommandGroup heading="Auditeurs disponibles">
-                <ScrollArea className="h-[200px]">
-                  {auditors
-                    .filter(auditor => !selectedAuditors.some(sa => sa.userId === auditor.id))
-                    .map(auditor => (
-                      <CommandItem
-                        key={auditor.id}
-                        onSelect={() => handleSelect(auditor.id)}
-                        className="flex items-center gap-2"
-                      >
-                        <UserRound className="h-4 w-4" />
-                        <div className="flex flex-col">
-                          <span>{auditor.name}</span>
-                          <span className="text-xs text-muted-foreground">{auditor.email}</span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                </ScrollArea>
-              </CommandGroup>
+              <CommandList>
+                <CommandEmpty>Aucun auditeur trouvé.</CommandEmpty>
+                <CommandGroup heading="Rôle dans l'audit">
+                  <div className="flex gap-2 p-2">
+                    <Button 
+                      size="sm" 
+                      variant={selectedRole === 'lead' ? 'default' : 'outline'}
+                      onClick={() => setSelectedRole('lead')}
+                      className="flex-1"
+                    >
+                      Lead
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant={selectedRole === 'participant' ? 'default' : 'outline'}
+                      onClick={() => setSelectedRole('participant')}
+                      className="flex-1"
+                    >
+                      Participant
+                    </Button>
+                  </div>
+                </CommandGroup>
+                <CommandGroup heading="Auditeurs disponibles">
+                  <ScrollArea className="h-[200px]">
+                    {auditors
+                      .filter(auditor => !selectedAuditors.some(sa => sa.userId === auditor.id))
+                      .map(auditor => (
+                        <CommandItem
+                          key={auditor.id}
+                          onSelect={() => handleSelect(auditor.id)}
+                          className="flex items-center gap-2"
+                        >
+                          <UserRound className="h-4 w-4" />
+                          <div className="flex flex-col">
+                            <span>{auditor.name}</span>
+                            <span className="text-xs text-muted-foreground">{auditor.email}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                  </ScrollArea>
+                </CommandGroup>
+              </CommandList>
             </Command>
           </PopoverContent>
         </Popover>
@@ -126,5 +128,3 @@ export const AuditorsSelect: React.FC<AuditorsSelectProps> = ({
     </div>
   );
 };
-
-import { X } from 'lucide-react';
