@@ -65,6 +65,7 @@ export const NoFrameworksCard = ({ sessionStatus }: NoFrameworksCardProps) => {
             return;
           }
           
+          // Vérification du format de base
           if (!frameworkData.name || !frameworkData.version || !Array.isArray(frameworkData.controls)) {
             toast({
               title: "Format invalide",
@@ -75,6 +76,7 @@ export const NoFrameworksCard = ({ sessionStatus }: NoFrameworksCardProps) => {
             return;
           }
 
+          // Vérification des contrôles
           const invalidControls = frameworkData.controls.filter(
             control => !control.referenceCode || !control.title
           );
@@ -89,12 +91,35 @@ export const NoFrameworksCard = ({ sessionStatus }: NoFrameworksCardProps) => {
             return;
           }
           
+          // Vérification des exigences si présentes
+          if (frameworkData.requirements && Array.isArray(frameworkData.requirements)) {
+            const invalidRequirements = frameworkData.requirements.filter(
+              req => !req.referenceCode || !req.title
+            );
+            
+            if (invalidRequirements.length > 0) {
+              toast({
+                title: "Exigences invalides",
+                description: `${invalidRequirements.length} exigence(s) ne contiennent pas toutes les propriétés requises (referenceCode, title)`,
+                variant: "destructive",
+              });
+              setIsImporting(false);
+              return;
+            }
+          }
+          
           try {
             const result = await importFramework(frameworkData);
             
+            // Construction du message de succès
+            let successMessage = `${result.framework.name} v${result.framework.version} avec ${result.controlsCount} contrôles`;
+            if (result.requirementsCount && result.requirementsCount > 0) {
+              successMessage += ` et ${result.requirementsCount} exigences`;
+            }
+            
             toast({
               title: "Framework importé",
-              description: `${result.framework.name} v${result.framework.version} avec ${result.controlsCount} contrôles`,
+              description: successMessage,
             });
           } catch (importError: any) {
             console.error("Erreur lors de l'importation:", importError);
@@ -156,7 +181,7 @@ export const NoFrameworksCard = ({ sessionStatus }: NoFrameworksCardProps) => {
             <SheetHeader>
               <SheetTitle>Importer un référentiel</SheetTitle>
               <SheetDescription>
-                Téléchargez un fichier JSON contenant un référentiel d'audit et ses contrôles.
+                Téléchargez un fichier JSON contenant un référentiel d'audit avec ses contrôles et exigences.
               </SheetDescription>
             </SheetHeader>
             
