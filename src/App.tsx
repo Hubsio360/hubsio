@@ -12,7 +12,7 @@ import Home from "@/pages/Home";
 import CompanyDetail from "@/pages/CompanyDetail";
 import NewAudit from "@/pages/NewAudit";
 import AuditDetail from "@/pages/AuditDetail";
-import Frameworks from "@/pages/Frameworks";
+import Frameworks from "@/pages/frameworks";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
