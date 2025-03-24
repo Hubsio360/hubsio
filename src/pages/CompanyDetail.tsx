@@ -1,12 +1,13 @@
-
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
 import {
   BarChart3,
   Building2,
@@ -22,12 +23,17 @@ import {
   MoveRight,
   Calendar as CalendarIcon,
   Users,
+  Trash2,
 } from 'lucide-react';
 
 const CompanyDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { getCompanyById, getAuditsByCompanyId, getFrameworkById, getAuditById } = useData();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { getCompanyById, getAuditsByCompanyId, getFrameworkById, getAuditById, deleteAudit } = useData();
   const [activeTab, setActiveTab] = useState('audits');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [auditToDelete, setAuditToDelete] = useState<string | null>(null);
 
   if (!id) {
     return (
@@ -58,6 +64,32 @@ const CompanyDetail = () => {
 
   const completedAudits = audits.filter(audit => audit.status === 'completed');
   const inProgressAudits = audits.filter(audit => audit.status === 'in_progress');
+
+  const handleDeleteAudit = async () => {
+    if (!auditToDelete) return;
+    
+    try {
+      await deleteAudit(auditToDelete);
+      toast({
+        title: "Audit supprimé",
+        description: "L'audit a été supprimé avec succès.",
+      });
+      setDeleteDialogOpen(false);
+      setAuditToDelete(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'audit:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'audit.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openDeleteDialog = (auditId: string) => {
+    setAuditToDelete(auditId);
+    setDeleteDialogOpen(true);
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -303,16 +335,23 @@ const CompanyDetail = () => {
                         </div>
                       </div>
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex justify-between">
                       <Button
                         variant="outline"
                         asChild
-                        className="w-full sm:w-auto"
                       >
                         <Link to={`/audit/${audit.id}`}>
                           Voir les détails
                           <MoveRight className="ml-2 h-4 w-4" />
                         </Link>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200"
+                        onClick={() => openDeleteDialog(audit.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Supprimer
                       </Button>
                     </CardFooter>
                   </Card>
@@ -334,8 +373,29 @@ const CompanyDetail = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet audit ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Toutes les données associées à cet audit seront définitivement supprimées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteAudit}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
 
 export default CompanyDetail;
+

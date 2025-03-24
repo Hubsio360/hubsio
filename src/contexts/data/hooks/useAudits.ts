@@ -26,10 +26,20 @@ export const useAudits = () => {
     return audits.find((audit) => audit.id === id);
   };
 
+  const deleteAudit = async (id: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        setAudits((prev) => prev.filter(audit => audit.id !== id));
+        resolve(true);
+      }, 500);
+    });
+  };
+
   return {
     audits,
     addAudit,
     getAuditsByCompanyId,
-    getAuditById
+    getAuditById,
+    deleteAudit
   };
 };

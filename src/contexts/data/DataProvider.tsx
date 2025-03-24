@@ -39,6 +39,7 @@ interface DataContextProps {
   };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
+  deleteAudit: (id: string) => Promise<boolean>;
   addFinding: (finding: Omit<Finding, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Finding>;
   updateFinding: (id: string, updates: Partial<Finding>) => Promise<Finding>;
   enrichCompanyData: (companyId: string) => Promise<Company>;
@@ -113,6 +114,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading,
         addCompany: companiesHook.addCompany,
         addAudit: auditsHook.addAudit,
+        deleteAudit: auditsHook.deleteAudit,
         addFinding: findingsHook.addFinding,
         updateFinding: findingsHook.updateFinding,
         enrichCompanyData: companiesHook.enrichCompanyData,
