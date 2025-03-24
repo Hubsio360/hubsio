@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, Clock, VideoIcon, Users, Calendar as CalendarIcon } from 'lucide-react';
+import { CalendarDays, Clock, VideoIcon, Users, Calendar as CalendarIcon, FileText } from 'lucide-react';
 import { AuditInterview, InterviewParticipant, User } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow, format, isToday, isTomorrow, parseISO, addMinutes } from 'date-fns';
@@ -19,7 +19,7 @@ interface AuditPlanCalendarProps {
 }
 
 const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditInterview }) => {
-  const { fetchInterviewsByAuditId, getParticipantsByInterviewId } = useData();
+  const { fetchInterviewsByAuditId, getParticipantsByInterviewId, themes } = useData();
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [participants, setParticipants] = useState<Record<string, InterviewParticipant[]>>({});
   const [users, setUsers] = useState<Record<string, User>>({});
@@ -123,10 +123,11 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
     }
   };
 
-  // Fonction pour générer un lien Google Meet
-  const generateMeetLink = () => {
-    const meetCode = Math.random().toString(36).substring(2, 10);
-    return `https://meet.google.com/${meetCode}`;
+  // Obtenir le nom de la thématique à partir de l'ID
+  const getThemeName = (themeId: string | undefined) => {
+    if (!themeId) return 'Sans thème';
+    const theme = themes.find(t => t.id === themeId);
+    return theme ? theme.name : 'Sans thème';
   };
 
   return (
@@ -189,7 +190,14 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
                     <div className="bg-primary h-2"></div>
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg">{interview.title}</CardTitle>
+                        <div>
+                          <CardTitle className="text-lg">{interview.title}</CardTitle>
+                          {interview.themeId && (
+                            <Badge className="mt-1 mb-1" variant="outline">
+                              {getThemeName(interview.themeId)}
+                            </Badge>
+                          )}
+                        </div>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -210,6 +218,18 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
                     <CardContent>
                       {interview.description && (
                         <p className="text-sm text-muted-foreground mb-3">{interview.description}</p>
+                      )}
+                      
+                      {interview.controlRefs && (
+                        <div className="mb-3 p-2 bg-muted/30 rounded-md">
+                          <div className="flex items-center text-sm font-medium mb-1">
+                            <FileText className="h-4 w-4 mr-1" />
+                            <span>Clauses/Contrôles</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {interview.controlRefs}
+                          </p>
+                        </div>
                       )}
                       
                       <div className="flex flex-wrap gap-2 mb-3">

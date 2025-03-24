@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutIcon } from 'lucide-react';
+import { LayoutIcon, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { eachDayOfInterval, addBusinessDays, isWeekend, subBusinessDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -11,6 +11,8 @@ import { useData } from '@/contexts/DataContext';
 import DateSelector from './audit-plan/DateSelector';
 import AuditStatsSummary from './audit-plan/AuditStatsSummary';
 import TopicsList from './audit-plan/TopicsList';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
@@ -25,12 +27,14 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   endDate,
   onPlanGenerated
 }) => {
-  const { generateAuditPlan, fetchTopics, topics } = useData();
+  const { generateAuditPlan, fetchTopics, topics, themes, importStandardAuditPlan } = useData();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [planStartDate, setPlanStartDate] = useState<Date | undefined>(new Date(startDate));
   const [planEndDate, setPlanEndDate] = useState<Date | undefined>(new Date(endDate));
   const [activeTab, setActiveTab] = useState('dates');
+  const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
 
   const handleGeneratePlan = async () => {
     if (!planStartDate || !planEndDate) {
@@ -84,6 +88,70 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     }
   };
 
+  const handleImportStandardPlan = async () => {
+    // Charger ici le plan d'audit standard (qui serait normalement fourni par l'utilisateur ou chargé depuis un fichier)
+    // Pour cet exemple, nous utilisons un plan d'audit standard formaté selon le JSON fourni
+    const demoStandardPlan = [
+      {
+        "Date-Heure": "March 17, 2025 8:30 AM (GMT+1) → 9:00 AM",
+        "Thème": "ADMIN",
+        "Titre": "Réunion d'ouverture",
+        "Clause/Contrôle": null
+      },
+      {
+        "Date-Heure": "March 17, 2025 9:00 AM (GMT+1) → 10:00 AM",
+        "Thème": "Exploitation & réseaux",
+        "Titre": "Sécurité des communications",
+        "Clause/Contrôle": "A.8.15 Sécurité des communications , A.8.16 Transfert d'informations "
+      },
+      // Plus d'entrées ici...
+      {
+        "Date-Heure": "March 18, 2025 5:00 PM (GMT+1) → 5:30 PM",
+        "Thème": "Cloture",
+        "Titre": "Réunion de cloture",
+        "Clause/Contrôle": null
+      }
+    ];
+
+    setIsImporting(true);
+    setImportSuccess(null);
+    
+    try {
+      const success = await importStandardAuditPlan(auditId, demoStandardPlan);
+      
+      if (success) {
+        toast({
+          title: 'Plan d\'audit importé',
+          description: 'Le plan d\'audit standard a été importé avec succès',
+          variant: 'default',
+        });
+        
+        setImportSuccess(true);
+        
+        if (onPlanGenerated) {
+          onPlanGenerated();
+        }
+      } else {
+        toast({
+          title: 'Erreur',
+          description: 'Une erreur est survenue lors de l\'importation du plan d\'audit standard',
+          variant: 'destructive',
+        });
+        setImportSuccess(false);
+      }
+    } catch (error) {
+      console.error('Error importing standard audit plan:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de l\'importation du plan d\'audit standard',
+        variant: 'destructive',
+      });
+      setImportSuccess(false);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const businessDays = planStartDate && planEndDate
     ? eachDayOfInterval({ start: planStartDate, end: planEndDate }).filter(date => !isWeekend(date)).length
     : 0;
@@ -114,14 +182,15 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           Génération du plan d'audit
         </CardTitle>
         <CardDescription>
-          Définissez les paramètres pour générer automatiquement votre plan d'audit
+          Définissez les paramètres pour générer automatiquement votre plan d'audit ou importez un plan standard
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
+          <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="dates">Dates d'audit</TabsTrigger>
             <TabsTrigger value="topics">Thématiques ({topics.length})</TabsTrigger>
+            <TabsTrigger value="import">Importer un plan</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dates" className="space-y-4">
@@ -151,22 +220,91 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           <TabsContent value="topics">
             <TopicsList topics={topics} />
           </TabsContent>
+          
+          <TabsContent value="import" className="space-y-4">
+            <div className="bg-muted/30 p-4 rounded-md">
+              <h3 className="text-lg font-medium mb-3">Importer un plan d'audit standard ISO 27001</h3>
+              <p className="text-muted-foreground mb-4">
+                Cette option vous permet d'importer rapidement un plan d'audit basé sur le standard ISO 27001:2022. 
+                Le plan comprendra les thématiques essentielles et les principaux contrôles à évaluer.
+              </p>
+              
+              <div className="space-y-3">
+                <div className="flex items-start">
+                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">1</span>
+                  <p className="text-sm">Le plan sera généré avec les dates de début et de fin sélectionnées</p>
+                </div>
+                <div className="flex items-start">
+                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">2</span>
+                  <p className="text-sm">Les thématiques et topics seront automatiquement créés</p>
+                </div>
+                <div className="flex items-start">
+                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">3</span>
+                  <p className="text-sm">Les références aux clauses et contrôles ISO 27001 seront incluses</p>
+                </div>
+              </div>
+            </div>
+            
+            {importSuccess === true && (
+              <Alert className="bg-green-50 border-green-200">
+                <AlertTitle className="text-green-600">Plan d'audit importé avec succès</AlertTitle>
+                <AlertDescription className="text-green-600">
+                  Le plan d'audit standard a été importé. Vous pouvez maintenant visualiser et modifier les interviews dans l'onglet Calendrier.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {importSuccess === false && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur d'importation</AlertTitle>
+                <AlertDescription>
+                  Une erreur est survenue lors de l'importation du plan d'audit. Veuillez réessayer.
+                </AlertDescription>
+              </Alert>
+            )}
+          </TabsContent>
         </Tabs>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => setActiveTab(activeTab === 'dates' ? 'topics' : 'dates')}>
-          {activeTab === 'dates' ? 'Voir les thématiques' : 'Retour aux dates'}
-        </Button>
-        <Button onClick={handleGeneratePlan} disabled={isGenerating || (!planStartDate || !planEndDate)}>
-          {isGenerating ? (
-            <>
-              <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-              Génération en cours...
-            </>
-          ) : (
-            'Générer le plan'
-          )}
-        </Button>
+        {activeTab === 'import' ? (
+          <>
+            <Button variant="outline" onClick={() => setActiveTab('dates')}>
+              Retour aux dates
+            </Button>
+            <Button onClick={handleImportStandardPlan} disabled={isImporting}>
+              {isImporting ? (
+                <>
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  Importation en cours...
+                </>
+              ) : (
+                <>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importer le plan standard
+                </>
+              )}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="outline" onClick={() => setActiveTab(activeTab === 'dates' ? 'topics' : activeTab === 'topics' ? 'import' : 'dates')}>
+              {activeTab === 'dates' ? 'Voir les thématiques' : activeTab === 'topics' ? 'Importer un plan' : 'Retour aux dates'}
+            </Button>
+            {activeTab !== 'import' && (
+              <Button onClick={handleGeneratePlan} disabled={isGenerating || (!planStartDate || !planEndDate)}>
+                {isGenerating ? (
+                  <>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                    Génération en cours...
+                  </>
+                ) : (
+                  'Générer le plan'
+                )}
+              </Button>
+            )}
+          </>
+        )}
       </CardFooter>
     </Card>
   );

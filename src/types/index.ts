@@ -121,16 +121,29 @@ export interface AuditTopic {
   description?: string;
 }
 
+export interface AuditTheme {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface AuditTopicControl {
+  topicId: string;
+  controlId: string;
+}
+
 export interface AuditInterview {
   id: string;
   auditId: string;
   topicId?: string;
+  themeId?: string;
   title: string;
   description?: string;
   startTime: string;
   durationMinutes: number;
   location?: string;
   meetingLink?: string;
+  controlRefs?: string; // Stocke les références aux clauses/contrôles ISO
 }
 
 export interface InterviewParticipant {
@@ -138,4 +151,12 @@ export interface InterviewParticipant {
   userId: string;
   role: string;
   notificationSent: boolean;
+}
+
+export interface StandardClause {
+  id: string;
+  referenceCode: string; // Par exemple: "A.8.15"
+  title: string; // Par exemple: "Sécurité des communications"
+  description?: string;
+  standardId: string; // Par exemple: "ISO27001:2022"
 }
