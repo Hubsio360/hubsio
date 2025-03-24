@@ -12,6 +12,7 @@ export type Database = {
       audit_interviews: {
         Row: {
           audit_id: string | null
+          control_refs: string | null
           created_at: string
           description: string | null
           duration_minutes: number
@@ -19,12 +20,14 @@ export type Database = {
           location: string | null
           meeting_link: string | null
           start_time: string
+          theme_id: string | null
           title: string
           topic_id: string | null
           updated_at: string
         }
         Insert: {
           audit_id?: string | null
+          control_refs?: string | null
           created_at?: string
           description?: string | null
           duration_minutes?: number
@@ -32,12 +35,14 @@ export type Database = {
           location?: string | null
           meeting_link?: string | null
           start_time: string
+          theme_id?: string | null
           title: string
           topic_id?: string | null
           updated_at?: string
         }
         Update: {
           audit_id?: string | null
+          control_refs?: string | null
           created_at?: string
           description?: string | null
           duration_minutes?: number
@@ -45,6 +50,7 @@ export type Database = {
           location?: string | null
           meeting_link?: string | null
           start_time?: string
+          theme_id?: string | null
           title?: string
           topic_id?: string | null
           updated_at?: string
@@ -55,6 +61,13 @@ export type Database = {
             columns: ["audit_id"]
             isOneToOne: false
             referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_interviews_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "audit_topics"
             referencedColumns: ["id"]
           },
           {

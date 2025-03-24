@@ -31,3 +31,18 @@ export const checkAuth = async () => {
   }
   return data.session;
 };
+
+// Type helper for audit_interviews table with the new columns
+export type AuditInterviewRow = Database['public']['Tables']['audit_interviews']['Row'] & {
+  theme_id?: string | null;
+  control_refs?: string | null;
+};
+
+// Custom typed select function for audit_interviews
+export const selectAuditInterviews = () => {
+  return supabase
+    .from('audit_interviews')
+    .select('*') as unknown as ReturnType<typeof supabase.from<'audit_interviews'>> & {
+      data: AuditInterviewRow[] | null;
+    };
+};

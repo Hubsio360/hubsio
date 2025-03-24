@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
@@ -18,9 +18,8 @@ export const useAuditInterviews = () => {
         return [];
       }
       
-      const { data, error } = await supabase
-        .from('audit_interviews')
-        .select('*')
+      // Using our custom typed function
+      const { data, error } = await selectAuditInterviews()
         .eq('audit_id', auditId)
         .order('start_time');
       
@@ -29,7 +28,7 @@ export const useAuditInterviews = () => {
         return [];
       }
       
-      const formattedInterviews = data.map(interview => ({
+      const formattedInterviews = (data || []).map(interview => ({
         id: interview.id,
         auditId: interview.audit_id,
         topicId: interview.topic_id,
@@ -69,26 +68,33 @@ export const useAuditInterviews = () => {
           meeting_link: interview.meetingLink,
           control_refs: interview.controlRefs
         }])
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error adding audit interview:', error);
         return null;
       }
       
-      const newInterview = {
-        id: data.id,
-        auditId: data.audit_id,
-        topicId: data.topic_id,
-        themeId: data.theme_id || undefined,
-        title: data.title,
-        description: data.description,
-        startTime: data.start_time,
-        durationMinutes: data.duration_minutes,
-        location: data.location,
-        meetingLink: data.meeting_link,
-        controlRefs: data.control_refs || undefined
+      if (!data || data.length === 0) {
+        console.error('No data returned after inserting interview');
+        return null;
+      }
+      
+      // Safely cast the returned data
+      const insertedRecord = data[0] as AuditInterviewRow;
+      
+      const newInterview: AuditInterview = {
+        id: insertedRecord.id,
+        auditId: insertedRecord.audit_id,
+        topicId: insertedRecord.topic_id,
+        themeId: insertedRecord.theme_id || undefined,
+        title: insertedRecord.title,
+        description: insertedRecord.description,
+        startTime: insertedRecord.start_time,
+        durationMinutes: insertedRecord.duration_minutes,
+        location: insertedRecord.location,
+        meetingLink: insertedRecord.meeting_link,
+        controlRefs: insertedRecord.control_refs || undefined
       };
       
       setInterviews((prev) => [...prev, newInterview]);
@@ -121,26 +127,33 @@ export const useAuditInterviews = () => {
         .from('audit_interviews')
         .update(updateData)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error updating audit interview:', error);
         return null;
       }
       
-      const updatedInterview = {
-        id: data.id,
-        auditId: data.audit_id,
-        topicId: data.topic_id,
-        themeId: data.theme_id || undefined,
-        title: data.title,
-        description: data.description,
-        startTime: data.start_time,
-        durationMinutes: data.duration_minutes,
-        location: data.location,
-        meetingLink: data.meeting_link,
-        controlRefs: data.control_refs || undefined
+      if (!data || data.length === 0) {
+        console.error('No data returned after updating interview');
+        return null;
+      }
+      
+      // Safely cast the returned data
+      const updatedRecord = data[0] as AuditInterviewRow;
+      
+      const updatedInterview: AuditInterview = {
+        id: updatedRecord.id,
+        auditId: updatedRecord.audit_id,
+        topicId: updatedRecord.topic_id,
+        themeId: updatedRecord.theme_id || undefined,
+        title: updatedRecord.title,
+        description: updatedRecord.description,
+        startTime: updatedRecord.start_time,
+        durationMinutes: updatedRecord.duration_minutes,
+        location: updatedRecord.location,
+        meetingLink: updatedRecord.meeting_link,
+        controlRefs: updatedRecord.control_refs || undefined
       };
       
       setInterviews((prev) =>
