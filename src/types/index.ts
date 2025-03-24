@@ -99,3 +99,18 @@ export interface Invoice {
   currency?: string;
   dueDate?: string;
 }
+
+export interface FrameworkImport {
+  name: string;
+  version: string;
+  controls: {
+    referenceCode: string;
+    title: string;
+    description: string;
+  }[];
+}
+
+export interface FrameworkImportResult {
+  framework: Framework;
+  controlsCount: number;
+}

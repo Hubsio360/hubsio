@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   Company, 
@@ -7,7 +6,9 @@ import {
   FrameworkControl, 
   AuditStep,
   Finding,
-  User
+  User,
+  FrameworkImport,
+  FrameworkImportResult
 } from '@/types';
 
 // Données mock pour le développement
@@ -256,6 +257,7 @@ interface DataContextProps {
   getAuditById: (id: string) => Audit | undefined;
   getFrameworkById: (id: string) => Framework | undefined;
   getControlById: (id: string) => FrameworkControl | undefined;
+  importFramework: (frameworkData: FrameworkImport) => Promise<FrameworkImportResult>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -368,6 +370,38 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const importFramework = async (frameworkData: FrameworkImport): Promise<FrameworkImportResult> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // Créer un nouveau framework
+        const newFramework: Framework = {
+          id: `framework-${Date.now()}`,
+          name: frameworkData.name,
+          version: frameworkData.version,
+        };
+        
+        // Créer les nouveaux contrôles
+        const newControls: FrameworkControl[] = frameworkData.controls.map((control, index) => ({
+          id: `control-${Date.now()}-${index}`,
+          frameworkId: newFramework.id,
+          referenceCode: control.referenceCode,
+          title: control.title,
+          description: control.description,
+        }));
+        
+        // Mettre à jour l'état
+        setFrameworks((prev) => [...prev, newFramework]);
+        setControls((prev) => [...prev, ...newControls]);
+        
+        // Retourner le résultat
+        resolve({
+          framework: newFramework,
+          controlsCount: newControls.length,
+        });
+      }, 1000);
+    });
+  };
+
   const getAuditsByCompanyId = (companyId: string): Audit[] => {
     return audits.filter((audit) => audit.companyId === companyId);
   };
@@ -419,6 +453,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getAuditById,
         getFrameworkById,
         getControlById,
+        importFramework,
       }}
     >
       {children}

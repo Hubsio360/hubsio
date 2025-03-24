@@ -1,0 +1,246 @@
+
+import { useState } from 'react';
+import { useData } from '@/contexts/DataContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Download, Plus, Upload, FileText, Info } from 'lucide-react';
+import { FrameworkControl } from '@/types';
+
+const Frameworks = () => {
+  const { frameworks, controls, importFramework } = useData();
+  const { toast } = useToast();
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    
+    try {
+      // Vérifier le format du fichier
+      if (!file.name.endsWith('.json')) {
+        toast({
+          title: "Format non supporté",
+          description: "Veuillez importer un fichier JSON",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+        return;
+      }
+
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const content = e.target?.result as string;
+          const frameworkData = JSON.parse(content);
+          
+          // Validation basique du format
+          if (!frameworkData.name || !frameworkData.version || !Array.isArray(frameworkData.controls)) {
+            toast({
+              title: "Format invalide",
+              description: "Le fichier ne contient pas les données attendues (name, version, controls)",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          // Importer le framework
+          const result = await importFramework(frameworkData);
+          
+          toast({
+            title: "Framework importé",
+            description: `${result.framework.name} v${result.framework.version} avec ${result.controlsCount} contrôles`,
+          });
+        } catch (error) {
+          console.error("Erreur lors du parsing JSON:", error);
+          toast({
+            title: "Erreur de format",
+            description: "Le fichier n'est pas un JSON valide",
+            variant: "destructive",
+          });
+        } finally {
+          setIsImporting(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast({
+          title: "Erreur de lecture",
+          description: "Impossible de lire le fichier",
+          variant: "destructive",
+        });
+        setIsImporting(false);
+      };
+      
+      reader.readAsText(file);
+    } catch (error) {
+      console.error("Erreur lors de l'importation:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'importation",
+        variant: "destructive",
+      });
+      setIsImporting(false);
+    }
+  };
+
+  // Format exemple pour l'export
+  const exampleFramework = {
+    name: "ISO 27001",
+    version: "2022",
+    controls: [
+      {
+        referenceCode: "A.5.1",
+        title: "Politiques de sécurité de l'information",
+        description: "Fournir des directives et un soutien à la gestion de la sécurité de l'information conformément aux exigences de l'entreprise."
+      },
+      {
+        referenceCode: "A.5.2",
+        title: "Revue des politiques de sécurité de l'information",
+        description: "Les politiques de sécurité de l'information doivent être revues à intervalles planifiés."
+      }
+    ]
+  };
+
+  const handleExampleDownload = () => {
+    const dataStr = JSON.stringify(exampleFramework, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = 'exemple-framework-iso27001.json';
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const getControlsCountByFramework = (frameworkId: string) => {
+    return controls.filter(control => control.frameworkId === frameworkId).length;
+  };
+
+  return (
+    <div className="container mx-auto py-8 px-4 animate-fade-in">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Référentiels</h1>
+          <p className="text-muted-foreground">
+            Gérez les référentiels d'audit et leurs contrôles
+          </p>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={handleExampleDownload} className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            <span>Exemple JSON</span>
+          </Button>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                <span>Importer un référentiel</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Importer un référentiel</SheetTitle>
+                <SheetDescription>
+                  Téléchargez un fichier JSON contenant un référentiel d'audit et ses contrôles.
+                </SheetDescription>
+              </SheetHeader>
+              
+              <div className="py-6">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle>Format requis</CardTitle>
+                    <CardDescription>
+                      Le fichier doit être au format JSON et contenir les champs suivants :
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <pre className="bg-muted p-4 rounded-md text-xs overflow-auto">
+                      {JSON.stringify(exampleFramework, null, 2)}
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="framework-file">Fichier JSON</Label>
+                  <div className="flex flex-col items-center justify-center border-2 border-dashed border-input rounded-md p-10 bg-muted/50">
+                    <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Glissez-déposez ou cliquez pour sélectionner
+                    </p>
+                    <Input
+                      id="framework-file"
+                      type="file"
+                      accept=".json"
+                      className="hidden"
+                      onChange={handleFileImport}
+                      disabled={isImporting}
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => document.getElementById('framework-file')?.click()}
+                      disabled={isImporting}
+                    >
+                      {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {frameworks.map((framework) => (
+          <Card key={framework.id} className="hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle>{framework.name}</CardTitle>
+              <CardDescription>Version {framework.version}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center text-muted-foreground">
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>{getControlsCountByFramework(framework.id)} contrôles</span>
+                </div>
+                <Button variant="outline" size="sm">
+                  Voir les détails
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {frameworks.length === 0 && (
+        <Card className="mt-6">
+          <CardContent className="flex flex-col items-center justify-center py-10">
+            <Info className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">Aucun référentiel</h3>
+            <p className="text-muted-foreground text-center mb-6">
+              Importez un référentiel pour commencer à créer des audits.
+            </p>
+            <Button onClick={() => document.querySelector('[role="dialog"] button')?.click()}>
+              <Plus className="mr-2 h-4 w-4" />
+              <span>Importer un référentiel</span>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+export default Frameworks;
