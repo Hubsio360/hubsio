@@ -85,29 +85,14 @@ export const useFrameworks = () => {
         version: newFrameworkData.version,
       };
       
-      // Préparation des contrôles à insérer
       const controlsToInsert = inputFramework.controls.map(control => ({
         framework_id: newFramework.id,
         reference_code: control.referenceCode,
         title: control.title,
-        description: control.description || '',
-        type: control.type || 'control'
+        description: control.description,
       }));
       
-      // Ajout des exigences si elles existent
-      if (inputFramework.requirements && inputFramework.requirements.length > 0) {
-        const requirementsToInsert = inputFramework.requirements.map(req => ({
-          framework_id: newFramework.id,
-          reference_code: req.referenceCode,
-          title: req.title,
-          description: req.description || '',
-          type: 'requirement'
-        }));
-        
-        controlsToInsert.push(...requirementsToInsert);
-      }
-      
-      console.log("Préparation à l'insertion de", controlsToInsert.length, "éléments (contrôles et exigences)");
+      console.log("Préparation à l'insertion de", controlsToInsert.length, "contrôles");
       
       const { data: controlsData, error: controlsError } = await supabase
         .from('framework_controls')
@@ -121,21 +106,16 @@ export const useFrameworks = () => {
         throw new Error(`Erreur lors de l'insertion des contrôles: ${controlsError.message}`);
       }
       
-      console.log("Éléments insérés avec succès:", controlsData?.length || 0, "éléments");
+      console.log("Contrôles insérés avec succès:", controlsData?.length || 0, "contrôles");
       
       // Mise à jour du state
       setFrameworks(prev => [...prev, newFramework]);
       
       console.log("Importation terminée avec succès");
       
-      // Calcul du nombre de contrôles et d'exigences
-      const controlsCount = controlsData ? controlsData.filter(c => c.type === 'control').length : 0;
-      const requirementsCount = controlsData ? controlsData.filter(c => c.type === 'requirement').length : 0;
-      
       return {
         framework: newFramework,
-        controlsCount: controlsCount,
-        requirementsCount: requirementsCount
+        controlsCount: controlsData?.length || 0,
       };
     } catch (error: any) {
       console.error('Error in importFramework:', error);

@@ -1,3 +1,4 @@
+
 export type UserRole = 'admin' | 'auditor' | 'reviewer';
 
 export type AuditStatus = 'draft' | 'in_progress' | 'review' | 'completed';
@@ -41,7 +42,6 @@ export interface FrameworkControl {
   referenceCode: string;
   title: string;
   description: string;
-  type: 'control' | 'requirement';
 }
 
 export interface Audit {
@@ -107,18 +107,10 @@ export interface FrameworkImport {
     referenceCode: string;
     title: string;
     description: string;
-    type?: 'control' | 'requirement';
-  }[];
-  requirements?: {
-    referenceCode: string;
-    title: string;
-    description: string;
-    type?: 'requirement';
   }[];
 }
 
 export interface FrameworkImportResult {
   framework: Framework;
   controlsCount: number;
-  requirementsCount?: number;
 }
