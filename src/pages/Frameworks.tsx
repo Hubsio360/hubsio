@@ -8,12 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Loader2, RefreshCcw } from 'lucide-react';
+import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Loader2, RefreshCcw, ChevronDown, ChevronUp } from 'lucide-react';
 import { FrameworkControl, Framework } from '@/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Frameworks = () => {
   const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl, loading, refreshFrameworks } = useData();
@@ -39,6 +40,7 @@ const Frameworks = () => {
   const [openAddControlDialog, setOpenAddControlDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sessionStatus, setSessionStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [expandedFrameworks, setExpandedFrameworks] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const checkSession = async () => {
@@ -227,6 +229,17 @@ const Frameworks = () => {
 
   const getControlsCountByFramework = (frameworkId: string) => {
     return controls.filter(control => control.frameworkId === frameworkId).length;
+  };
+
+  const getControlsByFramework = (frameworkId: string) => {
+    return controls.filter(control => control.frameworkId === frameworkId);
+  };
+
+  const toggleShowAllControls = (frameworkId: string) => {
+    setExpandedFrameworks(prev => ({
+      ...prev,
+      [frameworkId]: !prev[frameworkId]
+    }));
   };
 
   const handleEditFramework = (framework: Framework) => {
@@ -605,15 +618,13 @@ const Frameworks = () => {
                       </Button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-4 space-y-2">
-                      {controls
-                        .filter(control => control.frameworkId === framework.id)
-                        .slice(0, 5)
-                        .map(control => (
+                      <ScrollArea className="h-[300px] pr-3">
+                        {getControlsByFramework(framework.id).map(control => (
                           <ContextMenu key={control.id}>
                             <ContextMenuTrigger>
-                              <div className="text-sm border p-2 rounded group relative hover:bg-accent/30 transition-colors">
+                              <div className="text-sm border p-2 rounded group relative hover:bg-accent/30 transition-colors mb-2">
                                 <div className="font-medium">{control.referenceCode} - {control.title}</div>
-                                <div className="text-muted-foreground text-xs mt-1 line-clamp-2">
+                                <div className="text-muted-foreground text-xs mt-1">
                                   {control.description}
                                 </div>
                                 <Button 
@@ -642,11 +653,7 @@ const Frameworks = () => {
                             </ContextMenuContent>
                           </ContextMenu>
                         ))}
-                      {getControlsCountByFramework(framework.id) > 5 && (
-                        <div className="text-center text-sm text-muted-foreground mt-2">
-                          + {getControlsCountByFramework(framework.id) - 5} autres contrôles
-                        </div>
-                      )}
+                      </ScrollArea>
                     </CollapsibleContent>
                   </Collapsible>
                 </CardContent>
