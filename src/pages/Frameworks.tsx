@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -8,14 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Loader2, RefreshCcw } from 'lucide-react';
 import { FrameworkControl, Framework } from '@/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 const Frameworks = () => {
-  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl, loading } = useData();
+  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl, loading, refreshFrameworks } = useData();
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [frameworkToEdit, setFrameworkToEdit] = useState<Framework | null>(null);
@@ -36,10 +37,36 @@ const Frameworks = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openEditControlDialog, setOpenEditControlDialog] = useState(false);
   const [openAddControlDialog, setOpenAddControlDialog] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [sessionStatus, setSessionStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setSessionStatus(data.session ? 'authenticated' : 'unauthenticated');
+    };
+    
+    checkSession();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSessionStatus(session ? 'authenticated' : 'unauthenticated');
+    });
+    
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    if (sessionStatus !== 'authenticated') {
+      toast({
+        title: "Authentification requise",
+        description: "Vous devez être connecté pour importer un référentiel",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsImporting(true);
     
@@ -146,6 +173,26 @@ const Frameworks = () => {
         variant: "destructive",
       });
       setIsImporting(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshFrameworks();
+      toast({
+        title: "Données actualisées",
+        description: "Les référentiels et contrôles ont été actualisés",
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'actualisation:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'actualiser les données",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -380,6 +427,30 @@ const Frameworks = () => {
         </div>
 
         <div className="flex gap-3">
+          {sessionStatus === 'unauthenticated' && (
+            <Alert className="mb-2 bg-yellow-50 border-yellow-200">
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <AlertTitle>Authentification requise</AlertTitle>
+              <AlertDescription>
+                Vous devez être connecté pour pouvoir importer ou modifier des référentiels.
+              </AlertDescription>
+            </Alert>
+          )}
+          
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isRefreshing}
+            className="flex items-center gap-2"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="h-4 w-4" />
+            )}
+            <span>Actualiser</span>
+          </Button>
+          
           <Button variant="outline" onClick={handleExampleDownload} className="flex items-center gap-2">
             <Download className="h-4 w-4" />
             <span>Exemple JSON</span>
@@ -387,7 +458,7 @@ const Frameworks = () => {
           
           <Sheet>
             <SheetTrigger asChild>
-              <Button>
+              <Button disabled={sessionStatus !== 'authenticated'}>
                 <Plus className="mr-2 h-4 w-4" />
                 <span>Importer un référentiel</span>
               </Button>
@@ -430,7 +501,7 @@ const Frameworks = () => {
                       accept=".json"
                       className="hidden"
                       onChange={handleFileImport}
-                      disabled={isImporting}
+                      disabled={isImporting || sessionStatus !== 'authenticated'}
                     />
                     <Button
                       variant="outline"
@@ -438,7 +509,7 @@ const Frameworks = () => {
                         const inputElement = document.getElementById('framework-file') as HTMLInputElement;
                         if (inputElement) inputElement.click();
                       }}
-                      disabled={isImporting}
+                      disabled={isImporting || sessionStatus !== 'authenticated'}
                     >
                       {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
                     </Button>
@@ -494,6 +565,7 @@ const Frameworks = () => {
                         size="icon" 
                         onClick={() => handleEditFramework(framework)}
                         className="h-8 w-8"
+                        disabled={sessionStatus !== 'authenticated'}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -502,6 +574,7 @@ const Frameworks = () => {
                         size="icon" 
                         onClick={() => handleDeleteFramework(framework)}
                         className="h-8 w-8 text-destructive hover:text-destructive"
+                        disabled={sessionStatus !== 'authenticated'}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -519,6 +592,7 @@ const Frameworks = () => {
                       size="sm"
                       onClick={() => handleAddControl(framework)}
                       className="h-7 px-2"
+                      disabled={sessionStatus !== 'authenticated'}
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       <span>Ajouter</span>
@@ -550,6 +624,7 @@ const Frameworks = () => {
                                     handleEditControl(control);
                                   }}
                                   className="absolute right-1 top-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  disabled={sessionStatus !== 'authenticated'}
                                 >
                                   <Edit className="h-3 w-3" />
                                 </Button>
@@ -559,6 +634,7 @@ const Frameworks = () => {
                               <ContextMenuItem 
                                 onClick={() => handleEditControl(control)}
                                 className="flex items-center gap-2"
+                                disabled={sessionStatus !== 'authenticated'}
                               >
                                 <Edit className="h-4 w-4" />
                                 <span>Modifier ce contrôle</span>
@@ -588,7 +664,7 @@ const Frameworks = () => {
                 </p>
                 <Sheet>
                   <SheetTrigger asChild>
-                    <Button>
+                    <Button disabled={sessionStatus !== 'authenticated'}>
                       <Plus className="mr-2 h-4 w-4" />
                       <span>Importer un référentiel</span>
                     </Button>
@@ -631,7 +707,7 @@ const Frameworks = () => {
                             accept=".json"
                             className="hidden"
                             onChange={handleFileImport}
-                            disabled={isImporting}
+                            disabled={isImporting || sessionStatus !== 'authenticated'}
                           />
                           <Button
                             variant="outline"
@@ -639,7 +715,7 @@ const Frameworks = () => {
                               const inputElement = document.getElementById('framework-file-alt') as HTMLInputElement;
                               if (inputElement) inputElement.click();
                             }}
-                            disabled={isImporting}
+                            disabled={isImporting || sessionStatus !== 'authenticated'}
                           >
                             {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
                           </Button>
