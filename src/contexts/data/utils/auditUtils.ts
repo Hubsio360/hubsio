@@ -1,5 +1,9 @@
 
 import { Audit } from '@/types';
+import type { Database } from '@/integrations/supabase/types';
+
+// Type alias for the Supabase audits table row
+type AuditInsert = Database['public']['Tables']['audits']['Insert'];
 
 /**
  * Formats raw Supabase audit data into the application's Audit type
@@ -18,7 +22,7 @@ export const formatSupabaseAudit = (rawAudit: any): Audit => ({
 /**
  * Formats application Audit data for Supabase insertion
  */
-export const formatAuditForSupabase = (audit: Omit<Audit, 'id'>): Record<string, any> => ({
+export const formatAuditForSupabase = (audit: Omit<Audit, 'id'>): AuditInsert => ({
   company_id: audit.companyId,
   framework_id: audit.frameworkId,
   start_date: audit.startDate,
@@ -31,8 +35,8 @@ export const formatAuditForSupabase = (audit: Omit<Audit, 'id'>): Record<string,
 /**
  * Prepares partial audit data for Supabase update
  */
-export const formatAuditUpdatesForSupabase = (updates: Partial<Audit>): Record<string, any> => {
-  const auditData: Record<string, any> = {};
+export const formatAuditUpdatesForSupabase = (updates: Partial<Audit>): Partial<AuditInsert> => {
+  const auditData: Partial<AuditInsert> = {};
   
   if (updates.startDate) auditData.start_date = updates.startDate;
   if (updates.endDate) auditData.end_date = updates.endDate;
