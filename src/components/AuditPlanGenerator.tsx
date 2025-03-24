@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarIcon, UsersIcon, ClockIcon, LayoutPlanIcon, CheckIcon } from 'lucide-react';
+import { CalendarIcon, UsersIcon, ClockIcon, LayoutIcon, CheckIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format, eachDayOfInterval, addBusinessDays, isWeekend, addDays, subBusinessDays } from 'date-fns';
@@ -37,7 +36,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [planEndDate, setPlanEndDate] = useState<Date | undefined>(new Date(endDate));
   const [activeTab, setActiveTab] = useState('dates');
 
-  // Fonction pour générer le plan d'audit
   const handleGeneratePlan = async () => {
     if (!planStartDate || !planEndDate) {
       toast({
@@ -51,7 +49,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     setIsGenerating(true);
     
     try {
-      // Si aucun sujet n'a été chargé, chargeons-les maintenant
       if (topics.length === 0) {
         await fetchTopics();
       }
@@ -91,27 +88,22 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     }
   };
 
-  // Calculer les jours ouvrables entre les dates de début et de fin
   const businessDays = planStartDate && planEndDate
     ? eachDayOfInterval({ start: planStartDate, end: planEndDate }).filter(date => !isWeekend(date)).length
     : 0;
 
-  // Gérer le changement de la date de début
   const handleStartDateChange = (date: Date | undefined) => {
     if (date) {
       setPlanStartDate(date);
-      // Ajuster la date de fin si nécessaire
       if (planEndDate && date > planEndDate) {
         setPlanEndDate(addBusinessDays(date, 5));
       }
     }
   };
 
-  // Gérer le changement de la date de fin
   const handleEndDateChange = (date: Date | undefined) => {
     if (date) {
       setPlanEndDate(date);
-      // Ajuster la date de début si nécessaire
       if (planStartDate && date < planStartDate) {
         setPlanStartDate(subBusinessDays(date, 5));
       }
@@ -122,7 +114,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <LayoutPlanIcon className="h-5 w-5 mr-2" />
+          <LayoutIcon className="h-5 w-5 mr-2" />
           Génération du plan d'audit
         </CardTitle>
         <CardDescription>
