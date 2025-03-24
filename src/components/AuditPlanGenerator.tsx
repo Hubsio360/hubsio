@@ -1,20 +1,16 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarIcon, UsersIcon, ClockIcon, LayoutIcon, CheckIcon } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format, eachDayOfInterval, addBusinessDays, isWeekend, addDays, subBusinessDays } from 'date-fns';
+import { LayoutIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { eachDayOfInterval, addBusinessDays, isWeekend, subBusinessDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useData } from '@/contexts/DataContext';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
+import DateSelector from './audit-plan/DateSelector';
+import AuditStatsSummary from './audit-plan/AuditStatsSummary';
+import TopicsList from './audit-plan/TopicsList';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
@@ -130,149 +126,30 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           
           <TabsContent value="dates" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start-date">Date de début</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="start-date"
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {planStartDate ? (
-                        format(planStartDate, 'PPP', { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={planStartDate}
-                      onSelect={handleStartDateChange}
-                      initialFocus
-                      locale={fr}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <DateSelector
+                id="start-date"
+                label="Date de début"
+                selectedDate={planStartDate}
+                onSelect={handleStartDateChange}
+              />
               
-              <div className="space-y-2">
-                <Label htmlFor="end-date">Date de fin</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id="end-date"
-                      variant="outline"
-                      className="w-full justify-start text-left font-normal"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {planEndDate ? (
-                        format(planEndDate, 'PPP', { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={planEndDate}
-                      onSelect={handleEndDateChange}
-                      initialFocus
-                      locale={fr}
-                      disabled={(date) => date < (planStartDate || new Date())}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <DateSelector
+                id="end-date"
+                label="Date de fin"
+                selectedDate={planEndDate}
+                onSelect={handleEndDateChange}
+                minDate={planStartDate}
+              />
             </div>
             
-            <div className="mt-4 space-y-2">
-              <h3 className="text-sm font-medium">Récapitulatif</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <div className="bg-muted/50 p-3 rounded-md">
-                  <div className="text-sm font-medium mb-1 flex items-center">
-                    <CalendarIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                    Durée
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {businessDays} <span className="text-sm font-normal">jours</span>
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-3 rounded-md">
-                  <div className="text-sm font-medium mb-1 flex items-center">
-                    <UsersIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                    Thématiques
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {topics.length} <span className="text-sm font-normal">sujets</span>
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-3 rounded-md">
-                  <div className="text-sm font-medium mb-1 flex items-center">
-                    <ClockIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                    Interviews
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    {topics.length} <span className="text-sm font-normal">sessions</span>
-                  </div>
-                </div>
-                <div className="bg-muted/50 p-3 rounded-md">
-                  <div className="text-sm font-medium mb-1 flex items-center">
-                    <CheckIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                    Couverture
-                  </div>
-                  <div className="text-2xl font-semibold">
-                    100<span className="text-sm font-normal">%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <AuditStatsSummary 
+              businessDays={businessDays} 
+              topicsCount={topics.length} 
+            />
           </TabsContent>
           
           <TabsContent value="topics">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Thématiques d'audit disponibles</Label>
-                {topics.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-1 gap-2">
-                      {topics.map((topic) => (
-                        <div 
-                          key={topic.id} 
-                          className="flex items-center p-2 border rounded-md"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium">{topic.name}</div>
-                            {topic.description && (
-                              <div className="text-sm text-muted-foreground line-clamp-1">
-                                {topic.description}
-                              </div>
-                            )}
-                          </div>
-                          <Badge variant="outline" className="ml-2">
-                            Inclus
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Toutes les thématiques seront incluses dans le plan d'audit généré.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-6 border rounded-md">
-                    <h3 className="text-lg font-medium mb-2">Aucune thématique disponible</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Vous devez créer des thématiques d'audit avant de pouvoir générer un plan.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <TopicsList topics={topics} />
           </TabsContent>
         </Tabs>
       </CardContent>
