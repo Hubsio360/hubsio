@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Audit } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -58,6 +57,69 @@ export const useAudits = () => {
       toast({
         title: "Erreur",
         description: error.message || "Impossible de créer l'audit",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const updateAudit = async (id: string, updates: Partial<Audit>): Promise<Audit> => {
+    try {
+      console.log('Mise à jour de l\'audit dans Supabase:', id, updates);
+      
+      // Préparer les données pour la mise à jour dans la base de données
+      const auditData: Record<string, any> = {};
+      
+      if (updates.startDate) auditData.start_date = updates.startDate;
+      if (updates.endDate) auditData.end_date = updates.endDate;
+      if (updates.scope !== undefined) auditData.scope = updates.scope || null;
+      if (updates.status) auditData.status = updates.status;
+      
+      // Si aucune donnée à mettre à jour, retourner l'audit existant
+      if (Object.keys(auditData).length === 0) {
+        const existingAudit = audits.find(audit => audit.id === id);
+        if (!existingAudit) {
+          throw new Error(`Audit avec ID ${id} non trouvé`);
+        }
+        return existingAudit;
+      }
+      
+      // Mettre à jour l'audit dans la base de données
+      const { data, error } = await supabase
+        .from('audits')
+        .update(auditData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erreur lors de la mise à jour de l\'audit:', error);
+        throw new Error(`Erreur lors de la mise à jour de l'audit: ${error.message}`);
+      }
+
+      console.log('Audit mis à jour avec succès:', data);
+      
+      // Formater les données retournées par Supabase au format Audit
+      const updatedAudit: Audit = {
+        id: data.id,
+        companyId: data.company_id,
+        frameworkId: data.framework_id,
+        startDate: data.start_date,
+        endDate: data.end_date,
+        scope: data.scope || undefined,
+        createdById: data.created_by_id,
+        status: data.status,
+      };
+
+      // Mettre à jour l'état local
+      setAudits(prev => prev.map(audit => audit.id === id ? updatedAudit : audit));
+      
+      return updatedAudit;
+    } catch (error: any) {
+      console.error('Erreur dans updateAudit:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour l'audit",
         variant: "destructive",
       });
       throw error;
@@ -177,6 +239,7 @@ export const useAudits = () => {
   return {
     audits,
     addAudit,
+    updateAudit,
     getAuditsByCompanyId,
     getAuditById,
     deleteAudit,

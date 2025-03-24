@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -38,7 +37,6 @@ import {
 import { FindingCategory, FindingStatus } from '@/types';
 import AuditPlanSection from '@/components/AuditPlanSection';
 
-// Utilitaire pour afficher la catégorie de constat
 const getCategoryBadge = (category: FindingCategory) => {
   switch (category) {
     case 'non_conformity_major':
@@ -76,7 +74,6 @@ const getCategoryBadge = (category: FindingCategory) => {
   }
 };
 
-// Utilitaire pour afficher le statut d'un constat
 const getStatusBadge = (status: FindingStatus) => {
   switch (status) {
     case 'draft':
@@ -116,6 +113,7 @@ const AuditDetail = () => {
     getControlById,
     addFinding,
     updateFinding,
+    updateAudit,
     controls
   } = useData();
   const { user } = useAuth();
@@ -211,7 +209,6 @@ const AuditDetail = () => {
     }
   };
   
-  // Contrôles disponibles pour l'étape sélectionnée
   const availableControls = selectedStep
     ? controls.filter(control => 
         control.frameworkId === audit.frameworkId && 
@@ -305,7 +302,6 @@ const AuditDetail = () => {
     
     setIsRefinementLoading(prev => ({ ...prev, [findingId]: true }));
     
-    // Simuler l'appel à l'IA pour la reformulation
     setTimeout(async () => {
       const refinedText = `${finding.rawText} [REFORMULÉ] - Dans le cadre de l'évaluation du contrôle, il a été constaté que les mesures implémentées ne répondent pas entièrement aux exigences normatives.`;
       
@@ -350,26 +346,41 @@ const AuditDetail = () => {
     }
   };
 
-  // Nouvelle fonction pour gérer l'ouverture du dialogue d'édition
   const handleOpenEditDialog = () => {
     setEditFormData({
       scope: audit.scope || '',
-      startDate: audit.startDate.split('T')[0], // Format YYYY-MM-DD pour l'input date
-      endDate: audit.endDate.split('T')[0], // Format YYYY-MM-DD pour l'input date
+      startDate: audit.startDate.split('T')[0],
+      endDate: audit.endDate.split('T')[0],
     });
     setIsEditDialogOpen(true);
   };
 
-  // Nouvelle fonction pour gérer la soumission du formulaire d'édition
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Ici, vous pourriez ajouter une fonction à useAudits pour mettre à jour l'audit
-    // Pour l'instant, nous allons simplement afficher un toast de succès
-    toast({
-      title: "Succès",
-      description: "Les informations de l'audit ont été mises à jour",
-    });
-    setIsEditDialogOpen(false);
+    
+    try {
+      const updates: Partial<Audit> = {
+        startDate: editFormData.startDate,
+        endDate: editFormData.endDate,
+        scope: editFormData.scope
+      };
+      
+      await updateAudit(id, updates);
+      
+      toast({
+        title: "Succès",
+        description: "Les informations de l'audit ont été mises à jour",
+      });
+      
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de l\'audit:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour les informations de l'audit",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -428,7 +439,6 @@ const AuditDetail = () => {
         </div>
       </div>
 
-      {/* Dialogue d'édition */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
