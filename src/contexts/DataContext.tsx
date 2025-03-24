@@ -260,6 +260,7 @@ interface DataContextProps {
   importFramework: (frameworkData: FrameworkImport) => Promise<FrameworkImportResult>;
   updateFramework: (id: string, updates: Partial<Framework>) => Promise<Framework>;
   deleteFramework: (id: string) => Promise<void>;
+  updateControl: (id: string, updates: Partial<FrameworkControl>) => Promise<FrameworkControl>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -449,6 +450,30 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const updateControl = async (
+    id: string,
+    updates: Partial<FrameworkControl>
+  ): Promise<FrameworkControl> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const controlIndex = controls.findIndex((c) => c.id === id);
+        if (controlIndex === -1) {
+          return reject(new Error('Control not found'));
+        }
+
+        const updatedControl = {
+          ...controls[controlIndex],
+          ...updates,
+        };
+
+        const newControls = [...controls];
+        newControls[controlIndex] = updatedControl;
+        setControls(newControls);
+        resolve(updatedControl);
+      }, 500);
+    });
+  };
+
   const getAuditsByCompanyId = (companyId: string): Audit[] => {
     return audits.filter((audit) => audit.companyId === companyId);
   };
@@ -503,6 +528,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         importFramework,
         updateFramework,
         deleteFramework,
+        updateControl,
       }}
     >
       {children}

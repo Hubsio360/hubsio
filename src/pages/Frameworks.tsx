@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -7,23 +6,34 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle } from 'lucide-react';
 import { FrameworkControl, Framework } from '@/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
 
 const Frameworks = () => {
-  const { frameworks, controls, importFramework, updateFramework, deleteFramework } = useData();
+  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl } = useData();
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [frameworkToEdit, setFrameworkToEdit] = useState<Framework | null>(null);
   const [frameworkToDelete, setFrameworkToDelete] = useState<Framework | null>(null);
+  const [controlToEdit, setControlToEdit] = useState<FrameworkControl | null>(null);
   const [editFormData, setEditFormData] = useState({ name: '', version: '' });
+  const [editControlFormData, setEditControlFormData] = useState({ 
+    referenceCode: '', 
+    title: '', 
+    description: '' 
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingControl, setIsEditingControl] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [openEditControlDialog, setOpenEditControlDialog] = useState(false);
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -32,7 +42,6 @@ const Frameworks = () => {
     setIsImporting(true);
     
     try {
-      // Vérifier le format du fichier
       if (!file.name.endsWith('.json')) {
         toast({
           title: "Format non supporté",
@@ -50,7 +59,6 @@ const Frameworks = () => {
           const content = e.target?.result as string;
           const frameworkData = JSON.parse(content);
           
-          // Validation basique du format
           if (!frameworkData.name || !frameworkData.version || !Array.isArray(frameworkData.controls)) {
             toast({
               title: "Format invalide",
@@ -60,7 +68,6 @@ const Frameworks = () => {
             return;
           }
           
-          // Importer le framework
           const result = await importFramework(frameworkData);
           
           toast({
@@ -100,7 +107,6 @@ const Frameworks = () => {
     }
   };
 
-  // Format exemple pour l'export
   const exampleFramework = {
     name: "ISO 27001",
     version: "2022",
@@ -148,6 +154,16 @@ const Frameworks = () => {
     setOpenDeleteDialog(true);
   };
 
+  const handleEditControl = (control: FrameworkControl) => {
+    setControlToEdit(control);
+    setEditControlFormData({
+      referenceCode: control.referenceCode,
+      title: control.title,
+      description: control.description || '',
+    });
+    setOpenEditControlDialog(true);
+  };
+
   const submitEdit = async () => {
     if (!frameworkToEdit) return;
     
@@ -183,6 +199,45 @@ const Frameworks = () => {
       });
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const submitEditControl = async () => {
+    if (!controlToEdit) return;
+    
+    if (!editControlFormData.referenceCode || !editControlFormData.title) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsEditingControl(true);
+    
+    try {
+      const updatedControl = await updateControl(controlToEdit.id, {
+        referenceCode: editControlFormData.referenceCode,
+        title: editControlFormData.title,
+        description: editControlFormData.description
+      });
+      
+      toast({
+        title: "Contrôle mis à jour",
+        description: `${updatedControl.referenceCode} - ${updatedControl.title} a été mis à jour avec succès`,
+      });
+      
+      setOpenEditControlDialog(false);
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du contrôle:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la mise à jour du contrôle",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingControl(false);
     }
   };
 
@@ -338,12 +393,36 @@ const Frameworks = () => {
                     .filter(control => control.frameworkId === framework.id)
                     .slice(0, 5)
                     .map(control => (
-                      <div key={control.id} className="text-sm border p-2 rounded">
-                        <div className="font-medium">{control.referenceCode} - {control.title}</div>
-                        <div className="text-muted-foreground text-xs mt-1 line-clamp-2">
-                          {control.description}
-                        </div>
-                      </div>
+                      <ContextMenu key={control.id}>
+                        <ContextMenuTrigger>
+                          <div className="text-sm border p-2 rounded group relative hover:bg-accent/30 transition-colors">
+                            <div className="font-medium">{control.referenceCode} - {control.title}</div>
+                            <div className="text-muted-foreground text-xs mt-1 line-clamp-2">
+                              {control.description}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditControl(control);
+                              }}
+                              className="absolute right-1 top-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem 
+                            onClick={() => handleEditControl(control)}
+                            className="flex items-center gap-2"
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span>Modifier ce contrôle</span>
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     ))}
                   {getControlsCountByFramework(framework.id) > 5 && (
                     <div className="text-center text-sm text-muted-foreground mt-2">
@@ -373,7 +452,6 @@ const Frameworks = () => {
                 </Button>
               </SheetTrigger>
               <SheetContent>
-                {/* Contenu identique au sheet ci-dessus */}
                 <SheetHeader>
                   <SheetTitle>Importer un référentiel</SheetTitle>
                   <SheetDescription>
@@ -432,93 +510,5 @@ const Frameworks = () => {
         </Card>
       )}
 
-      {/* Dialogue de suppression */}
-      <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Supprimer le référentiel</DialogTitle>
-            <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce référentiel ? Cette action ne peut pas être annulée.
-            </DialogDescription>
-          </DialogHeader>
-          
-          {frameworkToDelete && (
-            <div className="py-4">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-                <span className="font-medium">Attention</span>
-              </div>
-              <p className="text-muted-foreground mb-2">
-                La suppression du référentiel <span className="font-medium">{frameworkToDelete.name}</span> entraînera également la suppression de :
-              </p>
-              <ul className="list-disc list-inside text-sm text-muted-foreground ml-4 space-y-1">
-                <li>{getControlsCountByFramework(frameworkToDelete.id)} contrôles associés</li>
-              </ul>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
-              Annuler
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={submitDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Suppression...' : 'Supprimer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <
 
-      {/* Dialogue de modification */}
-      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier le référentiel</DialogTitle>
-            <DialogDescription>
-              Modifiez les informations du référentiel.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nom du référentiel</Label>
-              <Input
-                id="name"
-                placeholder="Nom"
-                value={editFormData.name}
-                onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="version">Version</Label>
-              <Input
-                id="version"
-                placeholder="1.0"
-                value={editFormData.version}
-                onChange={(e) => setEditFormData({...editFormData, version: e.target.value})}
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenEditDialog(false)}>
-              Annuler
-            </Button>
-            <Button 
-              onClick={submitEdit}
-              disabled={isEditing}
-            >
-              {isEditing ? 'Enregistrement...' : 'Enregistrer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-};
-
-export default Frameworks;
