@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
@@ -79,7 +80,7 @@ export const useAuditInterviews = () => {
         return null;
       }
       
-      // Safely cast the returned data
+      // Get the first row from the inserted data
       const insertedRecord = data[0] as AuditInterviewRow;
       
       const newInterview: AuditInterview = {
@@ -138,7 +139,7 @@ export const useAuditInterviews = () => {
         return null;
       }
       
-      // Safely cast the returned data
+      // Get the first row from the updated data
       const updatedRecord = data[0] as AuditInterviewRow;
       
       const updatedInterview: AuditInterview = {
