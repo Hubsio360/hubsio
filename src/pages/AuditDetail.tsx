@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -29,8 +28,11 @@ import {
   Plus,
   Sparkles,
   User,
+  Calendar,
+  LayoutPlanIcon,
 } from 'lucide-react';
 import { FindingCategory, FindingStatus } from '@/types';
+import AuditPlanSection from '@/components/AuditPlanSection';
 
 // Utilitaire pour afficher la catégorie de constat
 const getCategoryBadge = (category: FindingCategory) => {
@@ -124,6 +126,7 @@ const AuditDetail = () => {
   });
   const [isSubmittingFinding, setIsSubmittingFinding] = useState(false);
   const [isRefinementLoading, setIsRefinementLoading] = useState<Record<string, boolean>>({});
+  const [showPlanSection, setShowPlanSection] = useState(false);
 
   if (!id) {
     return (
@@ -370,12 +373,30 @@ const AuditDetail = () => {
         </div>
 
         <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowPlanSection(!showPlanSection)}
+            className="flex items-center"
+          >
+            <LayoutPlanIcon className="mr-2 h-4 w-4" />
+            {showPlanSection ? "Masquer le plan d'audit" : "Plan d'audit"}
+          </Button>
           <Button variant="outline" disabled>
             <FileText className="mr-2 h-4 w-4" />
             Générer le rapport
           </Button>
         </div>
       </div>
+
+      {showPlanSection && (
+        <div className="mb-8">
+          <AuditPlanSection 
+            auditId={id || ''} 
+            startDate={audit.startDate} 
+            endDate={audit.endDate} 
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="md:col-span-2">
