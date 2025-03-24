@@ -10,6 +10,8 @@ import {
   FrameworkImport,
   FrameworkImportResult
 } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Données mock pour le développement
 const MOCK_COMPANIES: Company[] = [
@@ -56,188 +58,6 @@ const MOCK_COMPANIES: Company[] = [
   },
 ];
 
-const MOCK_FRAMEWORKS: Framework[] = [
-  {
-    id: '1',
-    name: 'ISO 27001',
-    version: '2022',
-  },
-  {
-    id: '2',
-    name: 'NIST Cybersecurity Framework',
-    version: '1.1',
-  },
-  {
-    id: '3',
-    name: 'PCI DSS',
-    version: '4.0',
-  },
-];
-
-const MOCK_CONTROLS: FrameworkControl[] = [
-  {
-    id: '1',
-    frameworkId: '1',
-    referenceCode: 'A.5.1',
-    title: 'Politiques de sécurité de l\'information',
-    description: 'Fournir des directives et un soutien à la gestion de la sécurité de l\'information conformément aux exigences de l\'entreprise et aux lois et règlements en vigueur.',
-  },
-  {
-    id: '2',
-    frameworkId: '1',
-    referenceCode: 'A.5.2',
-    title: 'Revue des politiques de sécurité de l\'information',
-    description: 'Les politiques de sécurité de l\'information doivent être revues à intervalles planifiés ou en cas de changements importants pour assurer leur adéquation, leur pertinence et leur efficacité continues.',
-  },
-  {
-    id: '3',
-    frameworkId: '1',
-    referenceCode: 'A.6.1.1',
-    title: 'Rôles et responsabilités en matière de sécurité',
-    description: 'Toutes les responsabilités en matière de sécurité de l\'information doivent être définies et attribuées.',
-  },
-  {
-    id: '4',
-    frameworkId: '1',
-    referenceCode: 'A.8.1.1',
-    title: 'Inventaire des actifs',
-    description: 'Les actifs associés à l\'information et aux moyens de traitement de l\'information doivent être identifiés et un inventaire de ces actifs doit être établi et tenu à jour.',
-  },
-  {
-    id: '5',
-    frameworkId: '1',
-    referenceCode: 'A.9.2.1',
-    title: 'Enregistrement et désinscription des utilisateurs',
-    description: 'Un processus formel d\'enregistrement et de désinscription des utilisateurs doit être mis en œuvre pour permettre l\'attribution des droits d\'accès.',
-  },
-];
-
-const MOCK_AUDITS: Audit[] = [
-  {
-    id: '1',
-    companyId: '1',
-    frameworkId: '1',
-    startDate: '2023-06-10',
-    endDate: '2023-06-15',
-    scope: 'Systèmes d\'information centraux',
-    createdById: '2',
-    status: 'completed',
-  },
-  {
-    id: '2',
-    companyId: '2',
-    frameworkId: '1',
-    startDate: '2023-09-18',
-    endDate: '2023-09-22',
-    scope: 'Traitement des données clients',
-    createdById: '2',
-    status: 'completed',
-  },
-  {
-    id: '3',
-    companyId: '3',
-    frameworkId: '1',
-    startDate: '2023-10-02',
-    endDate: '2023-10-05',
-    scope: 'Infrastructure cloud',
-    createdById: '2',
-    status: 'completed',
-  },
-  {
-    id: '4',
-    companyId: '4',
-    frameworkId: '1',
-    startDate: '2023-11-08',
-    endDate: '2023-11-12',
-    scope: 'Laboratoires de recherche',
-    createdById: '2',
-    status: 'completed',
-  },
-  {
-    id: '5',
-    companyId: '1',
-    frameworkId: '1',
-    startDate: '2024-03-15',
-    endDate: '2024-03-20',
-    scope: 'Nouvelle application de paiement',
-    createdById: '2',
-    status: 'in_progress',
-  },
-];
-
-const MOCK_AUDIT_STEPS: AuditStep[] = [
-  {
-    id: '1',
-    auditId: '5',
-    title: 'Revue des politiques de sécurité',
-    description: 'Évaluation des politiques et procédures de sécurité de l\'information',
-    order: 1,
-    controlIds: ['1', '2'],
-  },
-  {
-    id: '2',
-    auditId: '5',
-    title: 'Évaluation de la gouvernance',
-    description: 'Analyse de la structure organisationnelle et des responsabilités',
-    order: 2,
-    controlIds: ['3'],
-  },
-  {
-    id: '3',
-    auditId: '5',
-    title: 'Gestion des actifs',
-    description: 'Vérification des inventaires et de la classification des actifs',
-    order: 3,
-    controlIds: ['4'],
-  },
-  {
-    id: '4',
-    auditId: '5',
-    title: 'Contrôle d\'accès',
-    description: 'Évaluation des mécanismes de contrôle d\'accès',
-    order: 4,
-    controlIds: ['5'],
-  },
-];
-
-const MOCK_FINDINGS: Finding[] = [
-  {
-    id: '1',
-    auditStepId: '1',
-    controlId: '1',
-    authorId: '2',
-    rawText: 'J\'ai constaté que la politique de sécurité n\'a pas été mise à jour depuis 2 ans alors que beaucoup de changements ont eu lieu dans l\'organisation',
-    refinedText: 'La politique de sécurité de l\'information n\'a pas été révisée depuis plus de 24 mois, malgré des changements organisationnels significatifs survenus pendant cette période.',
-    category: 'non_conformity_minor',
-    status: 'validated',
-    createdAt: '2024-03-15T14:30:00Z',
-    updatedAt: '2024-03-16T09:15:00Z',
-  },
-  {
-    id: '2',
-    auditStepId: '2',
-    controlId: '3',
-    authorId: '2',
-    rawText: 'Les rôles et responsabilités en matière de sécurité sont clairement définis dans l\'organigramme mais ne sont pas connus par tous les employés interrogés',
-    refinedText: 'L\'organigramme de sécurité définit clairement les rôles et responsabilités, mais une connaissance insuffisante de ces attributions a été constatée lors des entretiens avec le personnel.',
-    category: 'sensitive_point',
-    status: 'pending_review',
-    createdAt: '2024-03-16T11:45:00Z',
-    updatedAt: '2024-03-16T11:45:00Z',
-  },
-  {
-    id: '3',
-    auditStepId: '3',
-    controlId: '4',
-    authorId: '2',
-    rawText: 'L\'inventaire des actifs n\'est pas complet, il manque les nouveaux serveurs acquis en janvier',
-    status: 'draft',
-    category: 'non_conformity_minor',
-    createdAt: '2024-03-17T10:20:00Z',
-    updatedAt: '2024-03-17T10:20:00Z',
-  },
-];
-
 interface DataContextProps {
   companies: Company[];
   audits: Audit[];
@@ -245,6 +65,10 @@ interface DataContextProps {
   controls: FrameworkControl[];
   auditSteps: AuditStep[];
   findings: Finding[];
+  loading: {
+    frameworks: boolean;
+    controls: boolean;
+  };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
   addFinding: (finding: Omit<Finding, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Finding>;
@@ -268,11 +92,95 @@ const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(MOCK_COMPANIES);
-  const [audits, setAudits] = useState<Audit[]>(MOCK_AUDITS);
-  const [frameworks, setFrameworks] = useState<Framework[]>(MOCK_FRAMEWORKS);
-  const [controls, setControls] = useState<FrameworkControl[]>(MOCK_CONTROLS);
-  const [auditSteps, setAuditSteps] = useState<AuditStep[]>(MOCK_AUDIT_STEPS);
-  const [findings, setFindings] = useState<Finding[]>(MOCK_FINDINGS);
+  const [audits, setAudits] = useState<Audit[]>([]);
+  const [frameworks, setFrameworks] = useState<Framework[]>([]);
+  const [controls, setControls] = useState<FrameworkControl[]>([]);
+  const [auditSteps, setAuditSteps] = useState<AuditStep[]>([]);
+  const [findings, setFindings] = useState<Finding[]>([]);
+  const [loading, setLoading] = useState({
+    frameworks: true,
+    controls: true
+  });
+  const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchFrameworks() {
+      try {
+        setLoading(prev => ({ ...prev, frameworks: true }));
+        const { data, error } = await supabase
+          .from('frameworks')
+          .select('*');
+        
+        if (error) {
+          console.error('Error fetching frameworks:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les référentiels",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const formattedFrameworks: Framework[] = data.map(item => ({
+          id: item.id,
+          name: item.name,
+          version: item.version
+        }));
+        
+        setFrameworks(formattedFrameworks);
+      } catch (error) {
+        console.error('Error in fetchFrameworks:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des référentiels",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, frameworks: false }));
+      }
+    }
+
+    async function fetchControls() {
+      try {
+        setLoading(prev => ({ ...prev, controls: true }));
+        const { data, error } = await supabase
+          .from('framework_controls')
+          .select('*');
+        
+        if (error) {
+          console.error('Error fetching controls:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les contrôles",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const formattedControls: FrameworkControl[] = data.map(item => ({
+          id: item.id,
+          frameworkId: item.framework_id,
+          referenceCode: item.reference_code,
+          title: item.title,
+          description: item.description || ''
+        }));
+        
+        setControls(formattedControls);
+      } catch (error) {
+        console.error('Error in fetchControls:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des contrôles",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(prev => ({ ...prev, controls: false }));
+      }
+    }
+
+    fetchFrameworks();
+    fetchControls();
+  }, [toast]);
 
   const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
     return new Promise((resolve) => {
@@ -351,10 +259,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return reject(new Error('Company not found'));
         }
 
-        // Simuler une enrichissement par IA
         const company = companies[companyIndex];
         
-        // Générer des informations enrichies en fonction du nom
         const enrichedData = {
           activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions de cybersécurité avancées.`,
           creationYear: company.creationYear || 2018,
@@ -375,138 +281,204 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const importFramework = async (frameworkData: FrameworkImport): Promise<FrameworkImportResult> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Créer un nouveau framework
-        const newFramework: Framework = {
-          id: `framework-${Date.now()}`,
+    try {
+      const { data: frameworkData, error: frameworkError } = await supabase
+        .from('frameworks')
+        .insert({
           name: frameworkData.name,
-          version: frameworkData.version,
-        };
-        
-        // Créer les nouveaux contrôles
-        const newControls: FrameworkControl[] = frameworkData.controls.map((control, index) => ({
-          id: `control-${Date.now()}-${index}`,
-          frameworkId: newFramework.id,
-          referenceCode: control.referenceCode,
-          title: control.title,
-          description: control.description,
-        }));
-        
-        // Mettre à jour l'état
-        setFrameworks((prev) => [...prev, newFramework]);
-        setControls((prev) => [...prev, ...newControls]);
-        
-        // Retourner le résultat
-        resolve({
-          framework: newFramework,
-          controlsCount: newControls.length,
-        });
-      }, 1000);
-    });
+          version: frameworkData.version
+        })
+        .select()
+        .single();
+      
+      if (frameworkError) {
+        console.error('Error inserting framework:', frameworkError);
+        throw new Error(`Erreur lors de l'insertion du référentiel: ${frameworkError.message}`);
+      }
+
+      const newFramework: Framework = {
+        id: frameworkData.id,
+        name: frameworkData.name,
+        version: frameworkData.version,
+      };
+      
+      const controlsToInsert = frameworkData.controls.map(control => ({
+        framework_id: newFramework.id,
+        reference_code: control.referenceCode,
+        title: control.title,
+        description: control.description,
+      }));
+      
+      const { data: controlsData, error: controlsError } = await supabase
+        .from('framework_controls')
+        .insert(controlsToInsert)
+        .select();
+      
+      if (controlsError) {
+        console.error('Error inserting controls:', controlsError);
+        throw new Error(`Erreur lors de l'insertion des contrôles: ${controlsError.message}`);
+      }
+      
+      const newControls: FrameworkControl[] = controlsData.map(control => ({
+        id: control.id,
+        frameworkId: control.framework_id,
+        referenceCode: control.reference_code,
+        title: control.title,
+        description: control.description || '',
+      }));
+      
+      setFrameworks(prev => [...prev, newFramework]);
+      setControls(prev => [...prev, ...newControls]);
+      
+      return {
+        framework: newFramework,
+        controlsCount: newControls.length,
+      };
+    } catch (error) {
+      console.error('Error in importFramework:', error);
+      throw error;
+    }
   };
 
   const updateFramework = async (
     id: string,
     updates: Partial<Framework>
   ): Promise<Framework> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const frameworkIndex = frameworks.findIndex((f) => f.id === id);
-        if (frameworkIndex === -1) {
-          return reject(new Error('Framework not found'));
-        }
+    try {
+      const dbUpdates = {
+        ...(updates.name && { name: updates.name }),
+        ...(updates.version && { version: updates.version })
+      };
 
-        const updatedFramework = {
-          ...frameworks[frameworkIndex],
-          ...updates,
-        };
+      const { data, error } = await supabase
+        .from('frameworks')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating framework:', error);
+        throw new Error(`Erreur lors de la mise à jour du référentiel: ${error.message}`);
+      }
 
-        const newFrameworks = [...frameworks];
-        newFrameworks[frameworkIndex] = updatedFramework;
-        setFrameworks(newFrameworks);
-        resolve(updatedFramework);
-      }, 500);
-    });
+      const updatedFramework: Framework = {
+        id: data.id,
+        name: data.name,
+        version: data.version,
+      };
+
+      setFrameworks(prev => prev.map(f => 
+        f.id === id ? updatedFramework : f
+      ));
+
+      return updatedFramework;
+    } catch (error) {
+      console.error('Error in updateFramework:', error);
+      throw error;
+    }
   };
 
   const deleteFramework = async (id: string): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        console.log("Suppression du référentiel avec ID:", id);
-        
-        const frameworkIndex = frameworks.findIndex((f) => f.id === id);
-        if (frameworkIndex === -1) {
-          console.error("Framework not found avec ID:", id);
-          return reject(new Error('Framework not found'));
-        }
+    try {
+      const { error } = await supabase
+        .from('frameworks')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting framework:', error);
+        throw new Error(`Erreur lors de la suppression du référentiel: ${error.message}`);
+      }
 
-        console.log("Framework trouvé à l'index:", frameworkIndex);
-        console.log("Frameworks avant suppression:", frameworks);
-        
-        // Important: Create new arrays for state updates to ensure React detects the change
-        const newFrameworks = frameworks.filter((f) => f.id !== id);
-        const newControls = controls.filter((c) => c.frameworkId !== id);
-        
-        console.log("Frameworks après filtrage:", newFrameworks);
-        
-        // Update state with the new arrays
-        setFrameworks(newFrameworks);
-        setControls(newControls);
-        
-        console.log("État frameworks après setFrameworks:", newFrameworks);
-        console.log("Contrôles après suppression des contrôles associés:", newControls);
-
-        // Make sure any audits using this framework are also updated
-        // This is optional but would ensure complete data consistency
-        const auditsUsingFramework = audits.filter(a => a.frameworkId === id);
-        if (auditsUsingFramework.length > 0) {
-          console.log("Audits utilisant ce référentiel:", auditsUsingFramework.length);
-          // You may want to handle this case based on your application's needs
-        }
-
-        resolve();
-      }, 500);
-    });
+      setFrameworks(prev => prev.filter(f => f.id !== id));
+      setControls(prev => prev.filter(c => c.frameworkId !== id));
+      
+    } catch (error) {
+      console.error('Error in deleteFramework:', error);
+      throw error;
+    }
   };
 
   const updateControl = async (
     id: string,
     updates: Partial<FrameworkControl>
   ): Promise<FrameworkControl> => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const controlIndex = controls.findIndex((c) => c.id === id);
-        if (controlIndex === -1) {
-          return reject(new Error('Control not found'));
-        }
+    try {
+      const dbUpdates = {
+        ...(updates.referenceCode && { reference_code: updates.referenceCode }),
+        ...(updates.title && { title: updates.title }),
+        ...(updates.description !== undefined && { description: updates.description })
+      };
 
-        const updatedControl = {
-          ...controls[controlIndex],
-          ...updates,
-        };
+      const { data, error } = await supabase
+        .from('framework_controls')
+        .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating control:', error);
+        throw new Error(`Erreur lors de la mise à jour du contrôle: ${error.message}`);
+      }
 
-        const newControls = [...controls];
-        newControls[controlIndex] = updatedControl;
-        setControls(newControls);
-        resolve(updatedControl);
-      }, 500);
-    });
+      const updatedControl: FrameworkControl = {
+        id: data.id,
+        frameworkId: data.framework_id,
+        referenceCode: data.reference_code,
+        title: data.title,
+        description: data.description || '',
+      };
+
+      setControls(prev => prev.map(c => 
+        c.id === id ? updatedControl : c
+      ));
+
+      return updatedControl;
+    } catch (error) {
+      console.error('Error in updateControl:', error);
+      throw error;
+    }
   };
 
   const addControl = async (
     control: Omit<FrameworkControl, 'id'>
   ): Promise<FrameworkControl> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newControl = {
-          ...control,
-          id: `control-${Date.now()}`,
-        };
-        setControls((prev) => [...prev, newControl]);
-        resolve(newControl);
-      }, 500);
-    });
+    try {
+      const dbControl = {
+        framework_id: control.frameworkId,
+        reference_code: control.referenceCode,
+        title: control.title,
+        description: control.description || null
+      };
+
+      const { data, error } = await supabase
+        .from('framework_controls')
+        .insert(dbControl)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding control:', error);
+        throw new Error(`Erreur lors de l'ajout du contrôle: ${error.message}`);
+      }
+
+      const newControl: FrameworkControl = {
+        id: data.id,
+        frameworkId: data.framework_id,
+        referenceCode: data.reference_code,
+        title: data.title,
+        description: data.description || '',
+      };
+
+      setControls(prev => [...prev, newControl]);
+
+      return newControl;
+    } catch (error) {
+      console.error('Error in addControl:', error);
+      throw error;
+    }
   };
 
   const getAuditsByCompanyId = (companyId: string): Audit[] => {
@@ -548,6 +520,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         controls,
         auditSteps,
         findings,
+        loading,
         addCompany,
         addAudit,
         addFinding,

@@ -9,16 +9,507 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      audit_reports: {
+        Row: {
+          audit_id: string
+          classification: string | null
+          generated_at: string
+          markdown_content: string
+          pdf_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_id: string
+          classification?: string | null
+          generated_at?: string
+          markdown_content: string
+          pdf_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_id?: string
+          classification?: string | null
+          generated_at?: string
+          markdown_content?: string
+          pdf_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_reports_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: true
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_step_controls: {
+        Row: {
+          audit_step_id: string
+          control_id: string
+        }
+        Insert: {
+          audit_step_id: string
+          control_id: string
+        }
+        Update: {
+          audit_step_id?: string
+          control_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_step_controls_audit_step_id_fkey"
+            columns: ["audit_step_id"]
+            isOneToOne: false
+            referencedRelation: "audit_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_step_controls_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "framework_controls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_steps: {
+        Row: {
+          audit_id: string
+          created_at: string
+          description: string | null
+          id: string
+          order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audit_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audit_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_steps_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_users: {
+        Row: {
+          audit_id: string
+          role_in_audit: string
+          user_id: string
+        }
+        Insert: {
+          audit_id: string
+          role_in_audit: string
+          user_id: string
+        }
+        Update: {
+          audit_id?: string
+          role_in_audit?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_users_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audits: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by_id: string
+          end_date: string
+          framework_id: string
+          id: string
+          scope: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["audit_status"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by_id: string
+          end_date: string
+          framework_id: string
+          id?: string
+          scope?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["audit_status"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by_id?: string
+          end_date?: string
+          framework_id?: string
+          id?: string
+          scope?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["audit_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audits_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audits_created_by_id_fkey"
+            columns: ["created_by_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audits_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          activity: string | null
+          created_at: string
+          creation_year: number | null
+          id: string
+          last_audit_date: string | null
+          market_scope: string | null
+          name: string
+          parent_company: string | null
+          updated_at: string
+        }
+        Insert: {
+          activity?: string | null
+          created_at?: string
+          creation_year?: number | null
+          id?: string
+          last_audit_date?: string | null
+          market_scope?: string | null
+          name: string
+          parent_company?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activity?: string | null
+          created_at?: string
+          creation_year?: number | null
+          id?: string
+          last_audit_date?: string | null
+          market_scope?: string | null
+          name?: string
+          parent_company?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      findings: {
+        Row: {
+          audit_step_id: string
+          author_id: string
+          category: Database["public"]["Enums"]["finding_category"]
+          control_id: string
+          created_at: string
+          id: string
+          raw_text: string
+          refined_text: string | null
+          status: Database["public"]["Enums"]["finding_status"]
+          updated_at: string
+        }
+        Insert: {
+          audit_step_id: string
+          author_id: string
+          category: Database["public"]["Enums"]["finding_category"]
+          control_id: string
+          created_at?: string
+          id?: string
+          raw_text: string
+          refined_text?: string | null
+          status?: Database["public"]["Enums"]["finding_status"]
+          updated_at?: string
+        }
+        Update: {
+          audit_step_id?: string
+          author_id?: string
+          category?: Database["public"]["Enums"]["finding_category"]
+          control_id?: string
+          created_at?: string
+          id?: string
+          raw_text?: string
+          refined_text?: string | null
+          status?: Database["public"]["Enums"]["finding_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "findings_audit_step_id_fkey"
+            columns: ["audit_step_id"]
+            isOneToOne: false
+            referencedRelation: "audit_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "findings_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "findings_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "framework_controls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      framework_controls: {
+        Row: {
+          created_at: string
+          description: string | null
+          framework_id: string
+          id: string
+          reference_code: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          framework_id: string
+          id?: string
+          reference_code: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          framework_id?: string
+          id?: string
+          reference_code?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "framework_controls_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      frameworks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+          version: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number | null
+          audit_id: string
+          created_at: string
+          currency: string | null
+          due_date: string | null
+          status: string
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          amount?: number | null
+          audit_id: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          status: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          amount?: number | null
+          audit_id?: string
+          created_at?: string
+          currency?: string | null
+          due_date?: string | null
+          status?: string
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: true
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gtrgm_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: {
+          "": unknown
+        }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      set_limit: {
+        Args: {
+          "": number
+        }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: {
+          "": string
+        }
+        Returns: string[]
+      }
+      unaccent: {
+        Args: {
+          "": string
+        }
+        Returns: string
+      }
+      unaccent_init: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
     }
     Enums: {
-      [_ in never]: never
+      audit_status: "draft" | "in_progress" | "review" | "completed"
+      finding_category:
+        | "non_conformity_major"
+        | "non_conformity_minor"
+        | "sensitive_point"
+        | "improvement_opportunity"
+        | "strength"
+      finding_status: "draft" | "pending_review" | "validated"
+      user_role: "admin" | "auditor" | "reviewer"
     }
     CompositeTypes: {
       [_ in never]: never

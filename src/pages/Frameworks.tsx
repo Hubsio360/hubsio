@@ -8,19 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { FrameworkControl, Framework } from '@/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
 
 const Frameworks = () => {
-  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl } = useData();
+  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl, loading } = useData();
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [frameworkToEdit, setFrameworkToEdit] = useState<Framework | null>(null);
@@ -415,177 +409,186 @@ const Frameworks = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {frameworks.map((framework) => (
-          <Card key={framework.id} className="hover:shadow-md transition-shadow">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle>{framework.name}</CardTitle>
-                  <CardDescription>Version {framework.version}</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleEditFramework(framework)}
-                    className="h-8 w-8"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleDeleteFramework(framework)}
-                    className="h-8 w-8 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-muted-foreground mb-4">
-                <div className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span>{getControlsCountByFramework(framework.id)} contrôles</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAddControl(framework)}
-                  className="h-7 px-2"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  <span>Ajouter</span>
-                </Button>
-              </div>
-              <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full">
-                    Voir les détails
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-4 space-y-2">
-                  {controls
-                    .filter(control => control.frameworkId === framework.id)
-                    .slice(0, 5)
-                    .map(control => (
-                      <ContextMenu key={control.id}>
-                        <ContextMenuTrigger>
-                          <div className="text-sm border p-2 rounded group relative hover:bg-accent/30 transition-colors">
-                            <div className="font-medium">{control.referenceCode} - {control.title}</div>
-                            <div className="text-muted-foreground text-xs mt-1 line-clamp-2">
-                              {control.description}
-                            </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditControl(control);
-                              }}
-                              className="absolute right-1 top-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </ContextMenuTrigger>
-                        <ContextMenuContent>
-                          <ContextMenuItem 
-                            onClick={() => handleEditControl(control)}
-                            className="flex items-center gap-2"
-                          >
-                            <Edit className="h-4 w-4" />
-                            <span>Modifier ce contrôle</span>
-                          </ContextMenuItem>
-                        </ContextMenuContent>
-                      </ContextMenu>
-                    ))}
-                  {getControlsCountByFramework(framework.id) > 5 && (
-                    <div className="text-center text-sm text-muted-foreground mt-2">
-                      + {getControlsCountByFramework(framework.id) - 5} autres contrôles
+      {loading.frameworks ? (
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-lg">Chargement des référentiels...</span>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {frameworks.map((framework) => (
+              <Card key={framework.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <CardTitle>{framework.name}</CardTitle>
+                      <CardDescription>Version {framework.version}</CardDescription>
                     </div>
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {frameworks.length === 0 && (
-        <Card className="mt-6">
-          <CardContent className="flex flex-col items-center justify-center py-10">
-            <Info className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">Aucun référentiel</h3>
-            <p className="text-muted-foreground text-center mb-6">
-              Importez un référentiel pour commencer à créer des audits.
-            </p>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  <span>Importer un référentiel</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader>
-                  <SheetTitle>Importer un référentiel</SheetTitle>
-                  <SheetDescription>
-                    Téléchargez un fichier JSON contenant un référentiel d'audit et ses contrôles.
-                  </SheetDescription>
-                </SheetHeader>
-                
-                <div className="py-6">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle>Format requis</CardTitle>
-                      <CardDescription>
-                        Le fichier doit être au format JSON et contenir les champs suivants :
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <pre className="bg-muted p-4 rounded-md text-xs overflow-auto">
-                        {JSON.stringify(exampleFramework, null, 2)}
-                      </pre>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="framework-file-alt">Fichier JSON</Label>
-                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-input rounded-md p-10 bg-muted/50">
-                      <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Glissez-déposez ou cliquez pour sélectionner
-                      </p>
-                      <Input
-                        id="framework-file-alt"
-                        type="file"
-                        accept=".json"
-                        className="hidden"
-                        onChange={handleFileImport}
-                        disabled={isImporting}
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const inputElement = document.getElementById('framework-file-alt') as HTMLInputElement;
-                          if (inputElement) inputElement.click();
-                        }}
-                        disabled={isImporting}
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleEditFramework(framework)}
+                        className="h-8 w-8"
                       >
-                        {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteFramework(framework)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </CardContent>
-        </Card>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between text-muted-foreground mb-4">
+                    <div className="flex items-center">
+                      <FileText className="h-4 w-4 mr-2" />
+                      <span>{getControlsCountByFramework(framework.id)} contrôles</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddControl(framework)}
+                      className="h-7 px-2"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      <span>Ajouter</span>
+                    </Button>
+                  </div>
+                  <Collapsible>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full">
+                        Voir les détails
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-4 space-y-2">
+                      {controls
+                        .filter(control => control.frameworkId === framework.id)
+                        .slice(0, 5)
+                        .map(control => (
+                          <ContextMenu key={control.id}>
+                            <ContextMenuTrigger>
+                              <div className="text-sm border p-2 rounded group relative hover:bg-accent/30 transition-colors">
+                                <div className="font-medium">{control.referenceCode} - {control.title}</div>
+                                <div className="text-muted-foreground text-xs mt-1 line-clamp-2">
+                                  {control.description}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditControl(control);
+                                  }}
+                                  className="absolute right-1 top-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </ContextMenuTrigger>
+                            <ContextMenuContent>
+                              <ContextMenuItem 
+                                onClick={() => handleEditControl(control)}
+                                className="flex items-center gap-2"
+                              >
+                                <Edit className="h-4 w-4" />
+                                <span>Modifier ce contrôle</span>
+                              </ContextMenuItem>
+                            </ContextMenuContent>
+                          </ContextMenu>
+                        ))}
+                      {getControlsCountByFramework(framework.id) > 5 && (
+                        <div className="text-center text-sm text-muted-foreground mt-2">
+                          + {getControlsCountByFramework(framework.id) - 5} autres contrôles
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {frameworks.length === 0 && (
+            <Card className="mt-6">
+              <CardContent className="flex flex-col items-center justify-center py-10">
+                <Info className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucun référentiel</h3>
+                <p className="text-muted-foreground text-center mb-6">
+                  Importez un référentiel pour commencer à créer des audits.
+                </p>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span>Importer un référentiel</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent>
+                    <SheetHeader>
+                      <SheetTitle>Importer un référentiel</SheetTitle>
+                      <SheetDescription>
+                        Téléchargez un fichier JSON contenant un référentiel d'audit et ses contrôles.
+                      </SheetDescription>
+                    </SheetHeader>
+                    
+                    <div className="py-6">
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle>Format requis</CardTitle>
+                          <CardDescription>
+                            Le fichier doit être au format JSON et contenir les champs suivants :
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <pre className="bg-muted p-4 rounded-md text-xs overflow-auto">
+                            {JSON.stringify(exampleFramework, null, 2)}
+                          </pre>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="framework-file-alt">Fichier JSON</Label>
+                        <div className="flex flex-col items-center justify-center border-2 border-dashed border-input rounded-md p-10 bg-muted/50">
+                          <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground mb-2">
+                            Glissez-déposez ou cliquez pour sélectionner
+                          </p>
+                          <Input
+                            id="framework-file-alt"
+                            type="file"
+                            accept=".json"
+                            className="hidden"
+                            onChange={handleFileImport}
+                            disabled={isImporting}
+                          />
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              const inputElement = document.getElementById('framework-file-alt') as HTMLInputElement;
+                              if (inputElement) inputElement.click();
+                            }}
+                            disabled={isImporting}
+                          >
+                            {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Edit Framework Dialog */}
