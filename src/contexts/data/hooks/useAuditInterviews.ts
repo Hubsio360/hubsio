@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
-import { supabase, selectAuditInterviews } from '@/integrations/supabase/client';
+import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
