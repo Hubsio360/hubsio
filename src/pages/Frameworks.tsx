@@ -12,6 +12,7 @@ import { Download, Plus, Upload, FileText, Info, Edit, Trash2, AlertCircle, Load
 import { FrameworkControl, Framework } from '@/types';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const Frameworks = () => {
   const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl, loading } = useData();
@@ -58,7 +59,20 @@ const Frameworks = () => {
       reader.onload = async (e) => {
         try {
           const content = e.target?.result as string;
-          const frameworkData = JSON.parse(content);
+          let frameworkData;
+          
+          try {
+            frameworkData = JSON.parse(content);
+          } catch (parseError) {
+            console.error("Erreur lors du parsing JSON:", parseError);
+            toast({
+              title: "Erreur de format",
+              description: "Le fichier n'est pas un JSON valide",
+              variant: "destructive",
+            });
+            setIsImporting(false);
+            return;
+          }
           
           if (!frameworkData.name || !frameworkData.version || !Array.isArray(frameworkData.controls)) {
             toast({
@@ -66,20 +80,47 @@ const Frameworks = () => {
               description: "Le fichier ne contient pas les données attendues (name, version, controls)",
               variant: "destructive",
             });
+            setIsImporting(false);
+            return;
+          }
+
+          const invalidControls = frameworkData.controls.filter(
+            control => !control.referenceCode || !control.title
+          );
+          
+          if (invalidControls.length > 0) {
+            toast({
+              title: "Contrôles invalides",
+              description: `${invalidControls.length} contrôle(s) ne contiennent pas toutes les propriétés requises (referenceCode, title)`,
+              variant: "destructive",
+            });
+            setIsImporting(false);
             return;
           }
           
-          const result = await importFramework(frameworkData);
+          console.log("Importing framework:", frameworkData);
           
-          toast({
-            title: "Framework importé",
-            description: `${result.framework.name} v${result.framework.version} avec ${result.controlsCount} contrôles`,
-          });
+          try {
+            const result = await importFramework(frameworkData);
+            console.log("Import successful:", result);
+            
+            toast({
+              title: "Framework importé",
+              description: `${result.framework.name} v${result.framework.version} avec ${result.controlsCount} contrôles`,
+            });
+          } catch (importError: any) {
+            console.error("Erreur lors de l'importation:", importError);
+            toast({
+              title: "Erreur d'importation",
+              description: importError.message || "Une erreur est survenue lors de l'importation",
+              variant: "destructive",
+            });
+          }
         } catch (error) {
-          console.error("Erreur lors du parsing JSON:", error);
+          console.error("Erreur lors du traitement:", error);
           toast({
-            title: "Erreur de format",
-            description: "Le fichier n'est pas un JSON valide",
+            title: "Erreur inattendue",
+            description: "Une erreur inattendue est survenue",
             variant: "destructive",
           });
         } finally {
@@ -409,6 +450,28 @@ const Frameworks = () => {
         </div>
       </div>
 
+      <Alert className="mb-6 bg-blue-50 border-blue-200">
+        <Info className="h-4 w-4" />
+        <AlertTitle>Format d'importation</AlertTitle>
+        <AlertDescription>
+          Pour importer un référentiel, utilisez un fichier JSON avec le format suivant :
+          <pre className="mt-2 p-2 bg-blue-100 rounded text-xs overflow-auto">
+{`{
+  "name": "Nom du référentiel",
+  "version": "Version",
+  "controls": [
+    {
+      "referenceCode": "A.1",
+      "title": "Titre du contrôle",
+      "description": "Description du contrôle (optionnelle)"
+    }
+  ]
+}`}
+          </pre>
+          <span className="block mt-2">Vous pouvez télécharger un exemple en cliquant sur "Exemple JSON"</span>
+        </AlertDescription>
+      </Alert>
+
       {loading.frameworks ? (
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -591,7 +654,6 @@ const Frameworks = () => {
         </>
       )}
 
-      {/* Edit Framework Dialog */}
       <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
         <DialogContent>
           <DialogHeader>
@@ -629,7 +691,6 @@ const Frameworks = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Framework Dialog */}
       <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -655,7 +716,6 @@ const Frameworks = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Control Dialog */}
       <Dialog open={openEditControlDialog} onOpenChange={setOpenEditControlDialog}>
         <DialogContent>
           <DialogHeader>
@@ -702,7 +762,6 @@ const Frameworks = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Control Dialog */}
       <Dialog open={openAddControlDialog} onOpenChange={setOpenAddControlDialog}>
         <DialogContent>
           <DialogHeader>
