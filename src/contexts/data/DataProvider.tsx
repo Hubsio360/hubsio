@@ -43,10 +43,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const handleImportStandardAuditPlan = async (auditId: string, planData: any[]): Promise<boolean> => {
+    const clauses = await standardClausesHook.fetchStandardClauses();
+    
     return importStandardAuditPlan(
       auditId, 
       planData, 
       themesHook.themes, 
+      clauses,
       themesHook.addTheme, 
       auditInterviewsHook.addInterview
     );

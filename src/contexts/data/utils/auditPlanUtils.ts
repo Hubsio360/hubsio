@@ -1,10 +1,11 @@
 
-import { AuditTheme } from '@/types';
+import { AuditTheme, StandardClause } from '@/types';
 
 export const importStandardAuditPlan = async (
   auditId: string, 
   planData: any[], 
   themes: AuditTheme[],
+  standardClauses: StandardClause[],
   addTheme: (theme: Omit<AuditTheme, 'id'>) => Promise<AuditTheme | null>,
   addInterview: (interview: any) => Promise<any>
 ): Promise<boolean> => {
@@ -80,12 +81,25 @@ export const importStandardAuditPlan = async (
       }
     }
 
+    // S'assurer que nous avons des thèmes valides avant de continuer
+    let themeMap = new Map<string, string>();
+    
+    for (const theme of themes) {
+      themeMap.set(theme.name, theme.id);
+    }
+
     for (const [themeName, interviews] of Object.entries(themeInterviews) as [string, any[]][]) {
-      let themeId = themes.find(t => t.name === themeName)?.id;
+      let themeId = themeMap.get(themeName);
       
       if (!themeId) {
         const newTheme = await addTheme({ name: themeName });
-        themeId = newTheme?.id;
+        if (newTheme) {
+          themeId = newTheme.id;
+          themeMap.set(themeName, themeId);
+        } else {
+          console.error(`Erreur lors de la création du thème: ${themeName}`);
+          continue;
+        }
       }
 
       for (const interview of interviews) {
