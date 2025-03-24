@@ -84,10 +84,10 @@ const AppRoutes = () => {
   );
 };
 
+// Create a QueryClient instance outside of the component
+const queryClient = new QueryClient();
+
 const App = () => {
-  // Create a new QueryClient inside the component function
-  const queryClient = new QueryClient();
-  
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
