@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +10,7 @@ interface AuthContextProps {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
+  getUsers: () => Promise<User[]>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -98,13 +98,30 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const getUsers = async (): Promise<User[]> => {
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+        throw error;
+      }
+      
+      return data.users.map(mapSupabaseUser);
+    } catch (error) {
+      console.error("Failed to get users:", error);
+      return [];
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
       isLoading, 
       login, 
       logout,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      getUsers
     }}>
       {children}
     </AuthContext.Provider>
