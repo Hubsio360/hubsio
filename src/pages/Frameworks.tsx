@@ -300,12 +300,18 @@ const Frameworks = () => {
   };
 
   const submitDelete = async () => {
-    if (!frameworkToDelete) return;
+    if (!frameworkToDelete) {
+      console.error("Tentative de suppression sans framework sélectionné");
+      return;
+    }
     
+    console.log("Début de la suppression du framework:", frameworkToDelete);
     setIsDeleting(true);
     
     try {
       await deleteFramework(frameworkToDelete.id);
+      
+      console.log("Framework supprimé avec succès:", frameworkToDelete.id);
       
       toast({
         title: "Référentiel supprimé",
@@ -313,6 +319,7 @@ const Frameworks = () => {
       });
       
       setOpenDeleteDialog(false);
+      setFrameworkToDelete(null);
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
       toast({
@@ -750,3 +757,5 @@ const Frameworks = () => {
 };
 
 export default Frameworks;
+
+

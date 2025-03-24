@@ -433,18 +433,28 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const deleteFramework = async (id: string): Promise<void> => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
+        console.log("Suppression du référentiel avec ID:", id);
+        
         const frameworkIndex = frameworks.findIndex((f) => f.id === id);
         if (frameworkIndex === -1) {
+          console.error("Framework not found avec ID:", id);
           return reject(new Error('Framework not found'));
         }
 
+        console.log("Framework trouvé à l'index:", frameworkIndex);
+        console.log("Frameworks avant suppression:", frameworks);
+        
         // Supprimer le référentiel
         const newFrameworks = frameworks.filter((f) => f.id !== id);
         setFrameworks(newFrameworks);
+        
+        console.log("Frameworks après suppression:", newFrameworks);
 
         // Supprimer tous les contrôles associés au référentiel
         const newControls = controls.filter((c) => c.frameworkId !== id);
         setControls(newControls);
+        
+        console.log("Contrôles après suppression des contrôles associés", newControls);
 
         resolve();
       }, 500);
