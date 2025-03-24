@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -42,11 +41,13 @@ interface DataContextProps {
     interviews: boolean;
     themes: boolean;
     standardClauses: boolean;
+    audits: boolean;
   };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
   updateAudit: (id: string, updates: Partial<Audit>) => Promise<Audit>;
   deleteAudit: (id: string) => Promise<boolean>;
+  fetchAudits: () => Promise<void>;
   addFinding: (finding: Omit<Finding, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Finding>;
   updateFinding: (id: string, updates: Partial<Finding>) => Promise<Finding>;
   enrichCompanyData: (companyId: string) => Promise<Company>;
@@ -129,7 +130,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     topics: auditTopicsHook.loading,
     interviews: auditInterviewsHook.loading,
     themes: false,
-    standardClauses: false
+    standardClauses: false,
+    audits: auditsHook.loading
   };
 
   const refreshFrameworks = async () => {
@@ -226,6 +228,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addAudit: auditsHook.addAudit,
         updateAudit: auditsHook.updateAudit,
         deleteAudit: auditsHook.deleteAudit,
+        fetchAudits: auditsHook.fetchAudits,
         addFinding: findingsHook.addFinding,
         updateFinding: findingsHook.updateFinding,
         enrichCompanyData: companiesHook.enrichCompanyData,

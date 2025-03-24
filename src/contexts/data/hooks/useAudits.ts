@@ -1,11 +1,60 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Audit } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const useAudits = () => {
   const [audits, setAudits] = useState<Audit[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Fetch audits on component mount
+  useEffect(() => {
+    fetchAudits();
+  }, []);
+
+  const fetchAudits = async () => {
+    try {
+      setLoading(true);
+      console.log('Récupération des audits depuis Supabase...');
+      
+      const { data, error } = await supabase
+        .from('audits')
+        .select('*');
+      
+      if (error) {
+        console.error('Erreur lors de la récupération des audits:', error);
+        throw new Error(`Erreur lors de la récupération des audits: ${error.message}`);
+      }
+
+      console.log('Audits récupérés avec succès:', data);
+      
+      // Formater les données retournées par Supabase au format Audit
+      const fetchedAudits: Audit[] = data.map((item: any) => ({
+        id: item.id,
+        companyId: item.company_id,
+        frameworkId: item.framework_id,
+        startDate: item.start_date,
+        endDate: item.end_date,
+        scope: item.scope || undefined,
+        createdById: item.created_by_id,
+        status: item.status,
+      }));
+
+      // Mettre à jour l'état local
+      setAudits(fetchedAudits);
+    } catch (error: any) {
+      console.error('Erreur dans fetchAudits:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de récupérer les audits",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addAudit = async (audit: Omit<Audit, 'id'>): Promise<Audit> => {
     try {
@@ -238,6 +287,8 @@ export const useAudits = () => {
 
   return {
     audits,
+    loading,
+    fetchAudits,
     addAudit,
     updateAudit,
     getAuditsByCompanyId,

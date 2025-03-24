@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart3,
   Building2,
@@ -30,10 +31,22 @@ const CompanyDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { getCompanyById, getAuditsByCompanyId, getFrameworkById, getAuditById, deleteAudit } = useData();
+  const { 
+    getCompanyById, 
+    getAuditsByCompanyId, 
+    getFrameworkById, 
+    getAuditById, 
+    deleteAudit,
+    fetchAudits,
+    loading
+  } = useData();
   const [activeTab, setActiveTab] = useState('audits');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [auditToDelete, setAuditToDelete] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchAudits();
+  }, [fetchAudits]);
 
   if (!id) {
     return (
@@ -288,7 +301,31 @@ const CompanyDetail = () => {
         </TabsList>
         
         <TabsContent value="audits" className="animate-fade-in">
-          {audits.length === 0 ? (
+          {loading.audits ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-6 w-1/3" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-1/4 mt-2" />
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Skeleton className="h-9 w-32" />
+                    <Skeleton className="h-9 w-32" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : audits.length === 0 ? (
             <Card>
               <CardContent className="pt-6 text-center py-8">
                 <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -398,4 +435,3 @@ const CompanyDetail = () => {
 };
 
 export default CompanyDetail;
-
