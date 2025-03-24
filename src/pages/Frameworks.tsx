@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -155,6 +156,7 @@ const Frameworks = () => {
   };
 
   const handleEditControl = (control: FrameworkControl) => {
+    console.log("Editing control:", control);
     setControlToEdit(control);
     setEditControlFormData({
       referenceCode: control.referenceCode,
