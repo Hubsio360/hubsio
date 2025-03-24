@@ -9,6 +9,63 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      audit_interviews: {
+        Row: {
+          audit_id: string | null
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          id: string
+          location: string | null
+          meeting_link: string | null
+          start_time: string
+          title: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          audit_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          start_time: string
+          title: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          audit_id?: string | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          id?: string
+          location?: string | null
+          meeting_link?: string | null
+          start_time?: string
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_interviews_audit_id_fkey"
+            columns: ["audit_id"]
+            isOneToOne: false
+            referencedRelation: "audits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_interviews_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "audit_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_reports: {
         Row: {
           audit_id: string
@@ -111,6 +168,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_topics: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       audit_users: {
         Row: {
@@ -365,6 +446,42 @@ export type Database = {
         }
         Relationships: []
       }
+      interview_participants: {
+        Row: {
+          interview_id: string
+          notification_sent: boolean | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          interview_id: string
+          notification_sent?: boolean | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          interview_id?: string
+          notification_sent?: boolean | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_participants_interview_id_fkey"
+            columns: ["interview_id"]
+            isOneToOne: false
+            referencedRelation: "audit_interviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number | null
@@ -406,6 +523,36 @@ export type Database = {
           },
         ]
       }
+      topic_controls: {
+        Row: {
+          control_id: string
+          topic_id: string
+        }
+        Insert: {
+          control_id: string
+          topic_id: string
+        }
+        Update: {
+          control_id?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_controls_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "framework_controls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_controls_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "audit_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar: string | null
@@ -441,6 +588,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      estimate_audit_days: {
+        Args: {
+          framework_id: string
+          company_size?: number
+        }
+        Returns: number
+      }
       gtrgm_compress: {
         Args: {
           "": unknown

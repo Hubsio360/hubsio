@@ -1,0 +1,321 @@
+
+import { useState } from 'react';
+import { AuditInterview, InterviewParticipant } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
+
+export const useAuditInterviews = () => {
+  const [interviews, setInterviews] = useState<AuditInterview[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_interviews')
+        .select('*')
+        .eq('audit_id', auditId)
+        .order('start_time');
+      
+      if (error) {
+        console.error('Error fetching audit interviews:', error);
+        return [];
+      }
+      
+      const formattedInterviews = data.map(interview => ({
+        id: interview.id,
+        auditId: interview.audit_id,
+        topicId: interview.topic_id,
+        title: interview.title,
+        description: interview.description,
+        startTime: interview.start_time,
+        durationMinutes: interview.duration_minutes,
+        location: interview.location,
+        meetingLink: interview.meeting_link
+      }));
+      
+      setInterviews(formattedInterviews);
+      return formattedInterviews;
+    } catch (error) {
+      console.error('Error fetching audit interviews:', error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addInterview = async (interview: Omit<AuditInterview, 'id'>): Promise<AuditInterview | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_interviews')
+        .insert([{
+          audit_id: interview.auditId,
+          topic_id: interview.topicId,
+          title: interview.title,
+          description: interview.description,
+          start_time: interview.startTime,
+          duration_minutes: interview.durationMinutes,
+          location: interview.location,
+          meeting_link: interview.meetingLink
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding audit interview:', error);
+        return null;
+      }
+      
+      const newInterview = {
+        id: data.id,
+        auditId: data.audit_id,
+        topicId: data.topic_id,
+        title: data.title,
+        description: data.description,
+        startTime: data.start_time,
+        durationMinutes: data.duration_minutes,
+        location: data.location,
+        meetingLink: data.meeting_link
+      };
+      
+      setInterviews((prev) => [...prev, newInterview]);
+      return newInterview;
+    } catch (error) {
+      console.error('Error adding audit interview:', error);
+      return null;
+    }
+  };
+
+  const updateInterview = async (
+    id: string,
+    updates: Partial<AuditInterview>
+  ): Promise<AuditInterview | null> => {
+    try {
+      const updateData: any = {};
+      
+      if (updates.auditId) updateData.audit_id = updates.auditId;
+      if (updates.topicId) updateData.topic_id = updates.topicId;
+      if (updates.title) updateData.title = updates.title;
+      if (updates.description !== undefined) updateData.description = updates.description;
+      if (updates.startTime) updateData.start_time = updates.startTime;
+      if (updates.durationMinutes) updateData.duration_minutes = updates.durationMinutes;
+      if (updates.location !== undefined) updateData.location = updates.location;
+      if (updates.meetingLink !== undefined) updateData.meeting_link = updates.meetingLink;
+      
+      const { data, error } = await supabase
+        .from('audit_interviews')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating audit interview:', error);
+        return null;
+      }
+      
+      const updatedInterview = {
+        id: data.id,
+        auditId: data.audit_id,
+        topicId: data.topic_id,
+        title: data.title,
+        description: data.description,
+        startTime: data.start_time,
+        durationMinutes: data.duration_minutes,
+        location: data.location,
+        meetingLink: data.meeting_link
+      };
+      
+      setInterviews((prev) =>
+        prev.map((interview) => (interview.id === id ? updatedInterview : interview))
+      );
+      
+      return updatedInterview;
+    } catch (error) {
+      console.error('Error updating audit interview:', error);
+      return null;
+    }
+  };
+
+  const deleteInterview = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('audit_interviews')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting audit interview:', error);
+        return false;
+      }
+      
+      setInterviews((prev) => prev.filter((interview) => interview.id !== id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting audit interview:', error);
+      return false;
+    }
+  };
+
+  const addParticipant = async (participant: Omit<InterviewParticipant, 'notificationSent'>): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('interview_participants')
+        .insert([{
+          interview_id: participant.interviewId,
+          user_id: participant.userId,
+          role: participant.role,
+          notification_sent: false
+        }]);
+      
+      if (error) {
+        console.error('Error adding interview participant:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding interview participant:', error);
+      return false;
+    }
+  };
+
+  const removeParticipant = async (interviewId: string, userId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('interview_participants')
+        .delete()
+        .eq('interview_id', interviewId)
+        .eq('user_id', userId);
+      
+      if (error) {
+        console.error('Error removing interview participant:', error);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error removing interview participant:', error);
+      return false;
+    }
+  };
+
+  const getParticipantsByInterviewId = async (interviewId: string): Promise<InterviewParticipant[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('interview_participants')
+        .select('*')
+        .eq('interview_id', interviewId);
+      
+      if (error) {
+        console.error('Error getting participants by interview ID:', error);
+        return [];
+      }
+      
+      return data.map(p => ({
+        interviewId: p.interview_id,
+        userId: p.user_id,
+        role: p.role,
+        notificationSent: p.notification_sent
+      }));
+    } catch (error) {
+      console.error('Error getting participants by interview ID:', error);
+      return [];
+    }
+  };
+
+  const generateAuditPlan = async (auditId: string, startDate: string, endDate: string): Promise<boolean> => {
+    try {
+      // Récupérer les informations de l'audit
+      const { data: auditData, error: auditError } = await supabase
+        .from('audits')
+        .select('framework_id')
+        .eq('id', auditId)
+        .single();
+      
+      if (auditError) {
+        console.error('Error getting audit data:', auditError);
+        return false;
+      }
+      
+      // Récupérer les topics disponibles
+      const { data: topicsData, error: topicsError } = await supabase
+        .from('audit_topics')
+        .select('*');
+        
+      if (topicsError) {
+        console.error('Error getting audit topics:', topicsError);
+        return false;
+      }
+      
+      if (!topicsData || topicsData.length === 0) {
+        console.error('No audit topics available for planning');
+        return false;
+      }
+      
+      // Calculer le nombre de jours entre les dates de début et de fin
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      
+      // Distribution des topics sur les jours disponibles
+      const interviewsToCreate = [];
+      const topicsPerDay = Math.max(1, Math.ceil(topicsData.length / diffDays));
+      
+      for (let i = 0; i < topicsData.length; i++) {
+        const topic = topicsData[i];
+        const dayIndex = Math.floor(i / topicsPerDay);
+        
+        if (dayIndex >= diffDays) break;
+        
+        const interviewDate = new Date(start);
+        interviewDate.setDate(start.getDate() + dayIndex);
+        
+        // Distribuer les interviews dans la journée (9h-17h)
+        const hourOffset = (i % topicsPerDay) * 2; // 2 heures par interview
+        interviewDate.setHours(9 + hourOffset, 0, 0, 0);
+        
+        interviewsToCreate.push({
+          audit_id: auditId,
+          topic_id: topic.id,
+          title: `Interview: ${topic.name}`,
+          description: topic.description || `Interview sur le thème: ${topic.name}`,
+          start_time: interviewDate.toISOString(),
+          duration_minutes: 60,
+          location: 'À déterminer',
+          meeting_link: null
+        });
+      }
+      
+      // Insérer les interviews générées
+      if (interviewsToCreate.length > 0) {
+        const { error: insertError } = await supabase
+          .from('audit_interviews')
+          .insert(interviewsToCreate);
+        
+        if (insertError) {
+          console.error('Error creating audit interviews:', insertError);
+          return false;
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error generating audit plan:', error);
+      return false;
+    }
+  };
+
+  return {
+    interviews,
+    loading,
+    fetchInterviewsByAuditId,
+    addInterview,
+    updateInterview,
+    deleteInterview,
+    addParticipant,
+    removeParticipant,
+    getParticipantsByInterviewId,
+    generateAuditPlan
+  };
+};

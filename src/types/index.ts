@@ -114,3 +114,28 @@ export interface FrameworkImportResult {
   framework: Framework;
   controlsCount: number;
 }
+
+export interface AuditTopic {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface AuditInterview {
+  id: string;
+  auditId: string;
+  topicId?: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  durationMinutes: number;
+  location?: string;
+  meetingLink?: string;
+}
+
+export interface InterviewParticipant {
+  interviewId: string;
+  userId: string;
+  role: string;
+  notificationSent: boolean;
+}

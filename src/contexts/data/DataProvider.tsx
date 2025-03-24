@@ -6,6 +6,8 @@ import { useFrameworks } from './hooks/useFrameworks';
 import { useControls } from './hooks/useControls';
 import { useAuditSteps } from './hooks/useAuditSteps';
 import { useFindings } from './hooks/useFindings';
+import { useAuditTopics } from './hooks/useAuditTopics';
+import { useAuditInterviews } from './hooks/useAuditInterviews';
 import { 
   Company, 
   Audit, 
@@ -14,7 +16,10 @@ import {
   AuditStep,
   Finding,
   FrameworkImport,
-  FrameworkImportResult
+  FrameworkImportResult,
+  AuditTopic,
+  AuditInterview,
+  InterviewParticipant
 } from '@/types';
 
 interface DataContextProps {
@@ -24,9 +29,13 @@ interface DataContextProps {
   controls: FrameworkControl[];
   auditSteps: AuditStep[];
   findings: Finding[];
+  topics: AuditTopic[];
+  interviews: AuditInterview[];
   loading: {
     frameworks: boolean;
     controls: boolean;
+    topics: boolean;
+    interviews: boolean;
   };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
@@ -46,6 +55,24 @@ interface DataContextProps {
   updateControl: (id: string, updates: Partial<FrameworkControl>) => Promise<FrameworkControl>;
   addControl: (control: Omit<FrameworkControl, 'id'>) => Promise<FrameworkControl>;
   refreshFrameworks: () => Promise<void>;
+  
+  // Nouvelles méthodes pour les topics d'audit
+  fetchTopics: () => Promise<AuditTopic[]>;
+  addTopic: (topic: Omit<AuditTopic, 'id'>) => Promise<AuditTopic | null>;
+  updateTopic: (id: string, updates: Partial<AuditTopic>) => Promise<AuditTopic | null>;
+  deleteTopic: (id: string) => Promise<boolean>;
+  associateControlsWithTopic: (topicId: string, controlIds: string[]) => Promise<boolean>;
+  getControlsByTopicId: (topicId: string) => Promise<string[]>;
+  
+  // Nouvelles méthodes pour les interviews d'audit
+  fetchInterviewsByAuditId: (auditId: string) => Promise<AuditInterview[]>;
+  addInterview: (interview: Omit<AuditInterview, 'id'>) => Promise<AuditInterview | null>;
+  updateInterview: (id: string, updates: Partial<AuditInterview>) => Promise<AuditInterview | null>;
+  deleteInterview: (id: string) => Promise<boolean>;
+  addParticipant: (participant: Omit<InterviewParticipant, 'notificationSent'>) => Promise<boolean>;
+  removeParticipant: (interviewId: string, userId: string) => Promise<boolean>;
+  getParticipantsByInterviewId: (interviewId: string) => Promise<InterviewParticipant[]>;
+  generateAuditPlan: (auditId: string, startDate: string, endDate: string) => Promise<boolean>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -57,10 +84,14 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const controlsHook = useControls();
   const auditStepsHook = useAuditSteps();
   const findingsHook = useFindings();
+  const auditTopicsHook = useAuditTopics();
+  const auditInterviewsHook = useAuditInterviews();
 
   const loading = {
     frameworks: frameworksHook.loading,
-    controls: controlsHook.loading
+    controls: controlsHook.loading,
+    topics: auditTopicsHook.loading,
+    interviews: auditInterviewsHook.loading
   };
 
   const refreshFrameworks = async () => {
@@ -77,6 +108,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         controls: controlsHook.controls,
         auditSteps: auditStepsHook.auditSteps,
         findings: findingsHook.findings,
+        topics: auditTopicsHook.topics,
+        interviews: auditInterviewsHook.interviews,
         loading,
         addCompany: companiesHook.addCompany,
         addAudit: auditsHook.addAudit,
@@ -95,7 +128,25 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         deleteFramework: frameworksHook.deleteFramework,
         updateControl: controlsHook.updateControl,
         addControl: controlsHook.addControl,
-        refreshFrameworks
+        refreshFrameworks,
+        
+        // Méthodes pour les topics d'audit
+        fetchTopics: auditTopicsHook.fetchTopics,
+        addTopic: auditTopicsHook.addTopic,
+        updateTopic: auditTopicsHook.updateTopic,
+        deleteTopic: auditTopicsHook.deleteTopic,
+        associateControlsWithTopic: auditTopicsHook.associateControlsWithTopic,
+        getControlsByTopicId: auditTopicsHook.getControlsByTopicId,
+        
+        // Méthodes pour les interviews d'audit
+        fetchInterviewsByAuditId: auditInterviewsHook.fetchInterviewsByAuditId,
+        addInterview: auditInterviewsHook.addInterview,
+        updateInterview: auditInterviewsHook.updateInterview,
+        deleteInterview: auditInterviewsHook.deleteInterview,
+        addParticipant: auditInterviewsHook.addParticipant,
+        removeParticipant: auditInterviewsHook.removeParticipant,
+        getParticipantsByInterviewId: auditInterviewsHook.getParticipantsByInterviewId,
+        generateAuditPlan: auditInterviewsHook.generateAuditPlan
       }}
     >
       {children}
