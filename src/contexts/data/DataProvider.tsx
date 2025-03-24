@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -101,7 +100,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const auditTopicsHook = useAuditTopics();
   const auditInterviewsHook = useAuditInterviews();
 
-  // Valeurs simulées pour les démonstrations
   const themes: AuditTheme[] = [
     { id: 'theme-1', name: 'ADMIN', description: 'Gestion administrative de l\'audit' },
     { id: 'theme-2', name: 'Exploitation & réseaux', description: 'Sécurité des infrastructures réseau et exploitation' },
@@ -121,7 +119,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     { id: 'clause-1', referenceCode: 'A.8.15', title: 'Sécurité des communications', standardId: 'ISO27001:2022' },
     { id: 'clause-2', referenceCode: 'A.8.16', title: 'Transfert d\'informations', standardId: 'ISO27001:2022' },
     { id: 'clause-3', referenceCode: 'A.8.17', title: 'Séparation des réseaux', standardId: 'ISO27001:2022' },
-    // ... Plus de clauses seraient ajoutées ici dans une implémentation complète
   ];
 
   const loading = {
@@ -138,43 +135,31 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await controlsHook.fetchControls();
   };
 
-  // Fonction simulée pour démonstration
   const fetchThemes = async (): Promise<AuditTheme[]> => {
-    // Dans une implémentation réelle, cette fonction ferait appel à la base de données
     return themes;
   };
 
-  // Fonction simulée pour démonstration
   const fetchStandardClauses = async (): Promise<StandardClause[]> => {
-    // Dans une implémentation réelle, cette fonction ferait appel à la base de données
     return standardClauses;
   };
 
-  // Fonction simulée pour démonstration
   const addTheme = async (theme: Omit<AuditTheme, 'id'>): Promise<AuditTheme | null> => {
-    // Dans une implémentation réelle, cette fonction ferait appel à la base de données
     console.log('Ajout d\'une thématique:', theme);
     return { id: `theme-${Date.now()}`, ...theme };
   };
 
-  // Fonction simulée pour démonstration
   const updateTheme = async (id: string, updates: Partial<AuditTheme>): Promise<AuditTheme | null> => {
-    // Dans une implémentation réelle, cette fonction ferait appel à la base de données
     console.log('Mise à jour de la thématique:', id, updates);
     return { id, name: updates.name || 'Theme name', description: updates.description };
   };
 
-  // Fonction simulée pour démonstration
   const deleteTheme = async (id: string): Promise<boolean> => {
-    // Dans une implémentation réelle, cette fonction ferait appel à la base de données
     console.log('Suppression de la thématique:', id);
     return true;
   };
 
-  // Fonction pour importer un plan d'audit standard à partir du modèle fourni
   const importStandardAuditPlan = async (auditId: string, planData: any[]): Promise<boolean> => {
     try {
-      // Regrouper par thématique pour une meilleure organisation
       const themeInterviews = planData.reduce((acc: Record<string, any[]>, item) => {
         const theme = item['Thème'] || 'Sans thème';
         if (!acc[theme]) {
@@ -184,9 +169,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return acc;
       }, {});
 
-      // Créer des interviews pour chaque élément du plan
-      for (const [themeName, interviews] of Object.entries(themeInterviews)) {
-        // Trouver ou créer la thématique
+      for (const [themeName, interviews] of Object.entries(themeInterviews) as [string, any[]][]) {
         let themeId = themes.find(t => t.name === themeName)?.id;
         
         if (!themeId) {
@@ -194,13 +177,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           themeId = newTheme?.id;
         }
 
-        // Créer des interviews pour cette thématique
         for (const interview of interviews) {
           const dateTimeParts = interview['Date-Heure'].split(' → ');
           const startDateTime = new Date(dateTimeParts[0]);
           
-          // Calculer la durée en minutes
-          let durationMinutes = 30; // Valeur par défaut
+          let durationMinutes = 30;
           if (dateTimeParts.length > 1) {
             const endTime = new Date(dateTimeParts[1]);
             durationMinutes = Math.round((endTime.getTime() - startDateTime.getTime()) / (1000 * 60));
