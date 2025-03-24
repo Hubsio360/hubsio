@@ -280,13 +280,13 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
-  const importFramework = async (frameworkData: FrameworkImport): Promise<FrameworkImportResult> => {
+  const importFramework = async (inputFramework: FrameworkImport): Promise<FrameworkImportResult> => {
     try {
-      const { data: frameworkData, error: frameworkError } = await supabase
+      const { data: newFrameworkData, error: frameworkError } = await supabase
         .from('frameworks')
         .insert({
-          name: frameworkData.name,
-          version: frameworkData.version
+          name: inputFramework.name,
+          version: inputFramework.version
         })
         .select()
         .single();
@@ -297,12 +297,12 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       const newFramework: Framework = {
-        id: frameworkData.id,
-        name: frameworkData.name,
-        version: frameworkData.version,
+        id: newFrameworkData.id,
+        name: newFrameworkData.name,
+        version: newFrameworkData.version,
       };
       
-      const controlsToInsert = frameworkData.controls.map(control => ({
+      const controlsToInsert = inputFramework.controls.map(control => ({
         framework_id: newFramework.id,
         reference_code: control.referenceCode,
         title: control.title,
