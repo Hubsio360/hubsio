@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { 
   Company, 
@@ -14,50 +13,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-// Données mock pour le développement
-const MOCK_COMPANIES: Company[] = [
-  {
-    id: '1',
-    name: 'TechSecure SAS',
-    activity: 'Développement logiciel sécurisé',
-    creationYear: 2015,
-    marketScope: 'National',
-    lastAuditDate: '2023-06-15',
-  },
-  {
-    id: '2',
-    name: 'DataProtect',
-    activity: 'Protection des données et RGPD',
-    creationYear: 2018,
-    parentCompany: 'CyberGroup International',
-    marketScope: 'Europe',
-    lastAuditDate: '2023-09-22',
-  },
-  {
-    id: '3',
-    name: 'SecureCloud',
-    activity: 'Services d\'hébergement sécurisés',
-    creationYear: 2016,
-    marketScope: 'International',
-    lastAuditDate: '2023-10-05',
-  },
-  {
-    id: '4',
-    name: 'Cyber Defense Labs',
-    activity: 'Recherche en cybersécurité',
-    creationYear: 2019,
-    marketScope: 'International',
-    lastAuditDate: '2023-11-12',
-  },
-  {
-    id: '5',
-    name: 'FinSafe Solutions',
-    activity: 'Sécurité des transactions financières',
-    creationYear: 2017,
-    parentCompany: 'FinTech Group',
-    marketScope: 'National',
-  },
-];
+const COMPANIES_INITIAL: Company[] = [];
 
 interface DataContextProps {
   companies: Company[];
@@ -93,7 +49,7 @@ interface DataContextProps {
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [companies, setCompanies] = useState<Company[]>(MOCK_COMPANIES);
+  const [companies, setCompanies] = useState<Company[]>(COMPANIES_INITIAL);
   const [audits, setAudits] = useState<Audit[]>([]);
   const [frameworks, setFrameworks] = useState<Framework[]>([]);
   const [controls, setControls] = useState<FrameworkControl[]>([]);
@@ -179,7 +135,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Fonction pour rafraîchir les données des frameworks et contrôles
   const refreshFrameworks = async () => {
     await fetchFrameworks();
     await fetchControls();
@@ -190,17 +145,83 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     fetchControls();
   }, [toast]);
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*');
+        
+        if (error) {
+          console.error('Error fetching companies:', error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les entreprises: " + error.message,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const formattedCompanies: Company[] = data.map(item => ({
+          id: item.id,
+          name: item.name,
+          activity: item.activity || '',
+          creationYear: item.creation_year,
+          parentCompany: item.parent_company,
+          marketScope: item.market_scope,
+          lastAuditDate: item.last_audit_date,
+        }));
+        
+        setCompanies(formattedCompanies);
+      } catch (error) {
+        console.error('Error in fetchCompanies:', error);
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors du chargement des entreprises",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCompanies();
+  }, [toast]);
+
   const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newCompany = {
-          ...company,
-          id: `company-${Date.now()}`,
-        };
-        setCompanies((prev) => [...prev, newCompany]);
-        resolve(newCompany);
-      }, 500);
-    });
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert({
+          name: company.name,
+          activity: company.activity,
+          creation_year: company.creationYear,
+          parent_company: company.parentCompany,
+          market_scope: company.marketScope,
+          last_audit_date: company.lastAuditDate,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding company:', error);
+        throw new Error(`Erreur lors de l'ajout de l'entreprise: ${error.message}`);
+      }
+
+      const newCompany: Company = {
+        id: data.id,
+        name: data.name,
+        activity: data.activity || '',
+        creationYear: data.creation_year,
+        parentCompany: data.parent_company,
+        marketScope: data.market_scope,
+        lastAuditDate: data.last_audit_date,
+      };
+
+      setCompanies(prev => [...prev, newCompany]);
+      return newCompany;
+    } catch (error) {
+      console.error('Error in addCompany:', error);
+      throw error;
+    }
   };
 
   const addAudit = async (audit: Omit<Audit, 'id'>): Promise<Audit> => {
@@ -584,3 +605,4 @@ export const useData = () => {
   }
   return context;
 };
+
