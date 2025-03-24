@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -57,7 +56,9 @@ interface DataContextProps {
   addControl: (control: Omit<FrameworkControl, 'id'>) => Promise<FrameworkControl>;
   refreshFrameworks: () => Promise<void>;
   
-  // Nouvelles méthodes pour les topics d'audit
+  assignAuditors: (auditId: string, auditorIds: { userId: string, roleInAudit: 'lead' | 'participant' }[]) => Promise<boolean>;
+  getAuditAuditors: (auditId: string) => Promise<{ userId: string, roleInAudit: 'lead' | 'participant' }[]>;
+  
   fetchTopics: () => Promise<AuditTopic[]>;
   addTopic: (topic: Omit<AuditTopic, 'id'>) => Promise<AuditTopic | null>;
   updateTopic: (id: string, updates: Partial<AuditTopic>) => Promise<AuditTopic | null>;
@@ -65,7 +66,6 @@ interface DataContextProps {
   associateControlsWithTopic: (topicId: string, controlIds: string[]) => Promise<boolean>;
   getControlsByTopicId: (topicId: string) => Promise<string[]>;
   
-  // Nouvelles méthodes pour les interviews d'audit
   fetchInterviewsByAuditId: (auditId: string) => Promise<AuditInterview[]>;
   addInterview: (interview: Omit<AuditInterview, 'id'>) => Promise<AuditInterview | null>;
   updateInterview: (id: string, updates: Partial<AuditInterview>) => Promise<AuditInterview | null>;
@@ -132,7 +132,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addControl: controlsHook.addControl,
         refreshFrameworks,
         
-        // Méthodes pour les topics d'audit
+        assignAuditors: auditsHook.assignAuditors,
+        getAuditAuditors: auditsHook.getAuditAuditors,
+        
         fetchTopics: auditTopicsHook.fetchTopics,
         addTopic: auditTopicsHook.addTopic,
         updateTopic: auditTopicsHook.updateTopic,
@@ -140,7 +142,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         associateControlsWithTopic: auditTopicsHook.associateControlsWithTopic,
         getControlsByTopicId: auditTopicsHook.getControlsByTopicId,
         
-        // Méthodes pour les interviews d'audit
         fetchInterviewsByAuditId: auditInterviewsHook.fetchInterviewsByAuditId,
         addInterview: auditInterviewsHook.addInterview,
         updateInterview: auditInterviewsHook.updateInterview,

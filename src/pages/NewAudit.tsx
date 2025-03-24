@@ -1,11 +1,10 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
@@ -17,10 +16,11 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { AuditorsSelect, Auditor } from '@/components/AuditorsSelect';
 
 const NewAudit = () => {
   const { id: companyId } = useParams<{ id: string }>();
-  const { getCompanyById, frameworks, addAudit } = useData();
+  const { getCompanyById, frameworks, addAudit, assignAuditors } = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,6 +31,13 @@ const NewAudit = () => {
     endDate: new Date(new Date().setDate(new Date().getDate() + 5)),
     scope: '',
   });
+  
+  const [auditors, setAuditors] = useState<Auditor[]>([
+    { id: 'bill-id', name: 'Bill', email: 'bill@secureport.fr' },
+    { id: 'boull-id', name: 'Boull', email: 'boull@secureport.fr' }
+  ]);
+  
+  const [selectedAuditors, setSelectedAuditors] = useState<{ userId: string; roleInAudit: 'lead' | 'participant' }[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,6 +66,14 @@ const NewAudit = () => {
       </div>
     );
   }
+
+  const handleAddAuditor = (userId: string, roleInAudit: 'lead' | 'participant') => {
+    setSelectedAuditors((prev) => [...prev, { userId, roleInAudit }]);
+  };
+
+  const handleRemoveAuditor = (userId: string) => {
+    setSelectedAuditors((prev) => prev.filter((auditor) => auditor.userId !== userId));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,6 +108,11 @@ const NewAudit = () => {
         createdById: user.id,
         status: 'draft',
       });
+      
+      // Assign auditors if selected
+      if (selectedAuditors.length > 0) {
+        await assignAuditors(newAudit.id, selectedAuditors);
+      }
       
       toast({
         title: "Audit créé",
@@ -236,6 +256,16 @@ const NewAudit = () => {
                       className="min-h-[100px]"
                     />
                   </div>
+                  
+                  <div>
+                    <Label>Équipe d'audit</Label>
+                    <AuditorsSelect
+                      auditors={auditors}
+                      selectedAuditors={selectedAuditors}
+                      onAuditorSelect={handleAddAuditor}
+                      onAuditorRemove={handleRemoveAuditor}
+                    />
+                  </div>
                 </div>
 
                 <Separator />
@@ -284,7 +314,7 @@ const NewAudit = () => {
                 <div className="text-sm">
                   <p className="font-medium mb-1">Équipe d'audit</p>
                   <p className="text-muted-foreground">
-                    Vous pourrez ajouter d'autres auditeurs à l'équipe dans l'étape suivante.
+                    Vous pouvez ajouter des auditeurs à l'équipe qui participeront à la réalisation de l'audit.
                   </p>
                 </div>
               </div>

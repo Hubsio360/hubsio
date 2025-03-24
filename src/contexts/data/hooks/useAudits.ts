@@ -35,11 +35,32 @@ export const useAudits = () => {
     });
   };
 
+  const assignAuditors = async (auditId: string, auditorIds: { userId: string, roleInAudit: 'lead' | 'participant' }[]): Promise<boolean> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // In a real app, this would make API calls to add entries to the audit_users table
+        console.log(`Assigned auditors to audit ${auditId}:`, auditorIds);
+        resolve(true);
+      }, 500);
+    });
+  };
+
+  const getAuditAuditors = async (auditId: string): Promise<{ userId: string, roleInAudit: 'lead' | 'participant' }[]> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // In a real app, this would fetch from the audit_users table
+        resolve([]);
+      }, 500);
+    });
+  };
+
   return {
     audits,
     addAudit,
     getAuditsByCompanyId,
     getAuditById,
-    deleteAudit
+    deleteAudit,
+    assignAuditors,
+    getAuditAuditors
   };
 };
