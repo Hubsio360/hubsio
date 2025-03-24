@@ -105,8 +105,17 @@ export const useAudits = () => {
     try {
       console.log(`Assignation des auditeurs à l'audit ${auditId}:`, auditorIds);
       
+      // Vérifier que les IDs sont des UUID valides
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      const validAuditorIds = auditorIds.filter(auditor => uuidRegex.test(auditor.userId));
+      
+      if (validAuditorIds.length === 0) {
+        console.warn('Aucun ID d\'auditeur valide trouvé');
+        return true; // On considère que c'est un succès même s'il n'y a pas d'auditeurs valides
+      }
+      
       // Préparer les données pour l'insertion dans la base de données
-      const auditUsersData = auditorIds.map(auditor => ({
+      const auditUsersData = validAuditorIds.map(auditor => ({
         audit_id: auditId,
         user_id: auditor.userId,
         role_in_audit: auditor.roleInAudit
@@ -130,7 +139,7 @@ export const useAudits = () => {
         description: error.message || "Impossible d'assigner les auditeurs",
         variant: "destructive",
       });
-      throw error;
+      return false;
     }
   };
 

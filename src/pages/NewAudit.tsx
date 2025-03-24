@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -32,14 +31,21 @@ const NewAudit = () => {
     scope: '',
   });
   
+  // Notez que nous remplaçons les faux IDs par des UUIDs valides
   const [auditors, setAuditors] = useState<Auditor[]>([
-    { id: 'bill-id', name: 'Bill', email: 'bill@secureport.fr' },
-    { id: 'boull-id', name: 'Boull', email: 'boull@secureport.fr' }
+    { id: user?.id || '', name: 'Utilisateur actuel', email: user?.email || '' }
   ]);
   
   const [selectedAuditors, setSelectedAuditors] = useState<{ userId: string; roleInAudit: 'lead' | 'participant' }[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Effet pour mettre à jour les auditeurs si l'utilisateur change
+  useEffect(() => {
+    if (user) {
+      setAuditors([{ id: user.id, name: user.name || 'Utilisateur actuel', email: user.email }]);
+    }
+  }, [user]);
 
   if (!companyId) {
     return (
@@ -68,6 +74,26 @@ const NewAudit = () => {
   }
 
   const handleAddAuditor = (userId: string, roleInAudit: 'lead' | 'participant') => {
+    if (!userId || userId === '') {
+      toast({
+        title: "Erreur",
+        description: "ID d'auditeur invalide",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Vérifier si l'ID est un UUID valide
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      toast({
+        title: "Erreur",
+        description: "L'ID de l'auditeur doit être un UUID valide",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setSelectedAuditors((prev) => [...prev, { userId, roleInAudit }]);
   };
 
