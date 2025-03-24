@@ -23,6 +23,14 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
       try {
         const themeData = await fetchThemes();
         setAvailableThemes(themeData);
+        
+        // Par défaut, toutes les thématiques sont sélectionnées
+        setSelectedThemes(themeData.map(theme => theme.id));
+        
+        // Notifier le parent du changement initial
+        if (onSelectionChange) {
+          onSelectionChange(themeData.map(theme => theme.id));
+        }
       } catch (error) {
         console.error("Erreur lors du chargement des thématiques:", error);
       } finally {
@@ -31,7 +39,7 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
     };
 
     loadThemes();
-  }, [fetchThemes]);
+  }, [fetchThemes, onSelectionChange]);
 
   const handleThemeToggle = (themeId: string) => {
     setSelectedThemes(prev => {
@@ -70,7 +78,7 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
 
   return (
     <div className="space-y-2">
-      <Label>Sélectionnez les thématiques d'audit à inclure</Label>
+      <Label>Désélectionnez les thématiques d'audit à exclure</Label>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
           {availableThemes.map((theme) => (
@@ -97,15 +105,15 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
                 variant={selectedThemes.includes(theme.id) ? "default" : "outline"} 
                 className="ml-2"
               >
-                {selectedThemes.includes(theme.id) ? "Sélectionné" : "Non sélectionné"}
+                {selectedThemes.includes(theme.id) ? "Inclus" : "Exclu"}
               </Badge>
             </div>
           ))}
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           {selectedThemes.length > 0 
-            ? `${selectedThemes.length} thématique(s) sélectionnée(s)` 
-            : "Aucune thématique sélectionnée. Toutes les thématiques seront incluses par défaut."}
+            ? `${selectedThemes.length} thématique(s) incluse(s) sur ${availableThemes.length}`
+            : "Attention : aucune thématique sélectionnée. Le plan d'audit sera vide."}
         </p>
       </div>
     </div>
