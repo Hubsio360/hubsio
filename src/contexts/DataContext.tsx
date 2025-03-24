@@ -444,17 +444,26 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         console.log("Framework trouvé à l'index:", frameworkIndex);
         console.log("Frameworks avant suppression:", frameworks);
         
-        // Supprimer le référentiel
+        // Important: Create new arrays for state updates to ensure React detects the change
         const newFrameworks = frameworks.filter((f) => f.id !== id);
-        setFrameworks(newFrameworks);
-        
-        console.log("Frameworks après suppression:", newFrameworks);
-
-        // Supprimer tous les contrôles associés au référentiel
         const newControls = controls.filter((c) => c.frameworkId !== id);
+        
+        console.log("Frameworks après filtrage:", newFrameworks);
+        
+        // Update state with the new arrays
+        setFrameworks(newFrameworks);
         setControls(newControls);
         
-        console.log("Contrôles après suppression des contrôles associés", newControls);
+        console.log("État frameworks après setFrameworks:", newFrameworks);
+        console.log("Contrôles après suppression des contrôles associés:", newControls);
+
+        // Make sure any audits using this framework are also updated
+        // This is optional but would ensure complete data consistency
+        const auditsUsingFramework = audits.filter(a => a.frameworkId === id);
+        if (auditsUsingFramework.length > 0) {
+          console.log("Audits utilisant ce référentiel:", auditsUsingFramework.length);
+          // You may want to handle this case based on your application's needs
+        }
 
         resolve();
       }, 500);

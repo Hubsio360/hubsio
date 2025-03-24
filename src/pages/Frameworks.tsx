@@ -313,6 +313,8 @@ const Frameworks = () => {
       
       console.log("Framework supprimé avec succès:", frameworkToDelete.id);
       
+      const updatedFrameworks = frameworks.filter(f => f.id !== frameworkToDelete.id);
+      
       toast({
         title: "Référentiel supprimé",
         description: `${frameworkToDelete.name} a été supprimé avec succès`,
@@ -757,5 +759,3 @@ const Frameworks = () => {
 };
 
 export default Frameworks;
-
-
