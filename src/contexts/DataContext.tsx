@@ -258,6 +258,8 @@ interface DataContextProps {
   getFrameworkById: (id: string) => Framework | undefined;
   getControlById: (id: string) => FrameworkControl | undefined;
   importFramework: (frameworkData: FrameworkImport) => Promise<FrameworkImportResult>;
+  updateFramework: (id: string, updates: Partial<Framework>) => Promise<Framework>;
+  deleteFramework: (id: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
@@ -402,6 +404,51 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   };
 
+  const updateFramework = async (
+    id: string,
+    updates: Partial<Framework>
+  ): Promise<Framework> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const frameworkIndex = frameworks.findIndex((f) => f.id === id);
+        if (frameworkIndex === -1) {
+          return reject(new Error('Framework not found'));
+        }
+
+        const updatedFramework = {
+          ...frameworks[frameworkIndex],
+          ...updates,
+        };
+
+        const newFrameworks = [...frameworks];
+        newFrameworks[frameworkIndex] = updatedFramework;
+        setFrameworks(newFrameworks);
+        resolve(updatedFramework);
+      }, 500);
+    });
+  };
+
+  const deleteFramework = async (id: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const frameworkIndex = frameworks.findIndex((f) => f.id === id);
+        if (frameworkIndex === -1) {
+          return reject(new Error('Framework not found'));
+        }
+
+        // Supprimer le référentiel
+        const newFrameworks = frameworks.filter((f) => f.id !== id);
+        setFrameworks(newFrameworks);
+
+        // Supprimer tous les contrôles associés au référentiel
+        const newControls = controls.filter((c) => c.frameworkId !== id);
+        setControls(newControls);
+
+        resolve();
+      }, 500);
+    });
+  };
+
   const getAuditsByCompanyId = (companyId: string): Audit[] => {
     return audits.filter((audit) => audit.companyId === companyId);
   };
@@ -454,6 +501,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getFrameworkById,
         getControlById,
         importFramework,
+        updateFramework,
+        deleteFramework,
       }}
     >
       {children}
