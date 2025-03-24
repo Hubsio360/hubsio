@@ -1,20 +1,68 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { AuditTopic } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import { AuditTheme, AuditTopic } from '@/types';
+import { useData } from '@/contexts/DataContext';
 
 interface TopicsListProps {
   topics: AuditTopic[];
+  onSelectionChange?: (selectedTopics: string[]) => void;
 }
 
-const TopicsList: React.FC<TopicsListProps> = ({ topics }) => {
-  if (topics.length === 0) {
+const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) => {
+  const { themes, fetchThemes } = useData();
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [availableThemes, setAvailableThemes] = useState<AuditTheme[]>([]);
+
+  useEffect(() => {
+    const loadThemes = async () => {
+      setLoading(true);
+      try {
+        const themeData = await fetchThemes();
+        setAvailableThemes(themeData);
+      } catch (error) {
+        console.error("Erreur lors du chargement des thématiques:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThemes();
+  }, [fetchThemes]);
+
+  const handleThemeToggle = (themeId: string) => {
+    setSelectedThemes(prev => {
+      const newSelection = prev.includes(themeId)
+        ? prev.filter(id => id !== themeId)
+        : [...prev, themeId];
+      
+      // Notifier le parent du changement si nécessaire
+      if (onSelectionChange) {
+        onSelectionChange(newSelection);
+      }
+      
+      return newSelection;
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-6 border rounded-md">
+        <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
+        <p>Chargement des thématiques...</p>
+      </div>
+    );
+  }
+
+  if (availableThemes.length === 0) {
     return (
       <div className="text-center py-6 border rounded-md">
         <h3 className="text-lg font-medium mb-2">Aucune thématique disponible</h3>
         <p className="text-sm text-muted-foreground">
-          Vous devez créer des thématiques d'audit avant de pouvoir générer un plan.
+          Aucune thématique d'audit n'est disponible. Contactez l'administrateur pour en ajouter.
         </p>
       </div>
     );
@@ -22,30 +70,42 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics }) => {
 
   return (
     <div className="space-y-2">
-      <Label>Thématiques d'audit disponibles</Label>
+      <Label>Sélectionnez les thématiques d'audit à inclure</Label>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
-          {topics.map((topic) => (
+          {availableThemes.map((theme) => (
             <div 
-              key={topic.id} 
-              className="flex items-center p-2 border rounded-md"
+              key={theme.id} 
+              className="flex items-center p-3 border rounded-md hover:bg-muted/50 cursor-pointer"
+              onClick={() => handleThemeToggle(theme.id)}
             >
+              <Checkbox 
+                id={`theme-${theme.id}`}
+                checked={selectedThemes.includes(theme.id)}
+                onCheckedChange={() => handleThemeToggle(theme.id)}
+                className="mr-3"
+              />
               <div className="flex-1">
-                <div className="font-medium">{topic.name}</div>
-                {topic.description && (
-                  <div className="text-sm text-muted-foreground line-clamp-1">
-                    {topic.description}
+                <div className="font-medium">{theme.name}</div>
+                {theme.description && (
+                  <div className="text-sm text-muted-foreground line-clamp-2">
+                    {theme.description}
                   </div>
                 )}
               </div>
-              <Badge variant="outline" className="ml-2">
-                Inclus
+              <Badge 
+                variant={selectedThemes.includes(theme.id) ? "default" : "outline"} 
+                className="ml-2"
+              >
+                {selectedThemes.includes(theme.id) ? "Sélectionné" : "Non sélectionné"}
               </Badge>
             </div>
           ))}
         </div>
         <p className="text-sm text-muted-foreground mt-2">
-          Toutes les thématiques seront incluses dans le plan d'audit généré.
+          {selectedThemes.length > 0 
+            ? `${selectedThemes.length} thématique(s) sélectionnée(s)` 
+            : "Aucune thématique sélectionnée. Toutes les thématiques seront incluses par défaut."}
         </p>
       </div>
     </div>
