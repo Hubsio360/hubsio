@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -510,5 +511,119 @@ const Frameworks = () => {
         </Card>
       )}
 
-      <
+      {/* Edit Framework Dialog */}
+      <Dialog open={openEditDialog} onOpenChange={setOpenEditDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le référentiel</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations du référentiel.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nom</Label>
+              <Input
+                id="edit-name"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-version">Version</Label>
+              <Input
+                id="edit-version"
+                value={editFormData.version}
+                onChange={(e) => setEditFormData({ ...editFormData, version: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenEditDialog(false)}>
+              Annuler
+            </Button>
+            <Button onClick={submitEdit} disabled={isEditing}>
+              {isEditing ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
+      {/* Delete Framework Dialog */}
+      <Dialog open={openDeleteDialog} onOpenChange={setOpenDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Supprimer le référentiel</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce référentiel ? Cette action ne peut pas être annulée.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2 py-4">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <p className="text-sm text-muted-foreground">
+              Tous les contrôles associés à ce référentiel seront également supprimés.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenDeleteDialog(false)}>
+              Annuler
+            </Button>
+            <Button variant="destructive" onClick={submitDelete} disabled={isDeleting}>
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Control Dialog */}
+      <Dialog open={openEditControlDialog} onOpenChange={setOpenEditControlDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le contrôle</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations du contrôle.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-control-code">Code de référence</Label>
+              <Input
+                id="edit-control-code"
+                value={editControlFormData.referenceCode}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, referenceCode: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-control-title">Titre</Label>
+              <Input
+                id="edit-control-title"
+                value={editControlFormData.title}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, title: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-control-description">Description</Label>
+              <Textarea
+                id="edit-control-description"
+                value={editControlFormData.description}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenEditControlDialog(false)}>
+              Annuler
+            </Button>
+            <Button onClick={submitEditControl} disabled={isEditingControl}>
+              {isEditingControl ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+    </div>
+  );
+};
+
+export default Frameworks;
