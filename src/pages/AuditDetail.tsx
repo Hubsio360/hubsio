@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -29,7 +30,7 @@ import {
   Sparkles,
   User,
   Calendar,
-  LayoutPlanIcon,
+  LayoutTemplate,
 } from 'lucide-react';
 import { FindingCategory, FindingStatus } from '@/types';
 import AuditPlanSection from '@/components/AuditPlanSection';
@@ -378,7 +379,7 @@ const AuditDetail = () => {
             onClick={() => setShowPlanSection(!showPlanSection)}
             className="flex items-center"
           >
-            <LayoutPlanIcon className="mr-2 h-4 w-4" />
+            <LayoutTemplate className="mr-2 h-4 w-4" />
             {showPlanSection ? "Masquer le plan d'audit" : "Plan d'audit"}
           </Button>
           <Button variant="outline" disabled>
