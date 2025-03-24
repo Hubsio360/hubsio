@@ -1,5 +1,5 @@
 
-import { AuditTheme, StandardClause } from '@/types';
+import { AuditTheme, StandardClause, AuditTopic } from '@/types';
 
 export const importStandardAuditPlan = async (
   auditId: string, 
@@ -7,7 +7,9 @@ export const importStandardAuditPlan = async (
   themes: AuditTheme[],
   standardClauses: StandardClause[],
   addTheme: (theme: Omit<AuditTheme, 'id'>) => Promise<AuditTheme | null>,
-  addInterview: (interview: any) => Promise<any>
+  addInterview: (interview: any) => Promise<any>,
+  addTopic?: (topic: Omit<AuditTopic, 'id'>) => Promise<AuditTopic | null>,
+  associateControlsWithTopic?: (topicId: string, controlIds: string[]) => Promise<boolean>
 ): Promise<boolean> => {
   try {
     const themeInterviews = planData.reduce((acc: Record<string, any[]>, item) => {
@@ -88,6 +90,17 @@ export const importStandardAuditPlan = async (
       themeMap.set(theme.name, theme.id);
     }
 
+    // Mapper les thèmes avec les clauses ISO standards pour la création automatique de topics
+    const themeToClausesMap: Record<string, string[]> = {
+      'ADMIN': [],
+      'Gouvernance': ['A.5', 'A.6'],
+      'Exploitation & réseaux': ['A.8.15', 'A.8.16', 'A.8'],
+      'Sécurité des ressources humaines': ['A.7'],
+      'Gestion des actifs': ['A.9'],
+      'Cloture': []
+    };
+
+    // Traitement de chaque thème
     for (const [themeName, interviews] of Object.entries(themeInterviews) as [string, any[]][]) {
       let themeId = themeMap.get(themeName);
       
@@ -101,7 +114,32 @@ export const importStandardAuditPlan = async (
           continue;
         }
       }
+      
+      // Si les fonctions pour créer des topics sont fournies, créer automatiquement des topics pour ce thème
+      if (addTopic && associateControlsWithTopic) {
+        const topicName = `Topic - ${themeName}`;
+        const topic = await addTopic({
+          name: topicName,
+          description: `Topic automatiquement créé pour le thème ${themeName}`
+        });
+        
+        if (topic) {
+          // Trouver les contrôles associés au thème
+          const clauseRefs = themeToClausesMap[themeName] || [];
+          if (clauseRefs.length > 0) {
+            // Filtrer les clauses standards correspondantes
+            const relevantClauseIds = standardClauses
+              .filter(clause => clauseRefs.some(ref => clause.referenceCode.startsWith(ref)))
+              .map(clause => clause.id);
+            
+            if (relevantClauseIds.length > 0) {
+              await associateControlsWithTopic(topic.id, relevantClauseIds);
+            }
+          }
+        }
+      }
 
+      // Création des interviews
       for (const interview of interviews) {
         const dateTimeParts = interview['Date-Heure'].split(' → ');
         const startDateTime = new Date(dateTimeParts[0]);

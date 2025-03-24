@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -51,7 +50,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       themesHook.themes, 
       clauses,
       themesHook.addTheme, 
-      auditInterviewsHook.addInterview
+      auditInterviewsHook.addInterview,
+      auditTopicsHook.addTopic,
+      auditTopicsHook.associateControlsWithTopic
     );
   };
 

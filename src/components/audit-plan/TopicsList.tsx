@@ -8,7 +8,7 @@ import { useData } from '@/contexts/DataContext';
 
 interface TopicsListProps {
   topics: AuditTopic[];
-  onSelectionChange?: (selectedTopics: string[]) => void;
+  onSelectionChange?: (selectedThemes: string[]) => void;
 }
 
 const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) => {
@@ -78,7 +78,10 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
 
   return (
     <div className="space-y-2">
-      <Label>Désélectionnez les thématiques d'audit à exclure</Label>
+      <Label>Sélectionnez les thématiques d'audit à inclure</Label>
+      <p className="text-sm text-muted-foreground mb-4">
+        Les topics et contrôles associés seront automatiquement créés selon la norme ISO 27001
+      </p>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
           {availableThemes.map((theme) => (

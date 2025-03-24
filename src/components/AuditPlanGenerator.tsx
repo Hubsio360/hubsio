@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutIcon, Upload } from 'lucide-react';
+import { LayoutIcon, Upload, Calendar, Layers } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { eachDayOfInterval, addBusinessDays, isWeekend, subBusinessDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -34,6 +34,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [planStartDate, setPlanStartDate] = useState<Date | undefined>(new Date(startDate));
   const [planEndDate, setPlanEndDate] = useState<Date | undefined>(new Date(endDate));
   const [activeTab, setActiveTab] = useState('dates');
+  const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
 
   const handleGeneratePlan = async () => {
@@ -174,6 +175,10 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     }
   };
 
+  const handleThemeSelectionChange = (selectedThemeIds: string[]) => {
+    setSelectedThemes(selectedThemeIds);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -182,15 +187,20 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           Génération du plan d'audit
         </CardTitle>
         <CardDescription>
-          Définissez les paramètres pour générer automatiquement votre plan d'audit ou importez un plan standard
+          Définissez les dates et les thématiques pour générer automatiquement votre plan d'audit
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-4">
-            <TabsTrigger value="dates">Dates d'audit</TabsTrigger>
-            <TabsTrigger value="topics">Thématiques ({topics.length})</TabsTrigger>
-            <TabsTrigger value="import">Importer un plan</TabsTrigger>
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="dates" className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2" />
+              Étape 1: Dates
+            </TabsTrigger>
+            <TabsTrigger value="themes" className="flex items-center">
+              <Layers className="h-4 w-4 mr-2" />
+              Étape 2: Thématiques
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="dates" className="space-y-4">
@@ -217,33 +227,11 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             />
           </TabsContent>
           
-          <TabsContent value="topics">
-            <TopicsList topics={topics} />
-          </TabsContent>
-          
-          <TabsContent value="import" className="space-y-4">
-            <div className="bg-muted/30 p-4 rounded-md">
-              <h3 className="text-lg font-medium mb-3">Importer un plan d'audit standard ISO 27001</h3>
-              <p className="text-muted-foreground mb-4">
-                Cette option vous permet d'importer rapidement un plan d'audit basé sur le standard ISO 27001:2022. 
-                Le plan comprendra les thématiques essentielles et les principaux contrôles à évaluer.
-              </p>
-              
-              <div className="space-y-3">
-                <div className="flex items-start">
-                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">1</span>
-                  <p className="text-sm">Le plan sera généré avec les dates de début et de fin sélectionnées</p>
-                </div>
-                <div className="flex items-start">
-                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">2</span>
-                  <p className="text-sm">Les thématiques et topics seront automatiquement créés</p>
-                </div>
-                <div className="flex items-start">
-                  <span className="bg-primary/10 rounded-full p-1 mr-2 mt-0.5">3</span>
-                  <p className="text-sm">Les références aux clauses et contrôles ISO 27001 seront incluses</p>
-                </div>
-              </div>
-            </div>
+          <TabsContent value="themes" className="space-y-4">
+            <TopicsList 
+              topics={topics} 
+              onSelectionChange={handleThemeSelectionChange}
+            />
             
             {importSuccess === true && (
               <Alert className="bg-green-50 border-green-200">
@@ -267,42 +255,30 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
         </Tabs>
       </CardContent>
       <CardFooter className="flex justify-between">
-        {activeTab === 'import' ? (
+        {activeTab === 'dates' ? (
           <>
-            <Button variant="outline" onClick={() => setActiveTab('dates')}>
-              Retour aux dates
+            <Button variant="outline" disabled>
+              Étape précédente
             </Button>
-            <Button onClick={handleImportStandardPlan} disabled={isImporting}>
-              {isImporting ? (
-                <>
-                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                  Importation en cours...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importer le plan standard
-                </>
-              )}
+            <Button onClick={() => setActiveTab('themes')}>
+              Étape suivante: Thématiques
             </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={() => setActiveTab(activeTab === 'dates' ? 'topics' : activeTab === 'topics' ? 'import' : 'dates')}>
-              {activeTab === 'dates' ? 'Voir les thématiques' : activeTab === 'topics' ? 'Importer un plan' : 'Retour aux dates'}
+            <Button variant="outline" onClick={() => setActiveTab('dates')}>
+              Retour aux dates
             </Button>
-            {activeTab !== 'import' && (
-              <Button onClick={handleGeneratePlan} disabled={isGenerating || (!planStartDate || !planEndDate)}>
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                    Génération en cours...
-                  </>
-                ) : (
-                  'Générer le plan'
-                )}
-              </Button>
-            )}
+            <Button onClick={handleImportStandardPlan} disabled={isImporting || selectedThemes.length === 0}>
+              {isImporting ? (
+                <>
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                  Génération en cours...
+                </>
+              ) : (
+                'Générer le plan'
+              )}
+            </Button>
           </>
         )}
       </CardFooter>
