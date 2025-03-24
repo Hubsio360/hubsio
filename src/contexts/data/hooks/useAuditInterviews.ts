@@ -10,6 +10,14 @@ export const useAuditInterviews = () => {
   const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
     setLoading(true);
     try {
+      // Vérifier si c'est un UUID valide avant d'interroger la base de données
+      // Si ce n'est pas un UUID, on retourne un tableau vide simulé pour le développement
+      if (!isValidUUID(auditId)) {
+        console.log(`ID d'audit non valide pour UUID: ${auditId}, simulation de données vides`);
+        setInterviews([]);
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('audit_interviews')
         .select('*')
@@ -25,12 +33,14 @@ export const useAuditInterviews = () => {
         id: interview.id,
         auditId: interview.audit_id,
         topicId: interview.topic_id,
+        themeId: interview.theme_id,
         title: interview.title,
         description: interview.description,
         startTime: interview.start_time,
         durationMinutes: interview.duration_minutes,
         location: interview.location,
-        meetingLink: interview.meeting_link
+        meetingLink: interview.meeting_link,
+        controlRefs: interview.control_refs
       }));
       
       setInterviews(formattedInterviews);
@@ -225,6 +235,52 @@ export const useAuditInterviews = () => {
 
   const generateAuditPlan = async (auditId: string, startDate: string, endDate: string): Promise<boolean> => {
     try {
+      // Vérifier si c'est un UUID valide avant d'interroger la base de données
+      // Pour le développement, nous allons générer un plan local si ce n'est pas un UUID valide
+      if (!isValidUUID(auditId)) {
+        console.log(`ID d'audit non valide pour UUID: ${auditId}, génération d'un plan local`);
+        
+        // Générer quelques interviews de test directement dans l'état local
+        const start = new Date(startDate);
+        const interviewsToCreate = [];
+        
+        // Créer quelques interviews factices pour la génération locale
+        const testThemes = [
+          { id: 'theme-1', name: 'ADMIN' },
+          { id: 'theme-2', name: 'Exploitation & réseaux' },
+          { id: 'theme-5', name: 'Sécurité des ressources humaines' },
+          { id: 'theme-12', name: 'Cloture' }
+        ];
+        
+        for (let i = 0; i < testThemes.length; i++) {
+          const theme = testThemes[i];
+          const interviewDate = new Date(start);
+          interviewDate.setDate(start.getDate() + Math.floor(i / 2));
+          
+          // Distribuer les interviews dans la journée (9h-17h)
+          const hourOffset = (i % 2) * 3; // 3 heures par interview
+          interviewDate.setHours(9 + hourOffset, 0, 0, 0);
+          
+          const interview: AuditInterview = {
+            id: `interview-${Date.now()}-${i}`,
+            auditId: auditId,
+            themeId: theme.id,
+            title: `Interview: ${theme.name}`,
+            description: `Interview sur le thème: ${theme.name}`,
+            startTime: interviewDate.toISOString(),
+            durationMinutes: 60,
+            location: 'À déterminer',
+          };
+          
+          interviewsToCreate.push(interview);
+        }
+        
+        // Mettre à jour l'état local avec les interviews générées
+        setInterviews(interviewsToCreate);
+        return true;
+      }
+      
+      // Le code suivant s'exécute uniquement si auditId est un UUID valide
       // Récupérer les informations de l'audit
       const { data: auditData, error: auditError } = await supabase
         .from('audits')
@@ -304,6 +360,12 @@ export const useAuditInterviews = () => {
       console.error('Error generating audit plan:', error);
       return false;
     }
+  };
+
+  // Fonction utilitaire pour vérifier si une chaîne est un UUID valide
+  const isValidUUID = (str: string) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
   };
 
   return {
