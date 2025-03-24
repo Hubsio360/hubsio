@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { AuditorsSelect } from '@/components/AuditorsSelect';
+import { Audit, FindingCategory, FindingStatus } from '@/types';
 import {
   AlertCircle,
   AlertTriangle,
@@ -34,7 +36,6 @@ import {
   LayoutTemplate,
   PencilLine,
 } from 'lucide-react';
-import { FindingCategory, FindingStatus } from '@/types';
 import AuditPlanSection from '@/components/AuditPlanSection';
 
 const getCategoryBadge = (category: FindingCategory) => {
@@ -107,16 +108,19 @@ const AuditDetail = () => {
   const { 
     getAuditById, 
     getCompanyById, 
-    getFrameworkById, 
+    getFrameworkById,
+    frameworks,
     getAuditStepsByAuditId, 
     getFindingsByAuditStepId,
     getControlById,
     addFinding,
     updateFinding,
     updateAudit,
-    controls
+    controls,
+    assignAuditors,
+    getAuditAuditors
   } = useData();
-  const { user } = useAuth();
+  const { user, getUsers } = useAuth();
   const { toast } = useToast();
   
   const [activeTab, setActiveTab] = useState('steps');
@@ -134,7 +138,12 @@ const AuditDetail = () => {
     scope: '',
     startDate: '',
     endDate: '',
+    frameworkId: '',
+    auditorIds: [] as { userId: string, roleInAudit: 'lead' | 'participant' }[]
   });
+  const [isLoadingAuditors, setIsLoadingAuditors] = useState(false);
+  const [auditAuditors, setAuditAuditors] = useState<{ userId: string, roleInAudit: 'lead' | 'participant' }[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{id: string, name: string, email: string, avatar?: string}[]>([]);
 
   if (!id) {
     return (
@@ -346,13 +355,61 @@ const AuditDetail = () => {
     }
   };
 
-  const handleOpenEditDialog = () => {
-    setEditFormData({
-      scope: audit.scope || '',
-      startDate: audit.startDate.split('T')[0],
-      endDate: audit.endDate.split('T')[0],
+  const handleOpenEditDialog = async () => {
+    setIsLoadingAuditors(true);
+    try {
+      const auditors = await getAuditAuditors(id || '');
+      setAuditAuditors(auditors);
+      
+      const users = await getUsers();
+      setAvailableUsers(users.map(u => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        avatar: u.avatar
+      })));
+      
+      setEditFormData({
+        scope: audit?.scope || '',
+        startDate: audit?.startDate.split('T')[0] || '',
+        endDate: audit?.endDate.split('T')[0] || '',
+        frameworkId: audit?.frameworkId || '',
+        auditorIds: auditors
+      });
+      
+      setIsLoadingAuditors(false);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error('Erreur lors du chargement des auditeurs:', error);
+      setIsLoadingAuditors(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les informations des auditeurs",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAuditorSelect = (userId: string, role: 'lead' | 'participant') => {
+    setEditFormData(prev => {
+      const newAuditorIds = [...prev.auditorIds];
+      const existingIndex = newAuditorIds.findIndex(a => a.userId === userId);
+      
+      if (existingIndex >= 0) {
+        newAuditorIds[existingIndex].roleInAudit = role;
+      } else {
+        newAuditorIds.push({ userId, roleInAudit: role });
+      }
+      
+      return { ...prev, auditorIds: newAuditorIds };
     });
-    setIsEditDialogOpen(true);
+  };
+
+  const handleAuditorRemove = (userId: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      auditorIds: prev.auditorIds.filter(a => a.userId !== userId)
+    }));
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -362,10 +419,15 @@ const AuditDetail = () => {
       const updates: Partial<Audit> = {
         startDate: editFormData.startDate,
         endDate: editFormData.endDate,
-        scope: editFormData.scope
+        scope: editFormData.scope,
+        frameworkId: editFormData.frameworkId || audit.frameworkId
       };
       
-      await updateAudit(id, updates);
+      await updateAudit(id || '', updates);
+      
+      if (editFormData.auditorIds.length > 0) {
+        await assignAuditors(id || '', editFormData.auditorIds);
+      }
       
       toast({
         title: "Succès",
@@ -440,7 +502,7 @@ const AuditDetail = () => {
       </div>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Modifier les informations de l'audit</DialogTitle>
             <DialogDescription>
@@ -486,6 +548,43 @@ const AuditDetail = () => {
                   className="col-span-3"
                   placeholder="Définir le périmètre de l'audit..."
                 />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="framework" className="text-right">
+                  Référentiel
+                </Label>
+                <Select
+                  value={editFormData.frameworkId}
+                  onValueChange={(value) => setEditFormData({...editFormData, frameworkId: value})}
+                >
+                  <SelectTrigger id="framework" className="col-span-3">
+                    <SelectValue placeholder="Sélectionner un référentiel" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {frameworks.map((fw) => (
+                      <SelectItem key={fw.id} value={fw.id}>
+                        {fw.name} ({fw.version})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                <Label className="text-right pt-2">
+                  Auditeurs
+                </Label>
+                <div className="col-span-3">
+                  {isLoadingAuditors ? (
+                    <div className="text-sm text-muted-foreground">Chargement des auditeurs...</div>
+                  ) : (
+                    <AuditorsSelect
+                      auditors={availableUsers}
+                      selectedAuditors={editFormData.auditorIds}
+                      onAuditorSelect={handleAuditorSelect}
+                      onAuditorRemove={handleAuditorRemove}
+                    />
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
