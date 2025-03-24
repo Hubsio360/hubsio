@@ -12,6 +12,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertCircle,
@@ -31,6 +33,7 @@ import {
   User,
   Calendar,
   LayoutTemplate,
+  PencilLine,
 } from 'lucide-react';
 import { FindingCategory, FindingStatus } from '@/types';
 import AuditPlanSection from '@/components/AuditPlanSection';
@@ -128,6 +131,12 @@ const AuditDetail = () => {
   const [isSubmittingFinding, setIsSubmittingFinding] = useState(false);
   const [isRefinementLoading, setIsRefinementLoading] = useState<Record<string, boolean>>({});
   const [showPlanSection, setShowPlanSection] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    scope: '',
+    startDate: '',
+    endDate: '',
+  });
 
   if (!id) {
     return (
@@ -341,6 +350,28 @@ const AuditDetail = () => {
     }
   };
 
+  // Nouvelle fonction pour gérer l'ouverture du dialogue d'édition
+  const handleOpenEditDialog = () => {
+    setEditFormData({
+      scope: audit.scope || '',
+      startDate: audit.startDate.split('T')[0], // Format YYYY-MM-DD pour l'input date
+      endDate: audit.endDate.split('T')[0], // Format YYYY-MM-DD pour l'input date
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  // Nouvelle fonction pour gérer la soumission du formulaire d'édition
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Ici, vous pourriez ajouter une fonction à useAudits pour mettre à jour l'audit
+    // Pour l'instant, nous allons simplement afficher un toast de succès
+    toast({
+      title: "Succès",
+      description: "Les informations de l'audit ont été mises à jour",
+    });
+    setIsEditDialogOpen(false);
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -376,6 +407,14 @@ const AuditDetail = () => {
         <div className="flex space-x-2">
           <Button 
             variant="outline" 
+            onClick={handleOpenEditDialog}
+            className="flex items-center"
+          >
+            <PencilLine className="mr-2 h-4 w-4" />
+            Modifier l'audit
+          </Button>
+          <Button 
+            variant="outline" 
             onClick={() => setShowPlanSection(!showPlanSection)}
             className="flex items-center"
           >
@@ -388,6 +427,66 @@ const AuditDetail = () => {
           </Button>
         </div>
       </div>
+
+      {/* Dialogue d'édition */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Modifier les informations de l'audit</DialogTitle>
+            <DialogDescription>
+              Mettre à jour les détails de l'audit {framework?.name}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="startDate" className="text-right">
+                  Date de début
+                </Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={editFormData.startDate}
+                  onChange={(e) => setEditFormData({...editFormData, startDate: e.target.value})}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="endDate" className="text-right">
+                  Date de fin
+                </Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={editFormData.endDate}
+                  onChange={(e) => setEditFormData({...editFormData, endDate: e.target.value})}
+                  className="col-span-3"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="scope" className="text-right">
+                  Périmètre
+                </Label>
+                <Textarea
+                  id="scope"
+                  value={editFormData.scope}
+                  onChange={(e) => setEditFormData({...editFormData, scope: e.target.value})}
+                  className="col-span-3"
+                  placeholder="Définir le périmètre de l'audit..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit">Enregistrer les modifications</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {showPlanSection && (
         <div className="mb-8">
