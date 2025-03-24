@@ -33,14 +33,14 @@ export const useAuditInterviews = () => {
         id: interview.id,
         auditId: interview.audit_id,
         topicId: interview.topic_id,
-        themeId: interview.theme_id,
+        themeId: interview.theme_id || undefined,
         title: interview.title,
         description: interview.description,
         startTime: interview.start_time,
         durationMinutes: interview.duration_minutes,
         location: interview.location,
         meetingLink: interview.meeting_link,
-        controlRefs: interview.control_refs
+        controlRefs: interview.control_refs || undefined
       }));
       
       setInterviews(formattedInterviews);
@@ -60,12 +60,14 @@ export const useAuditInterviews = () => {
         .insert([{
           audit_id: interview.auditId,
           topic_id: interview.topicId,
+          theme_id: interview.themeId,
           title: interview.title,
           description: interview.description,
           start_time: interview.startTime,
           duration_minutes: interview.durationMinutes,
           location: interview.location,
-          meeting_link: interview.meetingLink
+          meeting_link: interview.meetingLink,
+          control_refs: interview.controlRefs
         }])
         .select()
         .single();
@@ -79,12 +81,14 @@ export const useAuditInterviews = () => {
         id: data.id,
         auditId: data.audit_id,
         topicId: data.topic_id,
+        themeId: data.theme_id || undefined,
         title: data.title,
         description: data.description,
         startTime: data.start_time,
         durationMinutes: data.duration_minutes,
         location: data.location,
-        meetingLink: data.meeting_link
+        meetingLink: data.meeting_link,
+        controlRefs: data.control_refs || undefined
       };
       
       setInterviews((prev) => [...prev, newInterview]);
@@ -104,12 +108,14 @@ export const useAuditInterviews = () => {
       
       if (updates.auditId) updateData.audit_id = updates.auditId;
       if (updates.topicId) updateData.topic_id = updates.topicId;
+      if (updates.themeId !== undefined) updateData.theme_id = updates.themeId;
       if (updates.title) updateData.title = updates.title;
       if (updates.description !== undefined) updateData.description = updates.description;
       if (updates.startTime) updateData.start_time = updates.startTime;
       if (updates.durationMinutes) updateData.duration_minutes = updates.durationMinutes;
       if (updates.location !== undefined) updateData.location = updates.location;
       if (updates.meetingLink !== undefined) updateData.meeting_link = updates.meetingLink;
+      if (updates.controlRefs !== undefined) updateData.control_refs = updates.controlRefs;
       
       const { data, error } = await supabase
         .from('audit_interviews')
@@ -127,12 +133,14 @@ export const useAuditInterviews = () => {
         id: data.id,
         auditId: data.audit_id,
         topicId: data.topic_id,
+        themeId: data.theme_id || undefined,
         title: data.title,
         description: data.description,
         startTime: data.start_time,
         durationMinutes: data.duration_minutes,
         location: data.location,
-        meetingLink: data.meeting_link
+        meetingLink: data.meeting_link,
+        controlRefs: data.control_refs || undefined
       };
       
       setInterviews((prev) =>
