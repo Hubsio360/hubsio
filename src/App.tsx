@@ -12,6 +12,7 @@ import Home from "@/pages/Home";
 import CompanyDetail from "@/pages/CompanyDetail";
 import NewAudit from "@/pages/NewAudit";
 import AuditDetail from "@/pages/AuditDetail";
+import Frameworks from "@/pages/Frameworks";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,12 @@ const AppRoutes = () => {
       <Route path="/audit/:id" element={
         <ProtectedRoute>
           <AuditDetail />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/frameworks" element={
+        <ProtectedRoute>
+          <Frameworks />
         </ProtectedRoute>
       } />
       

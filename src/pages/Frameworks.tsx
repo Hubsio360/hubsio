@@ -189,7 +189,10 @@ const Frameworks = () => {
                     />
                     <Button
                       variant="outline"
-                      onClick={() => document.getElementById('framework-file')?.click()}
+                      onClick={() => {
+                        const inputElement = document.getElementById('framework-file') as HTMLInputElement;
+                        if (inputElement) inputElement.click();
+                      }}
                       disabled={isImporting}
                     >
                       {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
@@ -232,10 +235,69 @@ const Frameworks = () => {
             <p className="text-muted-foreground text-center mb-6">
               Importez un référentiel pour commencer à créer des audits.
             </p>
-            <Button onClick={() => document.querySelector('[role="dialog"] button')?.click()}>
-              <Plus className="mr-2 h-4 w-4" />
-              <span>Importer un référentiel</span>
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Importer un référentiel</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                {/* Contenu identique au sheet ci-dessus */}
+                <SheetHeader>
+                  <SheetTitle>Importer un référentiel</SheetTitle>
+                  <SheetDescription>
+                    Téléchargez un fichier JSON contenant un référentiel d'audit et ses contrôles.
+                  </SheetDescription>
+                </SheetHeader>
+                
+                <div className="py-6">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle>Format requis</CardTitle>
+                      <CardDescription>
+                        Le fichier doit être au format JSON et contenir les champs suivants :
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <pre className="bg-muted p-4 rounded-md text-xs overflow-auto">
+                        {JSON.stringify(exampleFramework, null, 2)}
+                      </pre>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="framework-file-alt">Fichier JSON</Label>
+                    <div className="flex flex-col items-center justify-center border-2 border-dashed border-input rounded-md p-10 bg-muted/50">
+                      <Upload className="h-10 w-10 text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Glissez-déposez ou cliquez pour sélectionner
+                      </p>
+                      <Input
+                        id="framework-file-alt"
+                        type="file"
+                        accept=".json"
+                        className="hidden"
+                        onChange={handleFileImport}
+                        disabled={isImporting}
+                      />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const inputElement = document.getElementById('framework-file-alt') as HTMLInputElement;
+                          if (inputElement) inputElement.click();
+                        }}
+                        disabled={isImporting}
+                      >
+                        {isImporting ? 'Importation...' : 'Sélectionner un fichier'}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
           </CardContent>
         </Card>
       )}
