@@ -35,7 +35,7 @@ export const checkAuth = async () => {
 // Type helper for audit_interviews table
 export type AuditInterviewRow = Database['public']['Tables']['audit_interviews']['Row'];
 
-// Function to select all audit interviews
+// Function to select all audit interviews - with proper return type to support filtering methods like .eq()
 export const selectAuditInterviews = () => {
-  return supabase.from('audit_interviews');
+  return supabase.from('audit_interviews').select('*');
 };
