@@ -8,14 +8,14 @@ const iso27001Clauses: StandardClause[] = [
   {
     id: 'clause-1',
     code: 'A.5',
-    title: 'Politiques de sécurité de l'information',
+    title: 'Politiques de sécurité de l\'information',
     description: 'Orientation et soutien de la direction pour la sécurité de l\'information, conformément aux exigences métier et aux lois et règlements applicables.',
     category: 'Gouvernance'
   },
   {
     id: 'clause-2',
     code: 'A.6',
-    title: 'Organisation de la sécurité de l'information',
+    title: 'Organisation de la sécurité de l\'information',
     description: 'Cadre de gestion pour initier et contrôler la mise en œuvre et le fonctionnement de la sécurité de l\'information au sein de l\'organisation.',
     category: 'Gouvernance'
   },
@@ -36,7 +36,7 @@ const iso27001Clauses: StandardClause[] = [
   {
     id: 'clause-5',
     code: 'A.9',
-    title: 'Contrôle d'accès',
+    title: 'Contrôle d\'accès',
     description: 'Limiter l\'accès aux informations et aux installations de traitement de l\'information.',
     category: 'Accès'
   },
@@ -50,7 +50,7 @@ const iso27001Clauses: StandardClause[] = [
   {
     id: 'clause-7',
     code: 'A.8.16',
-    title: 'Transfert d'informations',
+    title: 'Transfert d\'informations',
     description: 'Maintenir la sécurité des informations transférées au sein d\'une organisation et avec toute entité externe.',
     category: 'Communications'
   },
