@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
@@ -15,14 +14,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from '@/components/ui/context-menu';
+import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import * as z from 'zod';
 
 const Frameworks = () => {
-  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl } = useData();
+  const { frameworks, controls, importFramework, updateFramework, deleteFramework, updateControl, addControl } = useData();
   const { toast } = useToast();
   const [isImporting, setIsImporting] = useState(false);
   const [frameworkToEdit, setFrameworkToEdit] = useState<Framework | null>(null);
   const [frameworkToDelete, setFrameworkToDelete] = useState<Framework | null>(null);
   const [controlToEdit, setControlToEdit] = useState<FrameworkControl | null>(null);
+  const [frameworkForNewControl, setFrameworkForNewControl] = useState<Framework | null>(null);
   const [editFormData, setEditFormData] = useState({ name: '', version: '' });
   const [editControlFormData, setEditControlFormData] = useState({ 
     referenceCode: '', 
@@ -32,9 +36,11 @@ const Frameworks = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingControl, setIsEditingControl] = useState(false);
+  const [isAddingControl, setIsAddingControl] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [openEditControlDialog, setOpenEditControlDialog] = useState(false);
+  const [openAddControlDialog, setOpenAddControlDialog] = useState(false);
 
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -166,6 +172,11 @@ const Frameworks = () => {
     setOpenEditControlDialog(true);
   };
 
+  const handleAddControl = (framework: Framework) => {
+    setFrameworkForNewControl(framework);
+    setOpenAddControlDialog(true);
+  };
+
   const submitEdit = async () => {
     if (!frameworkToEdit) return;
     
@@ -240,6 +251,51 @@ const Frameworks = () => {
       });
     } finally {
       setIsEditingControl(false);
+    }
+  };
+
+  const submitAddControl = async () => {
+    if (!frameworkForNewControl) return;
+    
+    if (!editControlFormData.referenceCode || !editControlFormData.title) {
+      toast({
+        title: "Champs requis",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsAddingControl(true);
+    
+    try {
+      const newControl = await addControl({
+        frameworkId: frameworkForNewControl.id,
+        referenceCode: editControlFormData.referenceCode,
+        title: editControlFormData.title,
+        description: editControlFormData.description
+      });
+      
+      toast({
+        title: "Contrôle ajouté",
+        description: `${newControl.referenceCode} - ${newControl.title} a été ajouté avec succès`,
+      });
+      
+      setOpenAddControlDialog(false);
+      setEditControlFormData({
+        referenceCode: '',
+        title: '',
+        description: ''
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du contrôle:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout du contrôle",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingControl(false);
     }
   };
 
@@ -380,9 +436,20 @@ const Frameworks = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center text-muted-foreground mb-4">
-                <FileText className="h-4 w-4 mr-2" />
-                <span>{getControlsCountByFramework(framework.id)} contrôles</span>
+              <div className="flex items-center justify-between text-muted-foreground mb-4">
+                <div className="flex items-center">
+                  <FileText className="h-4 w-4 mr-2" />
+                  <span>{getControlsCountByFramework(framework.id)} contrôles</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleAddControl(framework)}
+                  className="h-7 px-2"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  <span>Ajouter</span>
+                </Button>
               </div>
               <Collapsible>
                 <CollapsibleTrigger asChild>
@@ -618,6 +685,62 @@ const Frameworks = () => {
             </Button>
             <Button onClick={submitEditControl} disabled={isEditingControl}>
               {isEditingControl ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Control Dialog */}
+      <Dialog open={openAddControlDialog} onOpenChange={setOpenAddControlDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter un contrôle</DialogTitle>
+            <DialogDescription>
+              {frameworkForNewControl && `Ajoutez un nouveau contrôle au référentiel ${frameworkForNewControl.name}.`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="add-control-code">Code de référence</Label>
+              <Input
+                id="add-control-code"
+                value={editControlFormData.referenceCode}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, referenceCode: e.target.value })}
+                placeholder="Ex: A.5.1"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-control-title">Titre</Label>
+              <Input
+                id="add-control-title"
+                value={editControlFormData.title}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, title: e.target.value })}
+                placeholder="Titre du contrôle"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="add-control-description">Description</Label>
+              <Textarea
+                id="add-control-description"
+                value={editControlFormData.description}
+                onChange={(e) => setEditControlFormData({ ...editControlFormData, description: e.target.value })}
+                placeholder="Description détaillée du contrôle"
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setOpenAddControlDialog(false);
+                setEditControlFormData({ referenceCode: '', title: '', description: '' });
+              }}
+            >
+              Annuler
+            </Button>
+            <Button onClick={submitAddControl} disabled={isAddingControl}>
+              {isAddingControl ? 'Ajout en cours...' : 'Ajouter'}
             </Button>
           </DialogFooter>
         </DialogContent>
