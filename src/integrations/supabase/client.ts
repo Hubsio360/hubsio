@@ -14,5 +14,10 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     persistSession: true,
     autoRefreshToken: true,
     storageKey: 'supabase-auth',
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'secu-reporter'
+    }
   }
 });
