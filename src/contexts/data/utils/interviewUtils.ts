@@ -1,6 +1,7 @@
 
 import { AuditInterview } from '@/types';
 import { addMinutes, setHours, setMinutes, addDays, isAfter, isBefore } from 'date-fns';
+import { InterviewInsert } from './interviewDbOps';
 
 /**
  * Checks if a given string is a valid UUID
@@ -65,17 +66,16 @@ export const getNextTimeSlot = (
  * Format an interview for database insertion
  */
 export const formatInterviewForDB = (
-  auditId: string,
   interview: Partial<AuditInterview>
-): Record<string, any> => {
+): InterviewInsert => {
   return {
-    audit_id: auditId,
+    audit_id: interview.auditId || '',
     topic_id: interview.topicId,
     theme_id: interview.themeId,
-    title: interview.title,
+    title: interview.title || '',
     description: interview.description,
-    start_time: interview.startTime,
-    duration_minutes: interview.durationMinutes,
+    start_time: interview.startTime || new Date().toISOString(),
+    duration_minutes: interview.durationMinutes || 60,
     location: interview.location,
     meeting_link: interview.meetingLink,
     control_refs: interview.controlRefs
@@ -86,7 +86,7 @@ export const formatInterviewForDB = (
  * Validate interview data before database operations
  */
 export const validateInterview = (interview: Partial<AuditInterview>): boolean => {
-  if (!interview.title || !interview.startTime || !interview.durationMinutes) {
+  if (!interview.title || !interview.startTime || !interview.durationMinutes || !interview.auditId) {
     console.error('Interview validation failed: Missing required fields');
     return false;
   }

@@ -1,4 +1,3 @@
-
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -54,7 +53,7 @@ export const addInterviewToDB = async (interview: Omit<AuditInterview, 'id'>): P
   }
   
   try {
-    const formattedInterview = formatInterviewForDB(interview.auditId, interview);
+    const formattedInterview = formatInterviewForDB(interview);
     
     const { data, error } = await supabase
       .from('audit_interviews')
@@ -300,9 +299,11 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
       'title' in interview && 
       'start_time' in interview && 
       'duration_minutes' in interview &&
+      'audit_id' in interview &&
       interview.title && 
       interview.start_time && 
-      interview.duration_minutes
+      interview.duration_minutes &&
+      interview.audit_id
     );
     
     if (validInterviews.length === 0) {
@@ -313,30 +314,10 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
     // Cast to InterviewInsert[] after validation
     const typedInterviews = validInterviews as InterviewInsert[];
     
-    // Further validation and UUID check for theme_id and topic_id
-    const finalInterviews = typedInterviews.map(interview => {
-      // Create a copy to avoid mutating the original
-      const interviewCopy = { ...interview };
-      
-      // Check if theme_id is a valid UUID, if not, set to null
-      if (interviewCopy.theme_id && !isValidUUID(interviewCopy.theme_id)) {
-        console.log(`Invalid UUID format for theme_id: ${interviewCopy.theme_id}, setting to null`);
-        interviewCopy.theme_id = null;
-      }
-      
-      // Check if topic_id is a valid UUID, if not, set to null
-      if (interviewCopy.topic_id && !isValidUUID(interviewCopy.topic_id)) {
-        console.log(`Invalid UUID format for topic_id: ${interviewCopy.topic_id}, setting to null`);
-        interviewCopy.topic_id = null;
-      }
-      
-      return interviewCopy;
-    });
-    
     // Insert the interviews
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(finalInterviews)
+      .insert(typedInterviews)
       .select();
       
     if (error) {
