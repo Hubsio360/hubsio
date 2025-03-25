@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +37,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
   const [availableThemes, setAvailableThemes] = useState<any[]>([]);
 
-  // Charge les thèmes au chargement du composant
   useEffect(() => {
     const loadInitialData = async () => {
       try {
@@ -46,7 +44,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
         const themeData = await fetchThemes();
         setAvailableThemes(themeData);
         
-        // Par défaut, toutes les thématiques sont sélectionnées
         if (themeData && themeData.length > 0) {
           const themeIds = themeData.map(theme => theme.id);
           setSelectedThemes(themeIds);
@@ -114,7 +111,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const handleImportStandardPlan = async () => {
     console.log(`Initiating plan import for audit ID: ${auditId}`);
     
-    // Vérifier que l'audit ID est valide
     if (!auditId) {
       toast({
         title: 'Erreur',
@@ -124,7 +120,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       return;
     }
     
-    // Vérifier qu'il y a des thèmes sélectionnés
     if (selectedThemes.length === 0) {
       toast({
         title: 'Aucune thématique sélectionnée',
@@ -138,13 +133,10 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     setImportSuccess(null);
     
     try {
-      // Filtrer les thèmes disponibles selon les thèmes sélectionnés
       const selectedThemesData = availableThemes.filter(theme => selectedThemes.includes(theme.id));
       
       console.log(`Selected themes: ${selectedThemesData.map(t => t.name).join(', ')}`);
       
-      // Créer le plan d'audit avec planData vide pour forcer l'utilisation du plan standard
-      // mais avec les thèmes sélectionnés
       const success = await importStandardAuditPlan(auditId, [], selectedThemesData);
       
       if (success) {
