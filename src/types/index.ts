@@ -63,7 +63,7 @@ export interface Audit {
   updatedAt?: string;
 }
 
-export type AuditStatus = 'draft' | 'planned' | 'in_progress' | 'completed' | 'cancelled';
+export type AuditStatus = 'draft' | 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'review';
 
 export interface AuditStep {
   id: string;
@@ -71,6 +71,7 @@ export interface AuditStep {
   title: string;
   description?: string;
   order: number;
+  controlIds?: string[]; // Ajout de cette propriété manquante
   createdAt?: string;
   updatedAt?: string;
 }
@@ -133,8 +134,8 @@ export interface Finding {
   updatedAt: string;
 }
 
-export type FindingCategory = 'conformity' | 'non_conformity' | 'observation' | 'recommendation';
-export type FindingStatus = 'draft' | 'review' | 'approved' | 'rejected';
+export type FindingCategory = 'conformity' | 'non_conformity' | 'observation' | 'recommendation' | 'non_conformity_major' | 'non_conformity_minor' | 'sensitive_point' | 'improvement_opportunity' | 'strength';
+export type FindingStatus = 'draft' | 'review' | 'approved' | 'rejected' | 'pending_review' | 'validated';
 
 // Types supplémentaires pouvant être utilisés dans l'application
 export interface AuditReport {
