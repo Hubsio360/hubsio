@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
@@ -5,6 +6,46 @@ import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integratio
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Nouvelle fonction pour récupérer uniquement les interviews réelles de la base de données
+  const fetchRealInterviewsFromDB = async (auditId: string): Promise<AuditInterview[]> => {
+    if (!auditId || !isValidUUID(auditId)) {
+      console.log('Invalid audit ID provided for fetchRealInterviewsFromDB');
+      return [];
+    }
+    
+    try {
+      const { data, error } = await selectAuditInterviews()
+        .eq('audit_id', auditId)
+        .order('start_time');
+      
+      if (error) {
+        console.error('Error fetching real audit interviews from DB:', error);
+        return [];
+      }
+      
+      if (!data || data.length === 0) {
+        return [];
+      }
+      
+      return data.map(interview => ({
+        id: interview.id,
+        auditId: interview.audit_id,
+        topicId: interview.topic_id,
+        themeId: interview.theme_id || undefined,
+        title: interview.title,
+        description: interview.description,
+        startTime: interview.start_time,
+        durationMinutes: interview.duration_minutes,
+        location: interview.location,
+        meetingLink: interview.meeting_link,
+        controlRefs: interview.control_refs || undefined
+      }));
+    } catch (error) {
+      console.error('Error in fetchRealInterviewsFromDB:', error);
+      return [];
+    }
+  };
 
   const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
     setLoading(true);
@@ -394,6 +435,7 @@ export const useAuditInterviews = () => {
     interviews,
     loading,
     fetchInterviewsByAuditId,
+    fetchRealInterviewsFromDB,
     addInterview,
     updateInterview,
     deleteInterview,
@@ -403,4 +445,3 @@ export const useAuditInterviews = () => {
     generateAuditPlan
   };
 };
-
