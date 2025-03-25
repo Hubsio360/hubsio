@@ -34,6 +34,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [planExists, setPlanExists] = useState(false);
 
   // Fonction memoizée pour charger les données
   const loadData = useCallback(async () => {
@@ -68,6 +69,8 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         console.log('Loaded interviews:', interviewsData);
         
         if (interviewsData && Array.isArray(interviewsData)) {
+          // Si des interviews existent dans la base de données, le plan existe
+          setPlanExists(interviewsData.length > 0);
           setInterviews(interviewsData);
           
           // Organiser les interviews par thème
@@ -82,12 +85,14 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           setInterviewsByTheme(themeMap);
         } else {
           console.warn('No valid interviews data returned');
+          setPlanExists(false);
           setInterviews([]);
           setInterviewsByTheme({});
         }
       } catch (interviewError) {
         console.error('Error loading interviews:', interviewError);
         setLoadError('Impossible de charger les interviews');
+        setPlanExists(false);
         setInterviews([]);
         setInterviewsByTheme({});
       }
@@ -124,6 +129,8 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       console.log('Refreshed interviews:', interviewsData);
       
       if (interviewsData && Array.isArray(interviewsData)) {
+        // Mettre à jour l'état du plan
+        setPlanExists(interviewsData.length > 0);
         setInterviews(interviewsData);
         
         const themeMap: Record<string, AuditInterview[]> = {};
@@ -144,6 +151,8 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         if (interviewsData.length > 0 && activeTab === 'generate') {
           setActiveTab('calendar');
         }
+      } else {
+        setPlanExists(false);
       }
     } catch (error) {
       console.error('Error refreshing interviews:', error);
@@ -179,17 +188,24 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     handleCloseEditDrawer();
   };
 
+  // Si aucun plan n'existe et qu'on est sur l'onglet calendrier, rediriger vers l'onglet génération
+  useEffect(() => {
+    if (dataLoaded && !planExists && activeTab !== 'generate') {
+      setActiveTab('generate');
+    }
+  }, [dataLoaded, planExists, activeTab]);
+
   return (
     <Card>
       <CardContent className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex justify-between items-center mb-4">
             <TabsList>
-              <TabsTrigger value="calendar" className="flex items-center">
+              <TabsTrigger value="calendar" className="flex items-center" disabled={!planExists}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Calendrier
               </TabsTrigger>
-              <TabsTrigger value="themes" className="flex items-center">
+              <TabsTrigger value="themes" className="flex items-center" disabled={!planExists}>
                 <Layers className="h-4 w-4 mr-2" />
                 Thématiques
               </TabsTrigger>
@@ -200,7 +216,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             </TabsList>
             
             <div className="flex gap-2">
-              {(activeTab === 'calendar' || activeTab === 'themes') && (
+              {planExists && (activeTab === 'calendar' || activeTab === 'themes') && (
                 <>
                   <Button
                     size="sm"
@@ -247,7 +263,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   Réessayer
                 </Button>
               </div>
-            ) : interviews.length > 0 ? (
+            ) : planExists && interviews.length > 0 ? (
               <AuditPlanCalendar 
                 auditId={auditId} 
                 interviews={interviews}
@@ -288,7 +304,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   Réessayer
                 </Button>
               </div>
-            ) : Object.keys(interviewsByTheme).length > 0 ? (
+            ) : planExists && Object.keys(interviewsByTheme).length > 0 ? (
               <div className="space-y-6">
                 {Object.entries(interviewsByTheme).map(([theme, themeInterviews]) => (
                   <Card key={theme} className="overflow-hidden">

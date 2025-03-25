@@ -80,5 +80,5 @@ export interface DataContextProps {
   removeParticipant: (interviewId: string, userId: string) => Promise<boolean>;
   getParticipantsByInterviewId: (interviewId: string) => Promise<InterviewParticipant[]>;
   generateAuditPlan: (auditId: string, startDate: string, endDate: string) => Promise<boolean>;
-  importStandardAuditPlan: (auditId: string, planData: any[]) => Promise<boolean>;
+  importStandardAuditPlan: (auditId: string, planData: any[], customThemes?: any[]) => Promise<boolean>;
 }

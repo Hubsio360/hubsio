@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +138,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       
       console.log(`Selected themes: ${selectedThemesData.map(t => t.name).join(', ')}`);
       
+      // Fix here: Passing only 2 arguments as expected by the function signature
       const success = await importStandardAuditPlan(auditId, [], selectedThemesData);
       
       if (success) {
