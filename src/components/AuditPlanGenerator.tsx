@@ -36,7 +36,8 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     themes,
     systemThemeNames,
     handleThemeDurationChange,
-    generatePlan
+    generatePlan,
+    availableHoursPerDay
   } = useAuditPlanGenerator({
     auditId,
     startDate,
@@ -65,6 +66,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
               themeDurations={themeDurations}
               selectedDays={selectedDays}
               totalHours={totalHours}
+              availableHoursPerDay={availableHoursPerDay}
               systemThemeNames={systemThemeNames}
               onTopicSelectionChange={setSelectedTopicIds}
               onDurationChange={handleThemeDurationChange}

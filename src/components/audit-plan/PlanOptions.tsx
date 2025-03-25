@@ -16,6 +16,7 @@ interface PlanOptionsProps {
   themeDurations: Record<string, number>;
   selectedDays: string[];
   totalHours: number;
+  availableHoursPerDay: number;
   systemThemeNames?: string[];
   onTopicSelectionChange: (topicIds: string[]) => void;
   onDurationChange: (themeId: string, duration: number) => void;
@@ -31,6 +32,7 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({
   themeDurations,
   selectedDays,
   totalHours,
+  availableHoursPerDay,
   systemThemeNames = ['ADMIN', 'Cloture'],
   onTopicSelectionChange,
   onDurationChange,
@@ -68,7 +70,7 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({
         selectedDays={selectedDays}
         onSelectedDaysChange={onSelectedDaysChange}
         requiredHours={totalHours}
-        availableHoursPerDay={6.5} // 8 hour day minus 1.5 hour lunch break
+        availableHoursPerDay={availableHoursPerDay}
       />
     </div>
   );

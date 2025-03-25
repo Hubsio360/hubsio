@@ -47,28 +47,6 @@ export const useAuditPlanGenerator = ({
   // Always include opening and closing meetings
   const hasOpeningClosing = true;
 
-  // Initialiser les jours d'audit par défaut en fonction des dates de début et de fin
-  useEffect(() => {
-    if (!initialLoad && startDate && endDate) {
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-      
-      // Créer un tableau de dates entre début et fin
-      const days: string[] = [];
-      let currentDate = new Date(start);
-      
-      while (currentDate <= end) {
-        days.push(new Date(currentDate).toISOString());
-        currentDate.setDate(currentDate.getDate() + 1);
-      }
-      
-      // Limiter à 5 jours maximum par défaut
-      const defaultDays = days.slice(0, 5);
-      
-      setSelectedDays(defaultDays);
-    }
-  }, [startDate, endDate, initialLoad]);
-
   // Load existing data for this audit
   useEffect(() => {
     const loadExistingData = async () => {
@@ -112,11 +90,31 @@ export const useAuditPlanGenerator = ({
     loadExistingData();
   }, [auditId, fetchInterviewsByAuditId, fetchThemes, fetchTopics, initialLoad, themes]);
 
+  // Reset selected days when audit dates change 
+  useEffect(() => {
+    if (startDate && endDate && selectedDays.length > 0) {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      
+      // Filter out days that are now outside the range
+      const validDays = selectedDays.filter(day => {
+        const date = new Date(day);
+        return date >= start && date <= end;
+      });
+      
+      // Only update if we actually removed days
+      if (validDays.length !== selectedDays.length) {
+        setSelectedDays(validDays);
+      }
+    }
+  }, [startDate, endDate, selectedDays]);
+
   // Calculate total interview hours and required days
   const {
     totalHours,
     totalInterviews,
-    requiredDays
+    requiredDays,
+    availableHoursPerDay
   } = useMemo(() => {
     // Calculate the total interview time in minutes
     let totalMinutes = 0;
@@ -252,6 +250,7 @@ export const useAuditPlanGenerator = ({
     themes,
     systemThemeNames: SYSTEM_THEME_NAMES,
     handleThemeDurationChange,
-    generatePlan
+    generatePlan,
+    availableHoursPerDay
   };
 };

@@ -1,10 +1,10 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, addDays, isBefore, isAfter, isSameDay, parseISO } from 'date-fns';
+import { format, isBefore, isAfter, parseISO } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -33,6 +33,25 @@ const AuditDaysSelector: React.FC<AuditDaysSelectorProps> = ({
   }, [requiredHours, availableHoursPerDay]);
   
   const needsMoreDays = selectedDays.length < requiredDays;
+  
+  // Effect to clear selected days that are outside the new date range if dates change
+  useEffect(() => {
+    if (startDate && endDate && selectedDays.length > 0) {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      
+      // Filter out days that are now outside the range
+      const validDays = selectedDays.filter(day => {
+        const date = new Date(day);
+        return !isBefore(date, start) && !isAfter(date, end);
+      });
+      
+      // Only update if we actually removed days
+      if (validDays.length !== selectedDays.length) {
+        onSelectedDaysChange(validDays);
+      }
+    }
+  }, [startDate, endDate, selectedDays, onSelectedDaysChange]);
   
   return (
     <Card>
