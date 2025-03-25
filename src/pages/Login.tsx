@@ -66,7 +66,18 @@ const Login = () => {
       });
       // Si la connexion est automatique, nous naviguerons automatiquement
     } catch (error: any) {
-      setError(error.message || 'Une erreur est survenue lors de l\'inscription');
+      console.error("Erreur d'inscription:", error);
+      
+      // Vérifier si l'erreur contient une information sur un email déjà utilisé
+      if (error.message && (
+          error.message.includes("duplicate key") || 
+          error.message.includes("already exists") ||
+          error.message.includes("already registered")
+        )) {
+        setError("Cet email est déjà utilisé. Veuillez vous connecter ou utiliser une autre adresse email.");
+      } else {
+        setError(error.message || 'Une erreur est survenue lors de l\'inscription');
+      }
     } finally {
       setIsLoading(false);
     }

@@ -92,6 +92,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (!userData.name) {
         throw new Error("Le nom est requis");
       }
+
+      // Vérifier d'abord si l'email existe déjà
+      const { data: existingUsers } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingUsers) {
+        throw new Error("Cet email est déjà utilisé. Veuillez vous connecter ou utiliser une autre adresse email.");
+      }
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -105,6 +116,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
 
       if (error) {
+        console.error("Erreur d'inscription:", error);
         throw error;
       }
 
@@ -118,6 +130,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(mapSupabaseUser(data.user));
       }
     } catch (error: any) {
+      console.error("Erreur complète d'inscription:", error);
       toast({
         variant: "destructive",
         title: "Erreur d'inscription",
