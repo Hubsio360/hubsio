@@ -144,17 +144,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      setIsLoading(true);
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Assurez-vous que l'utilisateur est mis à null immédiatement pour forcer le rafraîchissement de l'interface
+      setUser(null);
+      
       toast({
         title: "Déconnexion réussie",
         description: "À bientôt !",
       });
     } catch (error: any) {
+      console.error("Erreur lors de la déconnexion:", error);
       toast({
         variant: "destructive",
         title: "Erreur de déconnexion",
         description: error.message || "Une erreur est survenue lors de la déconnexion",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
