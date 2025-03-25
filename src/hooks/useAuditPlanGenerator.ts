@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { AuditTheme } from '@/types';
+import { parseISO } from 'date-fns';
 
 interface UseAuditPlanGeneratorProps {
   auditId: string;
@@ -45,6 +46,28 @@ export const useAuditPlanGenerator = ({
   
   // Always include opening and closing meetings
   const hasOpeningClosing = true;
+
+  // Initialiser les jours d'audit par défaut en fonction des dates de début et de fin
+  useEffect(() => {
+    if (!initialLoad && startDate && endDate) {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      
+      // Créer un tableau de dates entre début et fin
+      const days: string[] = [];
+      let currentDate = new Date(start);
+      
+      while (currentDate <= end) {
+        days.push(new Date(currentDate).toISOString());
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+      
+      // Limiter à 5 jours maximum par défaut
+      const defaultDays = days.slice(0, 5);
+      
+      setSelectedDays(defaultDays);
+    }
+  }, [startDate, endDate, initialLoad]);
 
   // Load existing data for this audit
   useEffect(() => {

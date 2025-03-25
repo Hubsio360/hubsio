@@ -4,7 +4,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, addDays, isBefore, isAfter, isSameDay } from 'date-fns';
+import { format, addDays, isBefore, isAfter, isSameDay, parseISO } from 'date-fns';
 import { AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -25,8 +25,8 @@ const AuditDaysSelector: React.FC<AuditDaysSelectorProps> = ({
   requiredHours,
   availableHoursPerDay
 }) => {
-  const auditStart = new Date(startDate);
-  const auditEnd = new Date(endDate);
+  const auditStart = useMemo(() => parseISO(startDate), [startDate]);
+  const auditEnd = useMemo(() => parseISO(endDate), [endDate]);
   
   const requiredDays = useMemo(() => {
     return Math.ceil(requiredHours / availableHoursPerDay);
@@ -40,6 +40,7 @@ const AuditDaysSelector: React.FC<AuditDaysSelectorProps> = ({
         <CardTitle className="text-lg">Jours d'audit</CardTitle>
         <CardDescription>
           Sélectionnez les jours pendant lesquels vous souhaitez planifier des entretiens
+          (période d'audit: {format(auditStart, 'dd/MM/yyyy', { locale: fr })} - {format(auditEnd, 'dd/MM/yyyy', { locale: fr })})
         </CardDescription>
       </CardHeader>
       <CardContent className="pb-2 space-y-4">
@@ -84,6 +85,8 @@ const AuditDaysSelector: React.FC<AuditDaysSelectorProps> = ({
             }}
             className="mx-auto pointer-events-auto"
             locale={fr}
+            fromDate={auditStart}
+            toDate={auditEnd}
             disabled={(date) => {
               // Disable days outside audit range
               return isBefore(date, auditStart) || isAfter(date, auditEnd);
