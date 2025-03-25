@@ -87,13 +87,21 @@ const iso27001Clauses: StandardClause[] = [
 export const useStandardClauses = () => {
   // Utiliser à la fois les données mockées et les clauses définies ici
   const [standardClauses] = useState<StandardClause[]>([...mockStandardClauses, ...iso27001Clauses]);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const fetchStandardClauses = useCallback(async (): Promise<StandardClause[]> => {
-    return standardClauses;
+    setLoading(true);
+    try {
+      // Simulate API call
+      return standardClauses;
+    } finally {
+      setLoading(false);
+    }
   }, [standardClauses]);
 
   return {
     standardClauses,
+    loading,
     fetchStandardClauses
   };
 };

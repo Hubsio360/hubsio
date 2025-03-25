@@ -5,9 +5,16 @@ import { mockThemes } from '../mocks/mockData';
 
 export const useThemes = () => {
   const [themes] = useState<AuditTheme[]>(mockThemes);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const fetchThemes = useCallback(async (): Promise<AuditTheme[]> => {
-    return themes;
+    setLoading(true);
+    try {
+      // Simulate API call
+      return themes;
+    } finally {
+      setLoading(false);
+    }
   }, [themes]);
 
   const addTheme = useCallback(async (theme: Omit<AuditTheme, 'id'>): Promise<AuditTheme | null> => {
@@ -27,6 +34,7 @@ export const useThemes = () => {
 
   return {
     themes,
+    loading,
     fetchThemes,
     addTheme,
     updateTheme,
