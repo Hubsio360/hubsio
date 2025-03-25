@@ -80,6 +80,11 @@ export interface DataContextProps {
   addParticipant: (participant: Omit<InterviewParticipant, 'notificationSent'>) => Promise<boolean>;
   removeParticipant: (interviewId: string, userId: string) => Promise<boolean>;
   getParticipantsByInterviewId: (interviewId: string) => Promise<InterviewParticipant[]>;
-  generateAuditPlan: (auditId: string, startDate: string, endDate: string, options?: any) => Promise<boolean>;
+  generateAuditPlan: (auditId: string, startDate: string, endDate: string, options?: {
+    topicIds?: string[];
+    selectedDays?: string[];
+    themeDurations?: Record<string, number>;
+    maxHoursPerDay?: number;
+  }) => Promise<boolean>;
   importStandardAuditPlan: (auditId: string, planData: any[], customThemes?: any[]) => Promise<boolean>;
 }

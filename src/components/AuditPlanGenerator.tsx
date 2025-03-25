@@ -1,22 +1,20 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Calendar } from '@/components/ui/calendar';
-import { addDays, format, isBefore, differenceInDays, startOfDay } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TopicsList from '@/components/audit-plan/TopicsList';
-import AuditStatsSummary from '@/components/audit-plan/AuditStatsSummary';
 import { Separator } from '@/components/ui/separator';
-import DateSelector from '@/components/audit-plan/DateSelector';
 import { AlertCircle, CheckIcon, Clock, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AuditTheme } from '@/types';
+import ThemeDurationSelector from '@/components/audit-plan/ThemeDurationSelector';
+import AuditDaysSelector from '@/components/audit-plan/AuditDaysSelector';
+import PlanSummary from '@/components/audit-plan/PlanSummary';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
@@ -34,6 +32,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const { 
     fetchTopics,
     fetchThemes,
+    themes,
     fetchInterviewsByAuditId,
     generateAuditPlan,
     getAuditById
@@ -43,17 +42,23 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [selectedTab, setSelectedTab] = useState('options');
   const [selectedTopicIds, setSelectedTopicIds] = useState<string[]>([]);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [duration, setDuration] = useState('60');
-  const [interviewsPerDay, setInterviewsPerDay] = useState('3');
+  const [themeDurations, setThemeDurations] = useState<Record<string, number>>({});
   const [generating, setGenerating] = useState(false);
   const [interviews, setInterviews] = useState<number>(0);
-  const [themes, setThemes] = useState<number>(0);
   const [existingInterviews, setExistingInterviews] = useState<number>(0);
   const [existingThemes, setExistingThemes] = useState<number>(0);
   const [initialLoad, setInitialLoad] = useState(false);
+  const [maxHoursPerDay] = useState(8); // 8 hours per day maximum
+
+  // Default durations for opening and closing meetings
+  const OPENING_MEETING_DURATION = 60; // 60 minutes
+  const CLOSING_MEETING_DURATION = 60; // 60 minutes
+  
+  // Always include opening and closing meetings
+  const hasOpeningClosing = true;
 
   // Load existing data for this audit
-  React.useEffect(() => {
+  useEffect(() => {
     const loadExistingData = async () => {
       if (!auditId || initialLoad) return;
       
@@ -66,6 +71,17 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
         const uniqueThemes = new Set(existingInterviewsData.map(interview => interview.themeId).filter(Boolean));
         setExistingThemes(uniqueThemes.size);
         
+        // Load available themes
+        await fetchThemes();
+        await fetchTopics();
+
+        // Initialize theme durations with defaults
+        const initialThemeDurations: Record<string, number> = {};
+        themes.forEach(theme => {
+          initialThemeDurations[theme.id] = 60; // Default 60 minutes
+        });
+        setThemeDurations(initialThemeDurations);
+        
         setInitialLoad(true);
       } catch (error) {
         console.error("Error loading existing audit data:", error);
@@ -73,17 +89,64 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     };
     
     loadExistingData();
-  }, [auditId, fetchInterviewsByAuditId, initialLoad]);
+  }, [auditId, fetchInterviewsByAuditId, fetchThemes, fetchTopics, initialLoad, themes]);
 
-  // Update stats when selections change
-  React.useEffect(() => {
-    // Calculate number of interviews based on selected days and interviews per day
-    const interviewCount = selectedDays.length * parseInt(interviewsPerDay || '0');
-    setInterviews(interviewCount);
+  // Calculate total interview hours and required days
+  const {
+    totalHours,
+    totalInterviews,
+    requiredDays
+  } = useMemo(() => {
+    // Calculate the total interview time in minutes
+    let totalMinutes = 0;
+    let interviewCount = 0;
     
-    // Set themes count based on selected topics
-    setThemes(selectedTopicIds.length);
-  }, [selectedDays, interviewsPerDay, selectedTopicIds]);
+    // Add time for opening and closing meetings
+    if (hasOpeningClosing) {
+      totalMinutes += OPENING_MEETING_DURATION + CLOSING_MEETING_DURATION;
+      interviewCount += 2;
+    }
+    
+    // Add time for each selected topic/theme
+    selectedTopicIds.forEach(topicId => {
+      // Find all themes related to this topic
+      const relatedThemeIds = themes
+        .filter(theme => theme.id === topicId) // For now, assuming topic IDs match theme IDs
+        .map(theme => theme.id);
+      
+      relatedThemeIds.forEach(themeId => {
+        if (themeId) {
+          const duration = themeDurations[themeId] || 60;
+          totalMinutes += duration;
+          interviewCount += 1;
+        }
+      });
+    });
+
+    // Convert minutes to hours
+    const hours = Math.ceil(totalMinutes / 60);
+    
+    // Calculate available hours per day, accounting for lunch break
+    const availableHoursPerDay = maxHoursPerDay - 1.5; // 8 hour day minus 1.5 hour lunch break
+    
+    // Calculate required days
+    const days = Math.ceil(hours / availableHoursPerDay);
+    
+    return {
+      totalHours: hours,
+      totalInterviews: interviewCount,
+      requiredDays: days,
+      availableHoursPerDay
+    };
+  }, [selectedTopicIds, themeDurations, themes, hasOpeningClosing, maxHoursPerDay]);
+
+  // Handle duration change for a specific theme
+  const handleThemeDurationChange = (themeId: string, duration: number) => {
+    setThemeDurations(prev => ({
+      ...prev,
+      [themeId]: duration
+    }));
+  };
 
   const generatePlan = async () => {
     if (!auditId) {
@@ -113,6 +176,16 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       return;
     }
 
+    // Check if we have enough days selected
+    if (selectedDays.length < requiredDays) {
+      toast({
+        title: "Jours insuffisants",
+        description: `Vous avez besoin d'au moins ${requiredDays} jours pour couvrir toutes les thématiques sélectionnées`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setGenerating(true);
 
     try {
@@ -120,8 +193,8 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       await generateAuditPlan(auditId, startDate, endDate, {
         topicIds: selectedTopicIds,
         selectedDays: selectedDays,
-        durationMinutes: parseInt(duration),
-        interviewsPerDay: parseInt(interviewsPerDay),
+        themeDurations: themeDurations,
+        maxHoursPerDay: maxHoursPerDay
       });
 
       toast({
@@ -160,6 +233,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Ce module va automatiquement générer un plan d'audit incluant des entretiens pour chaque thématique sélectionnée.
+              Une réunion d'ouverture et de clôture seront automatiquement incluses.
             </AlertDescription>
           </Alert>
           
@@ -180,97 +254,22 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Jours d'audit</CardTitle>
-                  <CardDescription>
-                    Sélectionnez les jours pendant lesquels vous souhaitez planifier des entretiens
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="space-y-4">
-                    {/* Render selected days */}
-                    <div className="flex flex-wrap gap-2">
-                      {selectedDays.map(day => (
-                        <div 
-                          key={day}
-                          className="flex items-center bg-muted/60 rounded px-3 py-1 text-sm"
-                        >
-                          <span>{format(new Date(day), 'EEEE dd MMMM', { locale: fr })}</span>
-                          <button
-                            className="ml-2 text-muted-foreground hover:text-destructive"
-                            onClick={() => setSelectedDays(prev => prev.filter(d => d !== day))}
-                          >
-                            &times;
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Calendar for selecting days */}
-                    <div className="border rounded-md p-3">
-                      <Calendar
-                        mode="multiple"
-                        selected={selectedDays.map(day => new Date(day))}
-                        onSelect={(days) => {
-                          if (!days) return;
-                          setSelectedDays(days.map(day => day.toISOString()));
-                        }}
-                        className="mx-auto pointer-events-auto"
-                        locale={fr}
-                        disabled={(date) => {
-                          // Disable days outside audit range
-                          const auditStart = new Date(startDate);
-                          const auditEnd = new Date(endDate);
-                          return date < auditStart || date > auditEnd;
-                        }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {selectedTopicIds.length > 0 && themes.length > 0 && (
+                <ThemeDurationSelector
+                  themes={themes.filter(theme => selectedTopicIds.includes(theme.id))}
+                  themeDurations={themeDurations}
+                  onDurationChange={handleThemeDurationChange}
+                />
+              )}
               
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Paramètres des entretiens</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-6 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="duration">Durée des entretiens</Label>
-                      <Select value={duration} onValueChange={setDuration}>
-                        <SelectTrigger id="duration">
-                          <SelectValue placeholder="Sélectionner une durée" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="30">30 minutes</SelectItem>
-                          <SelectItem value="45">45 minutes</SelectItem>
-                          <SelectItem value="60">60 minutes</SelectItem>
-                          <SelectItem value="90">90 minutes</SelectItem>
-                          <SelectItem value="120">2 heures</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="interviewsPerDay">Entretiens par jour</Label>
-                      <Select value={interviewsPerDay} onValueChange={setInterviewsPerDay}>
-                        <SelectTrigger id="interviewsPerDay">
-                          <SelectValue placeholder="Sélectionner un nombre" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 entretien</SelectItem>
-                          <SelectItem value="2">2 entretiens</SelectItem>
-                          <SelectItem value="3">3 entretiens</SelectItem>
-                          <SelectItem value="4">4 entretiens</SelectItem>
-                          <SelectItem value="5">5 entretiens</SelectItem>
-                          <SelectItem value="6">6 entretiens</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <AuditDaysSelector
+                startDate={startDate}
+                endDate={endDate}
+                selectedDays={selectedDays}
+                onSelectedDaysChange={setSelectedDays}
+                requiredHours={totalHours}
+                availableHoursPerDay={maxHoursPerDay - 1.5} // Accounting for lunch break
+              />
             </div>
             
             <div>
@@ -279,16 +278,25 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                   <CardTitle className="text-lg">Résumé du plan</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <AuditStatsSummary 
+                  <PlanSummary 
                     businessDays={selectedDays.length}
-                    topicsCount={themes}
-                    interviewsCount={interviews}
+                    requiredDays={requiredDays}
+                    topicsCount={selectedTopicIds.length}
+                    interviewsCount={totalInterviews}
+                    totalHours={totalHours}
+                    maxHoursPerDay={maxHoursPerDay}
+                    hasOpeningClosing={hasOpeningClosing}
                   />
                 </CardContent>
                 <CardFooter>
                   <Button 
                     onClick={generatePlan} 
-                    disabled={generating || selectedTopicIds.length === 0 || selectedDays.length === 0}
+                    disabled={
+                      generating || 
+                      selectedTopicIds.length === 0 || 
+                      selectedDays.length === 0 ||
+                      selectedDays.length < requiredDays
+                    }
                     className="w-full"
                   >
                     {generating ? (

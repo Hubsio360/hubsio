@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
-import { AuditInterview, InterviewParticipant } from '@/types';
+import { AuditInterview, InterviewParticipant, AuditTheme } from '@/types';
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
+import { addMinutes, setHours, setMinutes, addDays, isAfter, isBefore } from 'date-fns';
 
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
@@ -319,16 +319,149 @@ export const useAuditInterviews = () => {
     }
   };
 
-  const generateAuditPlan = async (auditId: string, startDate: string, endDate: string): Promise<boolean> => {
+  const generateAuditPlan = async (
+    auditId: string, 
+    startDate: string, 
+    endDate: string, 
+    options?: {
+      topicIds?: string[];
+      selectedDays?: string[];
+      themeDurations?: Record<string, number>;
+      maxHoursPerDay?: number;
+    }
+  ): Promise<boolean> => {
     try {
-      console.log(`Generating audit plan for audit ID: ${auditId}`);
+      console.log(`Generating audit plan for audit ID: ${auditId} with options:`, options);
+      
       if (!auditId) {
         console.error('No audit ID provided for plan generation');
         return false;
       }
       
-      // Toujours générer des interviews locales pour les tests
-      const localInterviews = generateLocalInterviews(auditId);
+      const maxHoursPerDay = options?.maxHoursPerDay || 8;
+      const selectedDays = options?.selectedDays || [];
+      const topicIds = options?.topicIds || [];
+      const themeDurations = options?.themeDurations || {};
+      
+      // If no days selected, can't generate a plan
+      if (selectedDays.length === 0) {
+        console.error('No days selected for the audit plan');
+        return false;
+      }
+      
+      // List of all interviews to create
+      const interviewsToCreate: Omit<AuditInterview, 'id'>[] = [];
+      
+      // Sort selected days chronologically
+      const sortedDays = [...selectedDays].sort((a, b) => 
+        new Date(a).getTime() - new Date(b).getTime()
+      );
+      
+      // Always start with an opening meeting on the first day
+      const firstDay = new Date(sortedDays[0]);
+      setHours(firstDay, 9);
+      setMinutes(firstDay, 0);
+      
+      interviewsToCreate.push({
+        auditId,
+        title: "Réunion d'ouverture",
+        description: "Présentation de l'audit et des objectifs",
+        startTime: firstDay.toISOString(),
+        durationMinutes: 60,
+        location: "Salle de réunion principale",
+        themeId: undefined, // Will be filled if available
+      });
+      
+      // Generate interviews for each topic/theme
+      let currentDay = 0;
+      let currentTime = new Date(sortedDays[currentDay]);
+      setHours(currentTime, 10); // Start after opening meeting
+      setMinutes(currentTime, 0);
+      
+      // Function to check if time is during lunch break (12:00-13:30)
+      const isDuringLunch = (time: Date): boolean => {
+        const hour = time.getHours();
+        const minute = time.getMinutes();
+        return (hour === 12) || (hour === 13 && minute < 30);
+      };
+      
+      // Function to get next available time slot
+      const getNextTimeSlot = (currentTime: Date, durationMinutes: number): Date => {
+        // Start with the current time
+        let nextTime = new Date(currentTime);
+        
+        // Add the interview duration
+        nextTime = addMinutes(nextTime, durationMinutes);
+        
+        // If we're now in the lunch break, move to after lunch
+        if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && isDuringLunch(nextTime))) {
+          nextTime = new Date(nextTime);
+          setHours(nextTime, 13);
+          setMinutes(nextTime, 30);
+        }
+        
+        // If we've gone past the end of the day (5 PM), move to the next day
+        if (nextTime.getHours() >= 17) {
+          currentDay++;
+          
+          // If we've used all selected days, we can't schedule more
+          if (currentDay >= sortedDays.length) {
+            console.log("Warning: Not enough days to schedule all interviews");
+            // Return null or throw an error, but for now we'll just cycle back to keep the code working
+            currentDay = 0;
+          }
+          
+          // Set time to 9 AM on the next day
+          nextTime = new Date(sortedDays[currentDay]);
+          setHours(nextTime, 9);
+          setMinutes(nextTime, 0);
+        }
+        
+        return nextTime;
+      };
+      
+      // Schedule each thematic interview
+      for (const topicId of topicIds) {
+        // Default duration if not specified
+        const duration = themeDurations[topicId] || 60;
+        
+        // If the current time would lead to an interview going into lunch, skip to after lunch
+        if (isDuringLunch(currentTime) || 
+            isDuringLunch(addMinutes(currentTime, duration))) {
+          setHours(currentTime, 13);
+          setMinutes(currentTime, 30);
+        }
+        
+        // Create the interview
+        interviewsToCreate.push({
+          auditId,
+          topicId,
+          themeId: topicId, // Assuming topic IDs match theme IDs for now
+          title: `Interview: ${topicId}`, // Will be replaced with actual theme name later
+          description: `Entretien sur la thématique`,
+          startTime: currentTime.toISOString(),
+          durationMinutes: duration,
+          location: "À déterminer",
+        });
+        
+        // Move to the next time slot
+        currentTime = getNextTimeSlot(currentTime, duration);
+      }
+      
+      // Add closing meeting on the last day
+      const lastDay = new Date(sortedDays[sortedDays.length - 1]);
+      setHours(lastDay, 16);
+      setMinutes(lastDay, 0);
+      
+      interviewsToCreate.push({
+        auditId,
+        title: "Réunion de clôture",
+        description: "Présentation des conclusions préliminaires",
+        startTime: lastDay.toISOString(),
+        durationMinutes: 60,
+        location: "Salle de réunion principale",
+        themeId: undefined, // Will be filled if available
+      });
       
       // Tenter d'enregistrer en base de données si possible (UUID valide)
       if (isValidUUID(auditId)) {
@@ -346,22 +479,25 @@ export const useAuditInterviews = () => {
           } else {
             console.log('Retrieved audit data:', auditData);
             
-            // Create db records for each local interview
-            const interviewsToCreate = localInterviews.map(interview => ({
+            // Create db records for each interview
+            const dbInterviewsToCreate = interviewsToCreate.map(interview => ({
               audit_id: auditId,
+              topic_id: interview.topicId,
               theme_id: interview.themeId,
               title: interview.title,
               description: interview.description,
               start_time: interview.startTime,
               duration_minutes: interview.durationMinutes,
-              location: interview.location
+              location: interview.location,
+              meeting_link: interview.meetingLink,
+              control_refs: interview.controlRefs
             }));
             
             // Insérer les interviews générées
-            if (interviewsToCreate.length > 0) {
+            if (dbInterviewsToCreate.length > 0) {
               const { error: insertError } = await supabase
                 .from('audit_interviews')
-                .insert(interviewsToCreate);
+                .insert(dbInterviewsToCreate);
               
               if (insertError) {
                 console.error('Error creating audit interviews in DB:', insertError);
@@ -376,7 +512,7 @@ export const useAuditInterviews = () => {
       }
       
       // Mettre à jour l'état local avec les interviews générées
-      setInterviews(localInterviews);
+      setInterviews(interviewsToCreate as AuditInterview[]);
       return true;
     } catch (error) {
       console.error('Error generating audit plan:', error);
