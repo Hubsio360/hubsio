@@ -110,11 +110,13 @@ export const generatePlanSchedule = async (
         setMinutes(currentTime, 30);
       }
       
+      // Use a simple title with no reference to theme_id or topic_id as UUID
       dbInterviewsToCreate.push({
         audit_id: auditId,
-        topic_id: topicId,
-        theme_id: topicId,
-        title: `Interview: ${topicId}`,
+        // Don't use these IDs if they're not valid UUIDs
+        // topic_id: isValidUUID(topicId) ? topicId : null,
+        // theme_id: isValidUUID(topicId) ? topicId : null,
+        title: `Interview: Thématique ${topicId.replace('theme-', '')}`,
         description: `Entretien sur la thématique`,
         start_time: currentTime.toISOString(),
         duration_minutes: duration,

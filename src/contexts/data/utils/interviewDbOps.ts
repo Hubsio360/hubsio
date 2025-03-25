@@ -307,26 +307,29 @@ export const createInterviewsInDB = async (interviews: Array<{
       return false;
     }
     
-    // Define the expected type for the insert operation
-    type AuditInterviewInsert = {
-      audit_id: string;
-      topic_id?: string;
-      theme_id?: string;
-      title: string;
-      description?: string;
-      start_time: string;
-      duration_minutes: number;
-      location?: string;
-      meeting_link?: string;
-      control_refs?: string;
-    }
-    
-    // Make sure our validated interviews conform to the expected type
-    const typedInterviews: AuditInterviewInsert[] = validInterviews;
+    // Further validation and UUID check for theme_id and topic_id
+    const finalInterviews = validInterviews.map(interview => {
+      // Create a copy to avoid mutating the original
+      const interviewCopy = { ...interview };
+      
+      // Check if theme_id is a valid UUID, if not, set to null
+      if (interviewCopy.theme_id && !isValidUUID(interviewCopy.theme_id)) {
+        console.log(`Invalid UUID format for theme_id: ${interviewCopy.theme_id}, setting to null`);
+        interviewCopy.theme_id = null;
+      }
+      
+      // Check if topic_id is a valid UUID, if not, set to null
+      if (interviewCopy.topic_id && !isValidUUID(interviewCopy.topic_id)) {
+        console.log(`Invalid UUID format for topic_id: ${interviewCopy.topic_id}, setting to null`);
+        interviewCopy.topic_id = null;
+      }
+      
+      return interviewCopy;
+    });
     
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(typedInterviews)
+      .insert(finalInterviews)
       .select();
       
     if (error) {
