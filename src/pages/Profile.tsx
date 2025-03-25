@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useData } from "@/contexts/data";
@@ -22,8 +21,7 @@ import { Badge } from "@/components/ui/badge";
 
 const Profile = () => {
   const { user, isLoading } = useAuth();
-  const { useAudits } = useData();
-  const { data: audits, isLoading: isLoadingAudits } = useAudits();
+  const { audits, loading } = useData();
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [formData, setFormData] = useState({
@@ -306,7 +304,7 @@ const Profile = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoadingAudits ? (
+              {loading.audits ? (
                 <div className="flex justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
