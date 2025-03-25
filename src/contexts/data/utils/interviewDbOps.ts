@@ -1,4 +1,3 @@
-
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -54,9 +53,11 @@ export const addInterviewToDB = async (interview: Omit<AuditInterview, 'id'>): P
   }
   
   try {
+    const formattedInterview = formatInterviewForDB(interview.auditId, interview);
+    
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert([formatInterviewForDB(interview.auditId, interview)])
+      .insert(formattedInterview)
       .select();
     
     if (error) {
@@ -306,10 +307,26 @@ export const createInterviewsInDB = async (interviews: Array<{
       return false;
     }
     
-    // Using type assertion to ensure TypeScript understands this is valid
+    // Define the expected type for the insert operation
+    type AuditInterviewInsert = {
+      audit_id: string;
+      topic_id?: string;
+      theme_id?: string;
+      title: string;
+      description?: string;
+      start_time: string;
+      duration_minutes: number;
+      location?: string;
+      meeting_link?: string;
+      control_refs?: string;
+    }
+    
+    // Make sure our validated interviews conform to the expected type
+    const typedInterviews: AuditInterviewInsert[] = validInterviews;
+    
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(validInterviews as any[])
+      .insert(typedInterviews)
       .select();
       
     if (error) {
