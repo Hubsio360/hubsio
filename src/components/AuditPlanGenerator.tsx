@@ -4,17 +4,14 @@ import { Button } from '@/components/ui/button';
 import { useData } from '@/contexts/DataContext';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import TopicsList from '@/components/audit-plan/TopicsList';
-import { Separator } from '@/components/ui/separator';
 import { AlertCircle, CheckIcon, Clock, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AuditTheme } from '@/types';
 import ThemeDurationSelector from '@/components/audit-plan/ThemeDurationSelector';
 import AuditDaysSelector from '@/components/audit-plan/AuditDaysSelector';
 import PlanSummary from '@/components/audit-plan/PlanSummary';
+import TopicsList from '@/components/audit-plan/TopicsList';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
