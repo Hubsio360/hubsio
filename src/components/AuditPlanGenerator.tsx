@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import PlanOptions from './audit-plan/PlanOptions';
 import PlanActions from './audit-plan/PlanActions';
 import { useAuditPlanGenerator } from '@/hooks/useAuditPlanGenerator';
+import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
@@ -37,7 +39,8 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     systemThemeNames,
     handleThemeDurationChange,
     generatePlan,
-    availableHoursPerDay
+    availableHoursPerDay,
+    previewInterviews
   } = useAuditPlanGenerator({
     auditId,
     startDate,
@@ -73,7 +76,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
               onSelectedDaysChange={setSelectedDays}
             />
             
-            <div>
+            <div className="md:col-span-1">
               <PlanActions 
                 generating={generating}
                 selectedTopicIds={selectedTopicIds.filter(id => {
@@ -89,6 +92,41 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                 hasOpeningClosing={hasOpeningClosing}
                 onGeneratePlan={generatePlan}
               />
+              
+              {selectedDays.length > 0 && selectedTopicIds.length > 0 && (
+                <Card className="mt-6">
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-medium mb-4">Aperçu du planning</h3>
+                    {previewInterviews.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        {previewInterviews.map((interview, index) => (
+                          <div key={index} className="p-3 border rounded-md">
+                            <div className="font-medium">{interview.title}</div>
+                            <div className="text-sm text-muted-foreground flex justify-between mt-1">
+                              <span>
+                                {format(new Date(interview.startTime), 'dd/MM/yyyy HH:mm')}
+                              </span>
+                              <span>{interview.durationMinutes} min</span>
+                            </div>
+                            {interview.themeId && (
+                              <div className="text-xs bg-primary/10 text-primary rounded px-2 py-1 mt-2 inline-block">
+                                {themes.find(t => t.id === interview.themeId)?.name || interview.themeId}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="pt-6 text-center py-8">
+                        <p className="text-muted-foreground mb-2">
+                          Sélectionnez des thématiques et des jours pour voir un aperçu du planning
+                        </p>
+                        <Calendar className="h-12 w-12 mx-auto text-muted-foreground/50 mt-4" />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </TabsContent>

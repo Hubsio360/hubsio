@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
-import { AuditTheme } from '@/types';
-import { parseISO } from 'date-fns';
+import { AuditTheme, AuditInterview } from '@/types';
+import { parseISO, setHours, setMinutes, addMinutes, addDays, format } from 'date-fns';
 
 interface UseAuditPlanGeneratorProps {
   auditId: string;
@@ -36,6 +35,8 @@ export const useAuditPlanGenerator = ({
   const [existingThemes, setExistingThemes] = useState<number>(0);
   const [initialLoad, setInitialLoad] = useState(false);
   const [maxHoursPerDay] = useState(8); // 8 hours per day maximum
+
+  const [previewInterviews, setPreviewInterviews] = useState<Partial<AuditInterview>[]>([]);
 
   // Les thèmes systèmes pour les réunions d'ouverture et de clôture
   const SYSTEM_THEME_NAMES = ['ADMIN', 'Cloture'];
@@ -154,6 +155,144 @@ export const useAuditPlanGenerator = ({
     };
   }, [selectedTopicIds, themeDurations, themes, hasOpeningClosing, maxHoursPerDay, SYSTEM_THEME_NAMES]);
 
+  // Generate preview interviews whenever selected days or topics change
+  useEffect(() => {
+    if (selectedDays.length === 0 || selectedTopicIds.length === 0) {
+      setPreviewInterviews([]);
+      return;
+    }
+
+    try {
+      // Sort selected days chronologically
+      const sortedDays = [...selectedDays].sort((a, b) => 
+        new Date(a).getTime() - new Date(b).getTime()
+      );
+      
+      const interviewsToPreview: Partial<AuditInterview>[] = [];
+
+      // Function to check if time is during lunch break (12:00-13:30)
+      const isDuringLunch = (time: Date): boolean => {
+        const hour = time.getHours();
+        const minute = time.getMinutes();
+        return (hour === 12) || (hour === 13 && minute < 30);
+      };
+      
+      // Always start with an opening meeting on the first day
+      if (hasOpeningClosing && sortedDays.length > 0) {
+        const firstDay = new Date(sortedDays[0]);
+        setHours(firstDay, 9);
+        setMinutes(firstDay, 0);
+        
+        interviewsToPreview.push({
+          title: "Réunion d'ouverture",
+          description: "Présentation de l'audit et des objectifs",
+          startTime: firstDay.toISOString(),
+          durationMinutes: 60,
+          location: "Salle de réunion principale",
+        });
+      }
+      
+      // Function to get next available time slot
+      const getNextTimeSlot = (currentTime: Date, durationMinutes: number): Date => {
+        // Start with the current time
+        let nextTime = new Date(currentTime);
+        
+        // Add the interview duration
+        nextTime = addMinutes(nextTime, durationMinutes);
+        
+        // If we're now in the lunch break, move to after lunch
+        if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && isDuringLunch(nextTime))) {
+          nextTime = new Date(nextTime);
+          setHours(nextTime, 13);
+          setMinutes(nextTime, 30);
+        }
+        
+        // If we've gone past the end of the day (5 PM), move to the next day
+        if (nextTime.getHours() >= 17) {
+          currentDayIndex++;
+          
+          // If we've used all selected days, we can't schedule more
+          if (currentDayIndex >= sortedDays.length) {
+            console.log("Preview: Not enough days to schedule all interviews");
+            // Reset to first day if we run out of days (for preview purposes)
+            currentDayIndex = 0;
+          }
+          
+          // Set time to 9 AM on the next day
+          nextTime = new Date(sortedDays[currentDayIndex]);
+          setHours(nextTime, 9);
+          setMinutes(nextTime, 0);
+        }
+        
+        return nextTime;
+      };
+
+      // Generate interviews for each topic/theme
+      let currentDayIndex = 0;
+      let currentTime = new Date(sortedDays[currentDayIndex]);
+      
+      // If we have an opening meeting, start after it
+      if (hasOpeningClosing) {
+        setHours(currentTime, 10);
+        setMinutes(currentTime, 0);
+      } else {
+        setHours(currentTime, 9);
+        setMinutes(currentTime, 0);
+      }
+      
+      // Schedule each thematic interview
+      for (const topicId of selectedTopicIds) {
+        const theme = themes.find(t => t.id === topicId);
+        if (!theme || SYSTEM_THEME_NAMES.includes(theme.name)) continue;
+        
+        // Default duration if not specified
+        const duration = themeDurations[topicId] || 60;
+        
+        // If the current time would lead to an interview going into lunch, skip to after lunch
+        if (isDuringLunch(currentTime) || 
+            isDuringLunch(addMinutes(currentTime, duration))) {
+          const lunchTime = new Date(currentTime);
+          setHours(lunchTime, 13);
+          setMinutes(lunchTime, 30);
+          currentTime = lunchTime;
+        }
+        
+        // Create the interview
+        interviewsToPreview.push({
+          themeId: topicId,
+          title: `Interview: ${theme.name}`,
+          description: `Entretien sur la thématique: ${theme.name}`,
+          startTime: currentTime.toISOString(),
+          durationMinutes: duration,
+          location: "À déterminer",
+        });
+        
+        // Move to the next time slot
+        currentTime = getNextTimeSlot(currentTime, duration);
+      }
+      
+      // Add closing meeting on the last day if applicable
+      if (hasOpeningClosing && sortedDays.length > 0) {
+        const lastDay = new Date(sortedDays[sortedDays.length - 1]);
+        setHours(lastDay, 16);
+        setMinutes(lastDay, 0);
+        
+        interviewsToPreview.push({
+          title: "Réunion de clôture",
+          description: "Présentation des conclusions préliminaires",
+          startTime: lastDay.toISOString(),
+          durationMinutes: 60,
+          location: "Salle de réunion principale",
+        });
+      }
+      
+      setPreviewInterviews(interviewsToPreview);
+    } catch (error) {
+      console.error("Error generating preview interviews:", error);
+      setPreviewInterviews([]);
+    }
+  }, [selectedDays, selectedTopicIds, themeDurations, hasOpeningClosing, themes, SYSTEM_THEME_NAMES]);
+
   // Handle duration change for a specific theme
   const handleThemeDurationChange = (themeId: string, duration: number) => {
     setThemeDurations(prev => ({
@@ -251,6 +390,7 @@ export const useAuditPlanGenerator = ({
     systemThemeNames: SYSTEM_THEME_NAMES,
     handleThemeDurationChange,
     generatePlan,
-    availableHoursPerDay
+    availableHoursPerDay,
+    previewInterviews
   };
 };

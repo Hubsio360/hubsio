@@ -7,7 +7,6 @@ export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Nouvelle fonction pour récupérer uniquement les interviews réelles de la base de données
   const fetchRealInterviewsFromDB = async (auditId: string): Promise<AuditInterview[]> => {
     if (!auditId || !isValidUUID(auditId)) {
       console.log('Invalid audit ID provided for fetchRealInterviewsFromDB');
@@ -52,7 +51,6 @@ export const useAuditInterviews = () => {
     try {
       console.log('Fetching interviews for audit:', auditId); // Debug log
       
-      // Pour le développement ou si les appels à l'API échouent, utiliser des données locales
       if (!auditId || auditId.length === 0) {
         console.log('Invalid audit ID provided, returning empty array');
         setInterviews([]);
@@ -60,16 +58,13 @@ export const useAuditInterviews = () => {
       }
       
       try {
-        // Try to fetch from the database first
         if (isValidUUID(auditId)) {
-          // Using our custom typed function
           const { data, error } = await selectAuditInterviews()
             .eq('audit_id', auditId)
             .order('start_time');
           
           if (error) {
             console.error('Error fetching audit interviews from DB:', error);
-            // Fall back to local data if DB query fails
             const localInterviews = generateLocalInterviews(auditId);
             setInterviews(localInterviews);
             return localInterviews;
@@ -98,8 +93,6 @@ export const useAuditInterviews = () => {
           }
         }
         
-        // If we're here, either the UUID is invalid or no data was returned
-        // Generate mock data for this specific audit
         const localInterviews = generateLocalInterviews(auditId);
         console.log('Generating local interviews for audit:', auditId, localInterviews);
         setInterviews(localInterviews);
@@ -107,7 +100,6 @@ export const useAuditInterviews = () => {
         
       } catch (fetchError) {
         console.error('Error in fetch operation:', fetchError);
-        // Generate mock data as fallback
         const localInterviews = generateLocalInterviews(auditId);
         setInterviews(localInterviews);
         return localInterviews;
@@ -145,7 +137,6 @@ export const useAuditInterviews = () => {
         return null;
       }
       
-      // Get the first row from the inserted data
       const insertedRecord = data[0] as AuditInterviewRow;
       
       const newInterview: AuditInterview = {
@@ -204,7 +195,6 @@ export const useAuditInterviews = () => {
         return null;
       }
       
-      // Get the first row from the updated data
       const updatedRecord = data[0] as AuditInterviewRow;
       
       const updatedInterview: AuditInterview = {
@@ -343,21 +333,17 @@ export const useAuditInterviews = () => {
       const topicIds = options?.topicIds || [];
       const themeDurations = options?.themeDurations || {};
       
-      // If no days selected, can't generate a plan
       if (selectedDays.length === 0) {
         console.error('No days selected for the audit plan');
         return false;
       }
       
-      // List of all interviews to create
       const interviewsToCreate: Omit<AuditInterview, 'id'>[] = [];
       
-      // Sort selected days chronologically
       const sortedDays = [...selectedDays].sort((a, b) => 
         new Date(a).getTime() - new Date(b).getTime()
       );
       
-      // Always start with an opening meeting on the first day
       const firstDay = new Date(sortedDays[0]);
       setHours(firstDay, 9);
       setMinutes(firstDay, 0);
@@ -369,49 +355,38 @@ export const useAuditInterviews = () => {
         startTime: firstDay.toISOString(),
         durationMinutes: 60,
         location: "Salle de réunion principale",
-        themeId: undefined, // Will be filled if available
+        themeId: undefined,
       });
       
-      // Generate interviews for each topic/theme
       let currentDay = 0;
       let currentTime = new Date(sortedDays[currentDay]);
-      setHours(currentTime, 10); // Start after opening meeting
+      setHours(currentTime, 10);
       setMinutes(currentTime, 0);
       
-      // Function to check if time is during lunch break (12:00-13:30)
       const isDuringLunch = (time: Date): boolean => {
         const hour = time.getHours();
         const minute = time.getMinutes();
         return (hour === 12) || (hour === 13 && minute < 30);
       };
       
-      // Function to get next available time slot
       const getNextTimeSlot = (currentTime: Date, durationMinutes: number): Date => {
-        // Start with the current time
         let nextTime = new Date(currentTime);
-        
-        // Add the interview duration
         nextTime = addMinutes(nextTime, durationMinutes);
         
-        // If we're now in the lunch break, move to after lunch
         if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && isDuringLunch(nextTime))) {
           nextTime = new Date(nextTime);
           setHours(nextTime, 13);
           setMinutes(nextTime, 30);
         }
         
-        // If we've gone past the end of the day (5 PM), move to the next day
         if (nextTime.getHours() >= 17) {
           currentDay++;
           
-          // If we've used all selected days, we can't schedule more
           if (currentDay >= sortedDays.length) {
             console.log("Warning: Not enough days to schedule all interviews");
-            // Return null or throw an error, but for now we'll just cycle back to keep the code working
             currentDay = 0;
           }
           
-          // Set time to 9 AM on the next day
           nextTime = new Date(sortedDays[currentDay]);
           setHours(nextTime, 9);
           setMinutes(nextTime, 0);
@@ -420,35 +395,29 @@ export const useAuditInterviews = () => {
         return nextTime;
       };
       
-      // Schedule each thematic interview
       for (const topicId of topicIds) {
-        // Default duration if not specified
         const duration = themeDurations[topicId] || 60;
         
-        // If the current time would lead to an interview going into lunch, skip to after lunch
         if (isDuringLunch(currentTime) || 
             isDuringLunch(addMinutes(currentTime, duration))) {
           setHours(currentTime, 13);
           setMinutes(currentTime, 30);
         }
         
-        // Create the interview
         interviewsToCreate.push({
           auditId,
           topicId,
-          themeId: topicId, // Assuming topic IDs match theme IDs for now
-          title: `Interview: ${topicId}`, // Will be replaced with actual theme name later
+          themeId: topicId,
+          title: `Interview: ${topicId}`,
           description: `Entretien sur la thématique`,
           startTime: currentTime.toISOString(),
           durationMinutes: duration,
           location: "À déterminer",
         });
         
-        // Move to the next time slot
         currentTime = getNextTimeSlot(currentTime, duration);
       }
       
-      // Add closing meeting on the last day
       const lastDay = new Date(sortedDays[sortedDays.length - 1]);
       setHours(lastDay, 16);
       setMinutes(lastDay, 0);
@@ -460,58 +429,60 @@ export const useAuditInterviews = () => {
         startTime: lastDay.toISOString(),
         durationMinutes: 60,
         location: "Salle de réunion principale",
-        themeId: undefined, // Will be filled if available
+        themeId: undefined,
       });
       
-      // Tenter d'enregistrer en base de données si possible (UUID valide)
       if (isValidUUID(auditId)) {
         try {
-          // Le code suivant s'exécute uniquement si auditId est un UUID valide
-          // Récupérer les informations de l'audit
-          const { data: auditData, error: auditError } = await supabase
-            .from('audits')
-            .select('framework_id')
-            .eq('id', auditId)
-            .single();
+          console.log("About to delete existing interviews for audit:", auditId);
           
-          if (auditError) {
-            console.error('Error getting audit data, proceeding with local data:', auditError);
+          const { error: deleteError } = await supabase
+            .from('audit_interviews')
+            .delete()
+            .eq('audit_id', auditId);
+          
+          if (deleteError) {
+            console.error("Error deleting existing interviews:", deleteError);
           } else {
-            console.log('Retrieved audit data:', auditData);
+            console.log("Successfully deleted existing interviews");
+          }
+
+          const dbInterviewsToCreate = interviewsToCreate.map(interview => ({
+            audit_id: auditId,
+            topic_id: interview.topicId,
+            theme_id: interview.themeId,
+            title: interview.title,
+            description: interview.description,
+            start_time: interview.startTime,
+            duration_minutes: interview.durationMinutes,
+            location: interview.location,
+            meeting_link: interview.meetingLink,
+            control_refs: interview.controlRefs
+          }));
+          
+          if (dbInterviewsToCreate.length > 0) {
+            console.log("Inserting interviews into DB:", dbInterviewsToCreate);
             
-            // Create db records for each interview
-            const dbInterviewsToCreate = interviewsToCreate.map(interview => ({
-              audit_id: auditId,
-              topic_id: interview.topicId,
-              theme_id: interview.themeId,
-              title: interview.title,
-              description: interview.description,
-              start_time: interview.startTime,
-              duration_minutes: interview.durationMinutes,
-              location: interview.location,
-              meeting_link: interview.meetingLink,
-              control_refs: interview.controlRefs
-            }));
-            
-            // Insérer les interviews générées
-            if (dbInterviewsToCreate.length > 0) {
-              const { error: insertError } = await supabase
-                .from('audit_interviews')
-                .insert(dbInterviewsToCreate);
+            const { data, error: insertError } = await supabase
+              .from('audit_interviews')
+              .insert(dbInterviewsToCreate)
+              .select();
               
-              if (insertError) {
-                console.error('Error creating audit interviews in DB:', insertError);
-              } else {
-                console.log('Successfully inserted interviews into DB');
-              }
+            if (insertError) {
+              console.error('Error creating audit interviews in DB:', insertError);
+            } else {
+              console.log('Successfully inserted interviews into DB:', data);
             }
           }
         } catch (dbError) {
-          console.error('Database operation error, using local data instead:', dbError);
+          console.error('Database operation error:', dbError);
+          return false;
         }
+      } else {
+        console.warn("Invalid UUID format for auditId:", auditId);
+        return false;
       }
       
-      // Mettre à jour l'état local avec les interviews générées
       setInterviews(interviewsToCreate as AuditInterview[]);
       return true;
     } catch (error) {
@@ -525,7 +496,6 @@ export const useAuditInterviews = () => {
     const start = new Date();
     const localInterviews = [];
     
-    // Créer quelques interviews factices pour la génération locale
     const testThemes = [
       { id: 'theme-1', name: 'ADMIN' },
       { id: 'theme-2', name: 'Exploitation & réseaux' },
@@ -538,11 +508,9 @@ export const useAuditInterviews = () => {
       const interviewDate = new Date(start);
       interviewDate.setDate(start.getDate() + Math.floor(i / 2));
       
-      // Distribuer les interviews dans la journée (9h-17h)
-      const hourOffset = (i % 2) * 3; // 3 heures par interview
+      const hourOffset = (i % 2) * 3;
       interviewDate.setHours(9 + hourOffset, 0, 0, 0);
       
-      // Create a unique ID for this mock interview based on the auditId
       const uniqueId = `interview-${auditId.substring(0, 8)}-${i}`;
       
       const interview: AuditInterview = {
