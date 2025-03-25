@@ -4,6 +4,7 @@ import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { useAuth as useAuthHook } from '@/contexts/data/hooks/useAuth';
 
 interface AuthContextProps {
   user: User | null;
@@ -29,6 +30,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const { logout: logoutHook } = useAuthHook();
 
   useEffect(() => {
     // Check active session
@@ -145,13 +147,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
       
-      if (error) {
-        throw error;
-      }
+      // Use the optimized logout function from the hook
+      await logoutHook();
       
-      // Assurez-vous que l'utilisateur est mis à null immédiatement pour forcer le rafraîchissement de l'interface
+      // Make sure to set user to null for UI updates
       setUser(null);
       
       toast({

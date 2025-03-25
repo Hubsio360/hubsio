@@ -39,8 +39,26 @@ export const useAuth = () => {
     }
   }, []);
 
+  // Adding a logout function that properly handles the session
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error.message);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     getUsers,
+    logout, // Export the logout function
   };
 };
