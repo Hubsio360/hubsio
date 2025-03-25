@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -30,12 +31,24 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [selectedInterview, setSelectedInterview] = useState<AuditInterview | null>(null);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
+  const [loadAttempted, setLoadAttempted] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
+      if (!auditId) {
+        console.log('No audit ID provided, skipping data load');
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
-        await fetchTopics();
+        try {
+          await fetchTopics();
+        } catch (topicError) {
+          console.error('Error loading topics, continuing with interviews:', topicError);
+        }
+        
         const interviewsData = await fetchInterviewsByAuditId(auditId);
         console.log('Loaded interviews:', interviewsData);
         setInterviews(interviewsData);
@@ -58,6 +71,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         });
       } finally {
         setLoading(false);
+        setLoadAttempted(true);
       }
     };
     
@@ -67,6 +81,11 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   }, [auditId, fetchInterviewsByAuditId, fetchTopics, toast]);
 
   const refreshInterviews = async () => {
+    if (!auditId) {
+      console.log('No audit ID provided, skipping refresh');
+      return;
+    }
+    
     try {
       console.log('Refreshing interviews for audit:', auditId);
       const interviewsData = await fetchInterviewsByAuditId(auditId);
