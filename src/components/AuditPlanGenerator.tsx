@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Calendar, CalendarRange } from '@/components/ui/calendar';
+import { Calendar } from '@/components/ui/calendar';
 import { addDays, format, isBefore, differenceInDays, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,8 +32,8 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   onPlanGenerated
 }) => {
   const { 
-    getTopics, 
-    getTopicsByIds,
+    fetchTopics,
+    fetchThemes,
     fetchInterviewsByAuditId,
     generateAuditPlan,
     getAuditById
@@ -116,7 +116,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     setGenerating(true);
 
     try {
-      // Generate the audit plan
+      // Generate the audit plan with correct arguments
       await generateAuditPlan(auditId, startDate, endDate, {
         topicIds: selectedTopicIds,
         selectedDays: selectedDays,
@@ -175,8 +175,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                 <CardContent>
                   <TopicsList 
                     auditId={auditId} 
-                    selectedTopicIds={selectedTopicIds} 
-                    onTopicSelectionChange={setSelectedTopicIds} 
+                    onSelectionChange={setSelectedTopicIds} 
                   />
                 </CardContent>
               </Card>
@@ -189,12 +188,45 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pb-2">
-                  <DateSelector 
-                    startDate={startDate} 
-                    endDate={endDate} 
-                    selectedDays={selectedDays}
-                    onSelectedDaysChange={setSelectedDays}
-                  />
+                  <div className="space-y-4">
+                    {/* Render selected days */}
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDays.map(day => (
+                        <div 
+                          key={day}
+                          className="flex items-center bg-muted/60 rounded px-3 py-1 text-sm"
+                        >
+                          <span>{format(new Date(day), 'EEEE dd MMMM', { locale: fr })}</span>
+                          <button
+                            className="ml-2 text-muted-foreground hover:text-destructive"
+                            onClick={() => setSelectedDays(prev => prev.filter(d => d !== day))}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Calendar for selecting days */}
+                    <div className="border rounded-md p-3">
+                      <Calendar
+                        mode="multiple"
+                        selected={selectedDays.map(day => new Date(day))}
+                        onSelect={(days) => {
+                          if (!days) return;
+                          setSelectedDays(days.map(day => day.toISOString()));
+                        }}
+                        className="mx-auto pointer-events-auto"
+                        locale={fr}
+                        disabled={(date) => {
+                          // Disable days outside audit range
+                          const auditStart = new Date(startDate);
+                          const auditEnd = new Date(endDate);
+                          return date < auditStart || date > auditEnd;
+                        }}
+                      />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
               
@@ -248,10 +280,9 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
                 </CardHeader>
                 <CardContent>
                   <AuditStatsSummary 
-                    interviews={interviews}
-                    themes={themes}
-                    existingInterviews={existingInterviews}
-                    existingThemes={existingThemes}
+                    businessDays={selectedDays.length}
+                    topicsCount={themes}
+                    interviewsCount={interviews}
                   />
                 </CardContent>
                 <CardFooter>

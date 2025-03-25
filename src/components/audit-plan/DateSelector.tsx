@@ -49,6 +49,7 @@ const DateSelector: React.FC<DateSelectorProps> = ({
             initialFocus
             locale={fr}
             disabled={minDate ? (date) => date < minDate : undefined}
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

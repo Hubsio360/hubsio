@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -174,7 +175,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   };
 
-  const handleRefreshClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleRefreshClick = () => {
     refreshInterviews();
   };
 

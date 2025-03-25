@@ -7,12 +7,11 @@ import { AuditTheme, AuditTopic } from '@/types';
 import { useData } from '@/contexts/DataContext';
 
 interface TopicsListProps {
-  topics: AuditTopic[];
-  onSelectionChange?: (selectedThemes: string[]) => void;
   auditId?: string;
+  onSelectionChange?: (selectedThemes: string[]) => void;
 }
 
-const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange, auditId }) => {
+const TopicsList: React.FC<TopicsListProps> = ({ onSelectionChange, auditId }) => {
   const { themes, fetchThemes, fetchInterviewsByAuditId } = useData();
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
