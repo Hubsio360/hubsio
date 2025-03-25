@@ -110,7 +110,7 @@ export const generatePlanSchedule = async (
         setMinutes(currentTime, 30);
       }
       
-      // Create a simple interview without using topicId in the UUID format
+      // Create a simple interview
       dbInterviewsToCreate.push({
         audit_id: auditId,
         title: `Interview: Thématique ${topicId.replace(/theme-/g, '')}`,

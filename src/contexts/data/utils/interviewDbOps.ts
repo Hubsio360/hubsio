@@ -303,15 +303,18 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
       interview.title && 
       interview.start_time && 
       interview.duration_minutes
-    ) as InterviewInsert[];
+    );
     
     if (validInterviews.length === 0) {
       console.error('No valid interviews to insert, missing required fields');
       return false;
     }
     
+    // Cast to InterviewInsert[] after validation
+    const typedInterviews = validInterviews as InterviewInsert[];
+    
     // Further validation and UUID check for theme_id and topic_id
-    const finalInterviews = validInterviews.map(interview => {
+    const finalInterviews = typedInterviews.map(interview => {
       // Create a copy to avoid mutating the original
       const interviewCopy = { ...interview };
       
