@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -146,18 +145,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      setIsLoading(true);
+      toast({
+        title: "Déconnexion en cours",
+        description: "Veuillez patienter...",
+      });
       
-      // Use the optimized logout function from the hook
+      // Use the force logout function from the hook
       await logoutHook();
       
-      // Make sure to set user to null for UI updates
-      setUser(null);
-      
-      toast({
-        title: "Déconnexion réussie",
-        description: "À bientôt !",
-      });
+      // We don't need to set user to null manually anymore since we're forcing a page reload
+      // and the auth state will be properly cleared
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error);
       toast({
@@ -165,8 +162,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         title: "Erreur de déconnexion",
         description: error.message || "Une erreur est survenue lors de la déconnexion",
       });
-    } finally {
-      setIsLoading(false);
+      
+      // Force redirect to login anyway
+      window.location.href = '/login';
     }
   };
 

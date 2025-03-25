@@ -39,18 +39,38 @@ export const useAuth = () => {
     }
   }, []);
 
-  // Adding a logout function that properly handles the session
+  // Force logout function with aggressive session clearing
   const logout = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
+      
+      // First, try the standard signOut method
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error.message);
-        throw error;
+        console.error('Standard logout error:', error.message);
+        // Continue with the rest of the function even if this fails
       }
+      
+      // Clear any localStorage session data
+      localStorage.removeItem('supabase-auth');
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Clear any cookies related to auth
+      document.cookie.split(';').forEach(c => {
+        document.cookie = c
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+      
+      console.log('Completed forceful logout actions');
+      // Browser reload as last resort to clear all state
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
     } catch (error) {
-      console.error('Error during logout:', error);
-      throw error;
+      console.error('Error during aggressive logout:', error);
+      // Still redirect to login even if there's an error
+      window.location.href = '/login';
     } finally {
       setLoading(false);
     }
@@ -59,6 +79,6 @@ export const useAuth = () => {
   return {
     loading,
     getUsers,
-    logout, // Export the logout function
+    logout,
   };
 };
