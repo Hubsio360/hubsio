@@ -1,4 +1,3 @@
-
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -330,11 +329,11 @@ export const createInterviewsInDB = async (interviews: Array<Partial<InterviewIn
       return interviewCopy;
     });
     
-    // Ensure we're passing an array to the insert method
-    // Use explicit casting to the required type
+    // The type assertion here is safe because we've validated that each object has
+    // the required title, start_time, and duration_minutes fields
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(finalInterviews as InterviewInsert[])
+      .insert(finalInterviews)
       .select();
       
     if (error) {
