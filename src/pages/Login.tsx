@@ -11,7 +11,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,7 +19,7 @@ const Login = () => {
   const [role, setRole] = useState('auditor');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, signup } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -60,30 +59,12 @@ const Login = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name,
-            role: role,
-          },
-        },
-      });
-
-      if (error) {
-        throw error;
-      }
-
+      await signup(email, password, { name, role });
       toast({
         title: "Inscription réussie",
         description: "Vous pouvez maintenant vous connecter",
       });
-      
-      // Redirection automatique si aucune confirmation par email n'est requise
-      if (data.session) {
-        navigate('/');
-      }
+      // Si la connexion est automatique, nous naviguerons automatiquement
     } catch (error: any) {
       setError(error.message || 'Une erreur est survenue lors de l\'inscription');
     } finally {

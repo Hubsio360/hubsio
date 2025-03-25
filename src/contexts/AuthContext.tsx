@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ interface AuthContextProps {
   logout: () => Promise<void>;
   isAuthenticated: boolean;
   getUsers: () => Promise<User[]>;
+  signup: (email: string, password: string, userData: {name: string, role: string}) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -82,6 +84,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const signup = async (email: string, password: string, userData: {name: string, role: string}) => {
+    try {
+      setIsLoading(true);
+      
+      // S'assurer que le nom n'est pas vide
+      if (!userData.name) {
+        throw new Error("Le nom est requis");
+      }
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Inscription réussie",
+        description: "Vous pouvez maintenant vous connecter",
+      });
+      
+      // Redirection automatique si aucune confirmation par email n'est requise
+      if (data.session) {
+        setUser(mapSupabaseUser(data.user));
+      }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erreur d'inscription",
+        description: error.message || "Une erreur est survenue lors de l'inscription",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       await supabase.auth.signOut();
@@ -121,7 +168,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       login, 
       logout,
       isAuthenticated: !!user,
-      getUsers
+      getUsers,
+      signup
     }}>
       {children}
     </AuthContext.Provider>
