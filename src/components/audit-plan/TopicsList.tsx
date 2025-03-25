@@ -16,21 +16,27 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [availableThemes, setAvailableThemes] = useState<AuditTheme[]>([]);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
     const loadThemes = async () => {
+      if (loading || initialLoadComplete) return; // Éviter les appels multiples
+      
       setLoading(true);
       try {
         const themeData = await fetchThemes();
         setAvailableThemes(themeData);
         
         // Par défaut, toutes les thématiques sont sélectionnées
-        setSelectedThemes(themeData.map(theme => theme.id));
+        const themeIds = themeData.map(theme => theme.id);
+        setSelectedThemes(themeIds);
         
         // Notifier le parent du changement initial
         if (onSelectionChange) {
-          onSelectionChange(themeData.map(theme => theme.id));
+          onSelectionChange(themeIds);
         }
+        
+        setInitialLoadComplete(true);
       } catch (error) {
         console.error("Erreur lors du chargement des thématiques:", error);
       } finally {
@@ -39,7 +45,7 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
     };
 
     loadThemes();
-  }, [fetchThemes, onSelectionChange]);
+  }, [fetchThemes]); // Retiré onSelectionChange de la liste des dépendances
 
   const handleThemeToggle = (themeId: string) => {
     setSelectedThemes(prev => {
