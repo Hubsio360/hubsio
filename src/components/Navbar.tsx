@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -33,7 +32,6 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     await logout();
-    // Rediriger explicitement vers la page de connexion après déconnexion
     navigate('/login');
   };
 
@@ -43,7 +41,6 @@ const Navbar = () => {
     { path: '/reports', label: 'Rapports', icon: <BarChart3 className="w-4 h-4 mr-2" /> }
   ];
 
-  // Items conditionnels selon le rôle
   if (user?.role === 'admin') {
     navItems.push({ 
       path: '/users', 
@@ -60,14 +57,12 @@ const Navbar = () => {
   return (
     <nav className="glass sticky top-0 z-50 w-full py-3 px-4 md:px-6 animate-fade-in">
       <div className="container mx-auto flex justify-between items-center">
-        {/* Logo et nom */}
         <Link to="/" className="flex items-center gap-2">
           <div className="text-primary font-bold text-lg md:text-xl">
             SecuReporter
           </div>
         </Link>
 
-        {/* Menu principal - desktop */}
         <div className="hidden md:flex items-center space-x-1">
           {navItems.map((item) => (
             <Link
@@ -85,7 +80,6 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* Menu utilisateur */}
         <div className="flex items-center">
           {user && (
             <DropdownMenu>
@@ -116,7 +110,6 @@ const Navbar = () => {
             </DropdownMenu>
           )}
 
-          {/* Bouton menu mobile */}
           <Button
             variant="ghost"
             size="icon"
@@ -128,12 +121,10 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Overlay mobile menu */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setMobileMenuOpen(false)} />
       )}
 
-      {/* Menu mobile */}
       <div
         className={`fixed top-0 right-0 h-full w-3/4 max-w-xs bg-card z-50 shadow-lg transform transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'

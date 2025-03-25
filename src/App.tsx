@@ -13,6 +13,7 @@ import CompanyDetail from "@/pages/CompanyDetail";
 import NewAudit from "@/pages/NewAudit";
 import AuditDetail from "@/pages/AuditDetail";
 import Frameworks from "@/pages/frameworks";
+import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 
@@ -85,6 +86,12 @@ const AppRoutes = () => {
       <Route path="/frameworks" element={
         <ProtectedRoute>
           <Frameworks />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <Profile />
         </ProtectedRoute>
       } />
       
