@@ -291,7 +291,14 @@ export const createInterviewsInDB = async (interviews: Array<{
     
     // Ensure each interview has the required fields
     const validInterviews = interviews.filter(interview => 
-      interview.title && interview.start_time && interview.duration_minutes
+      interview && 
+      typeof interview === 'object' && 
+      'title' in interview && 
+      'start_time' in interview && 
+      'duration_minutes' in interview &&
+      interview.title && 
+      interview.start_time && 
+      interview.duration_minutes
     );
     
     if (validInterviews.length === 0) {
@@ -299,9 +306,10 @@ export const createInterviewsInDB = async (interviews: Array<{
       return false;
     }
     
+    // Using type assertion to ensure TypeScript understands this is valid
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(validInterviews)
+      .insert(validInterviews as any[])
       .select();
       
     if (error) {
