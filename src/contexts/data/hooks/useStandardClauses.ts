@@ -46,19 +46,23 @@ export const useStandardClauses = () => {
           title: clause.title,
           standard_id: clause.standardId
         }])
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error adding standard clause:', error);
         return null;
       }
       
+      if (!data || data.length === 0) {
+        console.error('No data returned from insert operation');
+        return null;
+      }
+      
       const newClause: StandardClause = {
-        id: data.id,
-        referenceCode: data.reference_code,
-        title: data.title,
-        standardId: data.standard_id
+        id: data[0].id,
+        referenceCode: data[0].reference_code,
+        title: data[0].title,
+        standardId: data[0].standard_id
       };
       
       setStandardClauses(prev => [...prev, newClause]);

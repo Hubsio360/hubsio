@@ -182,6 +182,30 @@ export type Database = {
           },
         ]
       }
+      audit_themes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_topics: {
         Row: {
           created_at: string
@@ -535,6 +559,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      standard_clauses: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          reference_code: string
+          standard_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_code: string
+          standard_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_code?: string
+          standard_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       topic_controls: {
         Row: {

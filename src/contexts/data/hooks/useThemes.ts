@@ -41,18 +41,22 @@ export const useThemes = () => {
       const { data, error } = await supabase
         .from('audit_themes')
         .insert([theme])
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error adding audit theme:', error);
         return null;
       }
       
+      if (!data || data.length === 0) {
+        console.error('No data returned from insert operation');
+        return null;
+      }
+      
       const newTheme: AuditTheme = {
-        id: data.id,
-        name: data.name,
-        description: data.description || ''
+        id: data[0].id,
+        name: data[0].name,
+        description: data[0].description || ''
       };
       
       setThemes(prev => [...prev, newTheme]);
@@ -69,18 +73,22 @@ export const useThemes = () => {
         .from('audit_themes')
         .update(updates)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
       
       if (error) {
         console.error('Error updating audit theme:', error);
         return null;
       }
       
+      if (!data || data.length === 0) {
+        console.error('No data returned from update operation');
+        return null;
+      }
+      
       const updatedTheme: AuditTheme = {
-        id: data.id,
-        name: data.name,
-        description: data.description || ''
+        id: data[0].id,
+        name: data[0].name,
+        description: data[0].description || ''
       };
       
       setThemes(prev =>
