@@ -276,7 +276,7 @@ export const deleteExistingInterviews = async (auditId: string): Promise<boolean
 /**
  * Create multiple interviews in the database
  */
-export const createInterviewsInDB = async (interviews: Array<{
+export interface InterviewInsert {
   audit_id: string;
   topic_id?: string;
   theme_id?: string;
@@ -287,7 +287,9 @@ export const createInterviewsInDB = async (interviews: Array<{
   location?: string;
   meeting_link?: string;
   control_refs?: string;
-}>): Promise<boolean> => {
+}
+
+export const createInterviewsInDB = async (interviews: Array<Partial<InterviewInsert>>): Promise<boolean> => {
   try {
     console.log(`Inserting ${interviews.length} interviews into database`);
     
@@ -329,9 +331,10 @@ export const createInterviewsInDB = async (interviews: Array<{
     });
     
     // Ensure we're passing an array to the insert method
+    // Use explicit casting to the required type
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(finalInterviews as any[])
+      .insert(finalInterviews as InterviewInsert[])
       .select();
       
     if (error) {

@@ -2,7 +2,7 @@
 import { setHours, setMinutes } from 'date-fns';
 import { isValidUUID } from './interviewUtils';
 import { isDuringLunch } from './interviewUtils';
-import { deleteExistingInterviews, createInterviewsInDB, fetchInterviewsFromDB } from './interviewDbOps';
+import { deleteExistingInterviews, createInterviewsInDB, fetchInterviewsFromDB, InterviewInsert } from './interviewDbOps';
 
 /**
  * Generate an audit plan with interviews
@@ -53,7 +53,7 @@ export const generatePlanSchedule = async (
     );
     
     // Create database-ready interview objects
-    const dbInterviewsToCreate: any[] = [];
+    const dbInterviewsToCreate: InterviewInsert[] = [];
     
     // First day - Opening meeting
     const firstDay = new Date(sortedDays[0]);
@@ -110,14 +110,12 @@ export const generatePlanSchedule = async (
         setMinutes(currentTime, 30);
       }
       
-      // Use a simple title with no reference to theme_id or topic_id as UUID
+      // Create a simple interview without using topicId in the UUID format
+      // This avoids the issue with non-UUID strings for theme_id and topic_id
       dbInterviewsToCreate.push({
         audit_id: auditId,
-        // Don't use these IDs if they're not valid UUIDs
-        // topic_id: isValidUUID(topicId) ? topicId : null,
-        // theme_id: isValidUUID(topicId) ? topicId : null,
-        title: `Interview: Thématique ${topicId.replace('theme-', '')}`,
-        description: `Entretien sur la thématique`,
+        title: `Interview: Thématique ${topicId.replace(/theme-/g, '')}`,
+        description: "Entretien sur la thématique",
         start_time: currentTime.toISOString(),
         duration_minutes: duration,
         location: "À déterminer"
