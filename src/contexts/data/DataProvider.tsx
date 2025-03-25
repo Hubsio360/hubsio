@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -31,8 +32,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     controls: controlsHook.loading,
     topics: auditTopicsHook.loading,
     interviews: auditInterviewsHook.loading,
-    themes: false,
-    standardClauses: false,
+    themes: themesHook.loading,
+    standardClauses: standardClausesHook.loading,
     audits: auditsHook.loading
   };
 
@@ -42,18 +43,37 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const handleImportStandardAuditPlan = async (auditId: string, planData: any[]): Promise<boolean> => {
-    const clauses = await standardClausesHook.fetchStandardClauses();
+    console.log(`DataProvider: Starting import of standard audit plan for audit ID: ${auditId}`);
     
-    return importStandardAuditPlan(
-      auditId, 
-      planData, 
-      themesHook.themes, 
-      clauses,
-      themesHook.addTheme, 
-      auditInterviewsHook.addInterview,
-      auditTopicsHook.addTopic,
-      auditTopicsHook.associateControlsWithTopic
-    );
+    if (!auditId) {
+      console.error('DataProvider: No audit ID provided for plan creation');
+      return false;
+    }
+    
+    try {
+      // Assurez-vous que les thèmes et les clauses standard sont chargés
+      const themes = await themesHook.fetchThemes();
+      const clauses = await standardClausesHook.fetchStandardClauses();
+      
+      console.log(`DataProvider: Loaded ${themes.length} themes and ${clauses.length} standard clauses`);
+      
+      const result = await importStandardAuditPlan(
+        auditId, 
+        planData, 
+        themes, 
+        clauses,
+        themesHook.addTheme, 
+        auditInterviewsHook.addInterview,
+        auditTopicsHook.addTopic,
+        auditTopicsHook.associateControlsWithTopic
+      );
+      
+      console.log(`DataProvider: Import result: ${result ? 'Success' : 'Failed'}`);
+      return result;
+    } catch (error) {
+      console.error('DataProvider: Error importing standard audit plan:', error);
+      return false;
+    }
   };
 
   return (

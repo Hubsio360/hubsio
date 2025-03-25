@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -36,6 +36,15 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [activeTab, setActiveTab] = useState('dates');
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
+
+  // Charge les thèmes au chargement du composant
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchTopics();
+    };
+    
+    loadInitialData();
+  }, [fetchTopics]);
 
   const handleGeneratePlan = async () => {
     if (!planStartDate || !planEndDate) {
@@ -90,6 +99,18 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   };
 
   const handleImportStandardPlan = async () => {
+    console.log(`Initiating plan import for audit ID: ${auditId}`);
+    
+    // Vérifier que l'audit ID est valide
+    if (!auditId) {
+      toast({
+        title: 'Erreur',
+        description: 'ID d\'audit invalide',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     // Charger ici le plan d'audit standard (qui serait normalement fourni par l'utilisateur ou chargé depuis un fichier)
     // Pour cet exemple, nous utilisons un plan d'audit standard formaté selon le JSON fourni
     const demoStandardPlan = [
@@ -118,6 +139,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     setImportSuccess(null);
     
     try {
+      console.log('Calling importStandardAuditPlan with auditId:', auditId);
       const success = await importStandardAuditPlan(auditId, demoStandardPlan);
       
       if (success) {
@@ -203,7 +225,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dates" className="space-y-4">
+          <TabsContent value="dates" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <DateSelector
                 id="start-date"
@@ -269,7 +291,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             <Button variant="outline" onClick={() => setActiveTab('dates')}>
               Retour aux dates
             </Button>
-            <Button onClick={handleImportStandardPlan} disabled={isImporting || selectedThemes.length === 0}>
+            <Button onClick={handleImportStandardPlan} disabled={isImporting}>
               {isImporting ? (
                 <>
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />

@@ -12,14 +12,23 @@ export const importStandardAuditPlan = async (
   associateControlsWithTopic?: (topicId: string, controlIds: string[]) => Promise<boolean>
 ): Promise<boolean> => {
   try {
-    const themeInterviews = planData.reduce((acc: Record<string, any[]>, item) => {
+    console.log(`Starting import of audit plan for audit ID: ${auditId}`);
+    
+    // Validation: Check if auditId is provided and valid
+    if (!auditId || auditId.trim() === '') {
+      console.error('No audit ID provided for plan creation');
+      return false;
+    }
+    
+    // Get theme data from planData or use empty array if none provided
+    const themeInterviews = planData.length > 0 ? planData.reduce((acc: Record<string, any[]>, item) => {
       const theme = item['Thème'] || 'Sans thème';
       if (!acc[theme]) {
         acc[theme] = [];
       }
       acc[theme].push(item);
       return acc;
-    }, {});
+    }, {}) : {};
 
     // Maintenir une map de thèmes pour éviter les doublons et gérer les IDs
     const themeMap = new Map<string, string>();
@@ -84,6 +93,7 @@ export const importStandardAuditPlan = async (
 
         // Créer les thèmes standard
         for (const themeData of standardThemes) {
+          console.log(`Creating standard theme: ${themeData.name}`);
           const newTheme = await addTheme(themeData);
           if (newTheme) {
             themeMap.set(themeData.name, newTheme.id);
@@ -102,11 +112,14 @@ export const importStandardAuditPlan = async (
       'Cloture': []
     };
 
+    console.log(`Processing ${Object.keys(themeInterviews).length} themes for audit ID: ${auditId}`);
+    
     // Traitement de chaque thème
     for (const [themeName, interviews] of Object.entries(themeInterviews) as [string, any[]][]) {
       let themeId = themeMap.get(themeName);
       
       if (!themeId) {
+        console.log(`Creating new theme: ${themeName}`);
         const newTheme = await addTheme({ name: themeName });
         if (newTheme) {
           themeId = newTheme.id;
@@ -120,6 +133,7 @@ export const importStandardAuditPlan = async (
       // Si les fonctions pour créer des topics sont fournies, créer automatiquement des topics pour ce thème
       if (addTopic && associateControlsWithTopic) {
         const topicName = `Topic - ${themeName}`;
+        console.log(`Creating topic: ${topicName}`);
         const topic = await addTopic({
           name: topicName,
           description: `Topic automatiquement créé pour le thème ${themeName}`
@@ -135,6 +149,7 @@ export const importStandardAuditPlan = async (
               .map(clause => clause.id);
             
             if (relevantClauseIds.length > 0) {
+              console.log(`Associating ${relevantClauseIds.length} controls with topic: ${topic.id}`);
               await associateControlsWithTopic(topic.id, relevantClauseIds);
             }
           }
@@ -147,6 +162,8 @@ export const importStandardAuditPlan = async (
         continue;
       }
 
+      console.log(`Creating ${interviews.length} interviews for theme: ${themeName}`);
+      
       // Création des interviews avec le themeId valide
       for (const interview of interviews) {
         const dateTimeParts = interview['Date-Heure'].split(' → ');
@@ -159,7 +176,7 @@ export const importStandardAuditPlan = async (
         }
         
         try {
-          await addInterview({
+          const interviewData = {
             auditId,
             themeId,
             title: interview['Titre'],
@@ -167,13 +184,17 @@ export const importStandardAuditPlan = async (
             startTime: startDateTime.toISOString(),
             durationMinutes,
             controlRefs: interview['Clause/Contrôle'],
-          });
+          };
+
+          console.log(`Adding interview: ${JSON.stringify(interviewData)}`);
+          await addInterview(interviewData);
         } catch (error) {
           console.error('Erreur lors de la création de l\'interview:', error);
         }
       }
     }
 
+    console.log(`Successfully imported audit plan for audit ID: ${auditId}`);
     return true;
   } catch (error) {
     console.error('Error importing standard audit plan:', error);
