@@ -1,3 +1,4 @@
+
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -327,9 +328,10 @@ export const createInterviewsInDB = async (interviews: Array<{
       return interviewCopy;
     });
     
+    // Ensure we're passing an array to the insert method
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(finalInterviews)
+      .insert(finalInterviews as any[])
       .select();
       
     if (error) {
