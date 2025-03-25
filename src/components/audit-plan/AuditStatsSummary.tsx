@@ -5,11 +5,13 @@ import { CalendarIcon, UsersIcon, ClockIcon, CheckIcon } from 'lucide-react';
 interface AuditStatsSummaryProps {
   businessDays: number;
   topicsCount: number;
+  interviewsCount: number;
 }
 
 const AuditStatsSummary: React.FC<AuditStatsSummaryProps> = ({ 
   businessDays, 
-  topicsCount 
+  topicsCount,
+  interviewsCount
 }) => {
   return (
     <div className="mt-4 space-y-2">
@@ -39,7 +41,7 @@ const AuditStatsSummary: React.FC<AuditStatsSummaryProps> = ({
             Interviews
           </div>
           <div className="text-2xl font-semibold">
-            {topicsCount} <span className="text-sm font-normal">sessions</span>
+            {interviewsCount} <span className="text-sm font-normal">sessions</span>
           </div>
         </div>
         <div className="bg-muted/50 p-3 rounded-md">
@@ -48,7 +50,7 @@ const AuditStatsSummary: React.FC<AuditStatsSummaryProps> = ({
             Couverture
           </div>
           <div className="text-2xl font-semibold">
-            100<span className="text-sm font-normal">%</span>
+            {topicsCount > 0 ? '100' : '0'}<span className="text-sm font-normal">%</span>
           </div>
         </div>
       </div>

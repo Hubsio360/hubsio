@@ -9,14 +9,16 @@ import { useData } from '@/contexts/DataContext';
 interface TopicsListProps {
   topics: AuditTopic[];
   onSelectionChange?: (selectedThemes: string[]) => void;
+  auditId?: string;
 }
 
-const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) => {
-  const { themes, fetchThemes } = useData();
+const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange, auditId }) => {
+  const { themes, fetchThemes, fetchInterviewsByAuditId } = useData();
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [availableThemes, setAvailableThemes] = useState<AuditTheme[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [existingThemes, setExistingThemes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadThemes = async () => {
@@ -30,6 +32,22 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
         // Par défaut, toutes les thématiques sont sélectionnées
         const themeIds = themeData.map(theme => theme.id);
         setSelectedThemes(themeIds);
+        
+        // Si un auditId est fourni, vérifier quelles thématiques sont déjà utilisées
+        if (auditId) {
+          try {
+            const interviews = await fetchInterviewsByAuditId(auditId);
+            const usedThemes = new Set<string>();
+            interviews.forEach(interview => {
+              if (interview.themeId) {
+                usedThemes.add(interview.themeId);
+              }
+            });
+            setExistingThemes(usedThemes);
+          } catch (error) {
+            console.error("Erreur lors du chargement des interviews:", error);
+          }
+        }
         
         // Notifier le parent du changement initial
         if (onSelectionChange) {
@@ -45,7 +63,7 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
     };
 
     loadThemes();
-  }, [fetchThemes]); // Retiré onSelectionChange de la liste des dépendances
+  }, [fetchThemes, fetchInterviewsByAuditId, auditId]); 
 
   const handleThemeToggle = (themeId: string) => {
     setSelectedThemes(prev => {
@@ -90,34 +108,42 @@ const TopicsList: React.FC<TopicsListProps> = ({ topics, onSelectionChange }) =>
       </p>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
-          {availableThemes.map((theme) => (
-            <div 
-              key={theme.id} 
-              className="flex items-center p-3 border rounded-md hover:bg-muted/50 cursor-pointer"
-              onClick={() => handleThemeToggle(theme.id)}
-            >
-              <Checkbox 
-                id={`theme-${theme.id}`}
-                checked={selectedThemes.includes(theme.id)}
-                onCheckedChange={() => handleThemeToggle(theme.id)}
-                className="mr-3"
-              />
-              <div className="flex-1">
-                <div className="font-medium">{theme.name}</div>
-                {theme.description && (
-                  <div className="text-sm text-muted-foreground line-clamp-2">
-                    {theme.description}
-                  </div>
+          {availableThemes.map((theme) => {
+            const isExisting = existingThemes.has(theme.id);
+            return (
+              <div 
+                key={theme.id} 
+                className={`flex items-center p-3 border rounded-md ${isExisting ? 'bg-muted/30' : 'hover:bg-muted/50'} cursor-pointer`}
+                onClick={() => handleThemeToggle(theme.id)}
+              >
+                <Checkbox 
+                  id={`theme-${theme.id}`}
+                  checked={selectedThemes.includes(theme.id)}
+                  onCheckedChange={() => handleThemeToggle(theme.id)}
+                  className="mr-3"
+                />
+                <div className="flex-1">
+                  <div className="font-medium">{theme.name}</div>
+                  {theme.description && (
+                    <div className="text-sm text-muted-foreground line-clamp-2">
+                      {theme.description}
+                    </div>
+                  )}
+                </div>
+                <Badge 
+                  variant={selectedThemes.includes(theme.id) ? "default" : "outline"} 
+                  className="ml-2"
+                >
+                  {selectedThemes.includes(theme.id) ? "Inclus" : "Exclu"}
+                </Badge>
+                {isExisting && (
+                  <Badge variant="secondary" className="ml-2">
+                    Existant
+                  </Badge>
                 )}
               </div>
-              <Badge 
-                variant={selectedThemes.includes(theme.id) ? "default" : "outline"} 
-                className="ml-2"
-              >
-                {selectedThemes.includes(theme.id) ? "Inclus" : "Exclu"}
-              </Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           {selectedThemes.length > 0 

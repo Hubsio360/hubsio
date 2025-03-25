@@ -3,10 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { LayoutIcon, Upload, Calendar, Layers } from 'lucide-react';
+import { LayoutIcon, Calendar, Layers } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { eachDayOfInterval, addBusinessDays, isWeekend, subBusinessDays } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useData } from '@/contexts/DataContext';
 import DateSelector from './audit-plan/DateSelector';
 import AuditStatsSummary from './audit-plan/AuditStatsSummary';
@@ -27,7 +26,15 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   endDate,
   onPlanGenerated
 }) => {
-  const { generateAuditPlan, fetchTopics, topics, themes, fetchThemes, importStandardAuditPlan } = useData();
+  const { 
+    generateAuditPlan, 
+    fetchTopics, 
+    topics, 
+    themes, 
+    fetchThemes, 
+    importStandardAuditPlan,
+    fetchInterviewsByAuditId
+  } = useData();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -37,9 +44,13 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
   const [availableThemes, setAvailableThemes] = useState<any[]>([]);
+  const [auditTopics, setAuditTopics] = useState<any[]>([]);
+  const [auditInterviews, setAuditInterviews] = useState<any[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   useEffect(() => {
     const loadInitialData = async () => {
+      setIsDataLoading(true);
       try {
         await fetchTopics();
         const themeData = await fetchThemes();
@@ -49,13 +60,24 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           const themeIds = themeData.map(theme => theme.id);
           setSelectedThemes(themeIds);
         }
+        
+        // Charger les interviews existantes pour cet audit
+        if (auditId) {
+          const interviewsData = await fetchInterviewsByAuditId(auditId);
+          setAuditInterviews(interviewsData.filter(interview => 
+            interview.id && typeof interview.id === 'string' && 
+            interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+          ));
+        }
       } catch (error) {
         console.error("Erreur lors du chargement des données initiales:", error);
+      } finally {
+        setIsDataLoading(false);
       }
     };
     
     loadInitialData();
-  }, [fetchTopics, fetchThemes]);
+  }, [fetchTopics, fetchThemes, fetchInterviewsByAuditId, auditId]);
 
   const handleGeneratePlan = async () => {
     if (!planStartDate || !planEndDate) {
@@ -138,7 +160,6 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       
       console.log(`Selected themes: ${selectedThemesData.map(t => t.name).join(', ')}`);
       
-      // Fix here: Passing only 2 arguments as expected by the function signature
       const success = await importStandardAuditPlan(auditId, [], selectedThemesData);
       
       if (success) {
@@ -149,6 +170,15 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
         });
         
         setImportSuccess(true);
+        
+        // Mettre à jour les interviews après la création du plan
+        if (auditId) {
+          const newInterviews = await fetchInterviewsByAuditId(auditId);
+          setAuditInterviews(newInterviews.filter(interview => 
+            interview.id && typeof interview.id === 'string' && 
+            interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+          ));
+        }
         
         if (onPlanGenerated) {
           onPlanGenerated();
@@ -199,7 +229,20 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const handleThemeSelectionChange = (selectedThemeIds: string[]) => {
     console.log(`Theme selection changed to: ${selectedThemeIds.join(', ')}`);
     setSelectedThemes(selectedThemeIds);
+    
+    // Mettre à jour le nombre de topics associés à ces thèmes sélectionnés
+    const relevantTopics = topics.filter(topic => {
+      // Pour simplifier, on suppose que chaque topic peut être associé à une thématique
+      // Dans un cas réel, cette logique serait basée sur vos relations de données
+      return true; // À adapter selon votre structure
+    });
+    
+    setAuditTopics(relevantTopics);
   };
+
+  // Calculer les nombres réels de thématiques et interviews pour cet audit
+  const selectedThemesCount = selectedThemes.length;
+  const interviewsCount = auditInterviews.length;
 
   return (
     <Card>
@@ -245,7 +288,8 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             
             <AuditStatsSummary 
               businessDays={businessDays} 
-              topicsCount={topics.length} 
+              topicsCount={selectedThemesCount}
+              interviewsCount={interviewsCount}
             />
           </TabsContent>
           
