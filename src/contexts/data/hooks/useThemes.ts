@@ -1,36 +1,118 @@
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { AuditTheme } from '@/types';
-import { mockThemes } from '../mocks/mockData';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useThemes = () => {
-  const [themes] = useState<AuditTheme[]>(mockThemes);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [themes, setThemes] = useState<AuditTheme[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const fetchThemes = useCallback(async (): Promise<AuditTheme[]> => {
+  const fetchThemes = async (): Promise<AuditTheme[]> => {
     setLoading(true);
     try {
-      // Simulate API call
-      return themes;
+      const { data, error } = await supabase
+        .from('audit_themes')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error('Error fetching audit themes:', error);
+        return [];
+      }
+      
+      const fetchedThemes = (data || []).map(theme => ({
+        id: theme.id,
+        name: theme.name,
+        description: theme.description || ''
+      }));
+      
+      setThemes(fetchedThemes);
+      return fetchedThemes;
+    } catch (error) {
+      console.error('Error fetching audit themes:', error);
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [themes]);
+  };
 
-  const addTheme = useCallback(async (theme: Omit<AuditTheme, 'id'>): Promise<AuditTheme | null> => {
-    console.log('Ajout d\'une thématique:', theme);
-    return { id: `theme-${Date.now()}`, ...theme };
-  }, []);
+  const addTheme = async (theme: Omit<AuditTheme, 'id'>): Promise<AuditTheme | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_themes')
+        .insert([theme])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding audit theme:', error);
+        return null;
+      }
+      
+      const newTheme: AuditTheme = {
+        id: data.id,
+        name: data.name,
+        description: data.description || ''
+      };
+      
+      setThemes(prev => [...prev, newTheme]);
+      return newTheme;
+    } catch (error) {
+      console.error('Error adding audit theme:', error);
+      return null;
+    }
+  };
 
-  const updateTheme = useCallback(async (id: string, updates: Partial<AuditTheme>): Promise<AuditTheme | null> => {
-    console.log('Mise à jour de la thématique:', id, updates);
-    return { id, name: updates.name || 'Theme name', description: updates.description };
-  }, []);
+  const updateTheme = async (id: string, updates: Partial<AuditTheme>): Promise<AuditTheme | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_themes')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating audit theme:', error);
+        return null;
+      }
+      
+      const updatedTheme: AuditTheme = {
+        id: data.id,
+        name: data.name,
+        description: data.description || ''
+      };
+      
+      setThemes(prev =>
+        prev.map(theme => (theme.id === id ? updatedTheme : theme))
+      );
+      
+      return updatedTheme;
+    } catch (error) {
+      console.error('Error updating audit theme:', error);
+      return null;
+    }
+  };
 
-  const deleteTheme = useCallback(async (id: string): Promise<boolean> => {
-    console.log('Suppression de la thématique:', id);
-    return true;
-  }, []);
+  const deleteTheme = async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('audit_themes')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        console.error('Error deleting audit theme:', error);
+        return false;
+      }
+      
+      setThemes(prev => prev.filter(theme => theme.id !== id));
+      return true;
+    } catch (error) {
+      console.error('Error deleting audit theme:', error);
+      return false;
+    }
+  };
 
   return {
     themes,

@@ -1,6 +1,11 @@
 
+// Cet fichier ne sera plus utilisé pour servir des données à l'application
+// Les données viendront uniquement de la base de données Supabase
+
 import { AuditTheme, StandardClause } from '@/types';
 
+// Note: Ces données servent uniquement comme référence pour le développement
+// et ne sont pas utilisées dans l'application
 export const mockThemes: AuditTheme[] = [
   { id: 'theme-1', name: 'ADMIN', description: 'Gestion administrative de l\'audit' },
   { id: 'theme-2', name: 'Exploitation & réseaux', description: 'Sécurité des infrastructures réseau et exploitation' },

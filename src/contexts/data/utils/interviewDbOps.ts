@@ -1,6 +1,23 @@
+
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
+
+/**
+ * Type definition for interview insertion
+ */
+export interface InterviewInsert {
+  audit_id: string;
+  topic_id?: string;
+  theme_id?: string;
+  title: string;
+  description?: string;
+  start_time: string;
+  duration_minutes: number;
+  location?: string;
+  meeting_link?: string;
+  control_refs?: string;
+}
 
 /**
  * Fetch interviews from the database by audit ID
@@ -275,19 +292,6 @@ export const deleteExistingInterviews = async (auditId: string): Promise<boolean
 /**
  * Create multiple interviews in the database
  */
-export interface InterviewInsert {
-  audit_id: string;
-  topic_id?: string;
-  theme_id?: string;
-  title: string;
-  description?: string;
-  start_time: string;
-  duration_minutes: number;
-  location?: string;
-  meeting_link?: string;
-  control_refs?: string;
-}
-
 export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[]): Promise<boolean> => {
   try {
     console.log(`Attempting to insert ${interviews.length} interviews into database`);
