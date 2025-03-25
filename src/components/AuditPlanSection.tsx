@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -6,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Plus, Layers, RefreshCw } from 'lucide-react';
 import AuditPlanCalendar from './AuditPlanCalendar';
-import { AuditPlanGenerator } from './AuditPlanGenerator';
+import AuditPlanGenerator from './AuditPlanGenerator'; // Fixed import
 import EditInterviewDrawer from './EditInterviewDrawer';
 import { useToast } from '@/hooks/use-toast';
 
@@ -385,4 +386,3 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
 };
 
 export default AuditPlanSection;
-

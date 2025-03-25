@@ -9,7 +9,7 @@ import AuditStatsSummary from './audit-plan/AuditStatsSummary';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
-  frameworkId?: string; // Add frameworkId
+  frameworkId?: string;
   startDate: string;
   endDate: string;
   onPlanGenerated?: (targetTab?: string) => void;
@@ -74,26 +74,32 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
 
       <div className="md:col-span-1 space-y-6">
         <AuditStatsSummary
-          totalHours={totalHours}
-          totalInterviews={totalInterviews}
-          requiredDays={requiredDays}
-          selectedDays={selectedDays.length}
-          existingInterviews={existingInterviews}
-          existingThemes={existingThemes}
-          hasOpeningClosing={hasOpeningClosing}
+          businessDays={selectedDays.length}
+          topicsCount={selectedTopicIds.length}
+          interviewsCount={totalInterviews}
         />
         
         <PlanSummary
-          previewInterviews={previewInterviews}
-          loading={generating}
+          businessDays={selectedDays.length}
+          requiredDays={requiredDays}
+          topicsCount={selectedTopicIds.length}
+          interviewsCount={totalInterviews}
+          totalHours={totalHours}
+          maxHoursPerDay={maxHoursPerDay}
+          hasOpeningClosing={hasOpeningClosing}
         />
         
         <PlanActions
-          onGeneratePlan={handleGeneratePlan}
-          disabled={selectedTopicIds.length === 0 || selectedDays.length === 0 || generating}
-          loading={generating}
-          hasEnoughDays={selectedDays.length >= requiredDays}
+          generating={generating}
+          selectedTopicIds={selectedTopicIds}
+          selectedDays={selectedDays}
+          businessDays={selectedDays.length}
           requiredDays={requiredDays}
+          interviewsCount={totalInterviews}
+          totalHours={totalHours}
+          maxHoursPerDay={maxHoursPerDay}
+          hasOpeningClosing={hasOpeningClosing}
+          onGeneratePlan={handleGeneratePlan}
         />
       </div>
     </div>
