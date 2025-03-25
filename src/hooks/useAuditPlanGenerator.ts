@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { AuditTheme, AuditInterview } from '@/types';
-import { parseISO, setHours, setMinutes, addMinutes, addDays, format } from 'date-fns';
+import { parseISO, setHours, setMinutes, addMinutes, addDays, format, eachDayOfInterval, isWeekend } from 'date-fns';
 
 interface UseAuditPlanGeneratorProps {
   auditId: string;
@@ -47,6 +48,26 @@ export const useAuditPlanGenerator = ({
   
   // Always include opening and closing meetings
   const hasOpeningClosing = true;
+
+  // Initialize the selected days with business days from the audit date range
+  useEffect(() => {
+    if (startDate && endDate && !initialLoad) {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      
+      // Get all days in the range
+      const days = eachDayOfInterval({ start, end });
+      
+      // Filter out weekends
+      const businessDays = days.filter(day => !isWeekend(day));
+      
+      // Convert to ISO strings
+      const businessDaysIso = businessDays.map(day => day.toISOString());
+      
+      // Set as selected days
+      setSelectedDays(businessDaysIso);
+    }
+  }, [startDate, endDate, initialLoad]);
 
   // Load existing data for this audit
   useEffect(() => {
@@ -93,7 +114,7 @@ export const useAuditPlanGenerator = ({
 
   // Reset selected days when audit dates change 
   useEffect(() => {
-    if (startDate && endDate && selectedDays.length > 0) {
+    if (startDate && endDate && selectedDays.length > 0 && initialLoad) {
       const start = parseISO(startDate);
       const end = parseISO(endDate);
       
@@ -108,7 +129,7 @@ export const useAuditPlanGenerator = ({
         setSelectedDays(validDays);
       }
     }
-  }, [startDate, endDate, selectedDays]);
+  }, [startDate, endDate, selectedDays, initialLoad]);
 
   // Calculate total interview hours and required days
   const {
