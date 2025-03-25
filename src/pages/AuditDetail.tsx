@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AuditorsSelect } from '@/components/AuditorsSelect';
-import { Audit, FindingCategory, FindingStatus } from '@/types';
+import { Audit, FindingCategory, FindingStatus, User } from '@/types';
 import {
   AlertCircle,
   AlertTriangle,
@@ -31,7 +31,7 @@ import {
   ListChecks,
   Plus,
   Sparkles,
-  User,
+  User as UserIcon,
   Calendar,
   LayoutTemplate,
   PencilLine,
@@ -143,7 +143,7 @@ const AuditDetail = () => {
   });
   const [isLoadingAuditors, setIsLoadingAuditors] = useState(false);
   const [auditAuditors, setAuditAuditors] = useState<{ userId: string, roleInAudit: 'lead' | 'participant' }[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<{id: string, name: string, email: string, avatar?: string}[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<{id: string, name: string, email: string, avatar?: string, role: string}[]>([]);
 
   if (!id) {
     return (
@@ -361,12 +361,13 @@ const AuditDetail = () => {
       const auditors = await getAuditAuditors(id || '');
       setAuditAuditors(auditors);
       
-      const users = await getUsers();
-      setAvailableUsers(users.map(u => ({
+      const fetchedUsers = await getUsers();
+      setAvailableUsers(fetchedUsers.map(u => ({
         id: u.id,
         name: u.name,
         email: u.email,
-        avatar: u.avatar
+        avatar: u.avatar,
+        role: u.role
       })));
       
       setEditFormData({
@@ -632,394 +633,5 @@ const AuditDetail = () => {
               
               <div className="space-y-2">
                 <div className="flex items-center">
-                  <User className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-muted-foreground mr-2">Auditeur:</span>
-                  <span>{user?.name || 'Non défini'}</span>
-                </div>
-                
-                {audit.scope && (
-                  <div className="flex items-start">
-                    <ListChecks className="h-4 w-4 mr-2 text-muted-foreground mt-0.5" />
-                    <div>
-                      <span className="text-muted-foreground mr-2">Périmètre:</span>
-                      <span>{audit.scope}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  <UserIcon
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Progression</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">Étapes</div>
-                <div className="font-medium">{auditSteps.length}</div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">Constats</div>
-                <div className="font-medium">
-                  {stepFindings.length} ajoutés
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-muted-foreground">Constats validés</div>
-                <div className="font-medium">
-                  {stepFindings.filter(f => f.status === 'validated').length} / {stepFindings.length}
-                </div>
-              </div>
-              
-              <Separator className="my-2" />
-              
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Rapport</div>
-                <div>
-                  {stepFindings.every(f => f.status === 'validated') ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="steps" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="steps" className="inline-flex items-center">
-            <ListChecks className="h-4 w-4 mr-2" />
-            Plan d'audit
-          </TabsTrigger>
-          <TabsTrigger value="findings" className="inline-flex items-center">
-            <FileText className="h-4 w-4 mr-2" />
-            Constats
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="steps" className="animate-fade-in">
-          {auditSteps.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6 text-center py-8">
-                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">Aucune étape définie</h3>
-                <p className="text-muted-foreground mb-6">
-                  Cet audit n'a pas encore d'étapes définies
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg">Étapes</CardTitle>
-                    <CardDescription>
-                      Sélectionnez une étape pour ajouter des constats
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="py-0">
-                    <div className="space-y-2">
-                      {auditSteps.map((step) => {
-                        const stepHasFindings = getFindingsByAuditStepId(step.id).length > 0;
-                        return (
-                          <Button
-                            key={step.id}
-                            variant={selectedStepId === step.id ? "default" : "outline"}
-                            className="w-full justify-start text-left flex items-start"
-                            onClick={() => setSelectedStepId(step.id)}
-                          >
-                            <div className="flex items-center">
-                              <div className="mr-2">
-                                {stepHasFindings ? (
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                ) : (
-                                  <span className="flex items-center justify-center w-5 h-5 rounded-full border text-xs font-medium">
-                                    {step.order}
-                                  </span>
-                                )}
-                              </div>
-                              <div>
-                                <div className="font-medium">{step.title}</div>
-                                {step.description && (
-                                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                                    {step.description}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </Button>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <div className="md:col-span-2">
-                {selectedStep ? (
-                  <>
-                    <Card className="mb-6">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">{selectedStep.title}</CardTitle>
-                            {selectedStep.description && (
-                              <CardDescription>
-                                {selectedStep.description}
-                              </CardDescription>
-                            )}
-                          </div>
-                          <Badge variant="outline">
-                            Étape {selectedStep.order}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-4">
-                        <h3 className="text-sm font-medium mb-2">Contrôles à évaluer :</h3>
-                        <div className="space-y-3">
-                          {availableControls.map(control => (
-                            <div key={control.id} className="rounded-md border p-3">
-                              <div className="flex justify-between items-start mb-1">
-                                <div className="font-medium">{control.referenceCode}</div>
-                                <Badge variant="outline" className="ml-2">
-                                  {framework?.name || 'Référentiel'}
-                                </Badge>
-                              </div>
-                              <div className="text-sm font-medium mb-1">{control.title}</div>
-                              <div className="text-sm text-muted-foreground">{control.description}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Ajouter un constat</CardTitle>
-                        <CardDescription>
-                          Enregistrez vos constats pour cette étape
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <form onSubmit={handleAddFinding} className="space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="rawText" className="required">Constat</Label>
-                            <Textarea
-                              id="rawText"
-                              placeholder="Décrivez votre constat..."
-                              className="min-h-[100px]"
-                              value={newFinding.rawText}
-                              onChange={(e) => setNewFinding({ ...newFinding, rawText: e.target.value })}
-                              required
-                            />
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="control" className="required">Contrôle associé</Label>
-                              <Select
-                                value={newFinding.controlId}
-                                onValueChange={(value) => setNewFinding({ ...newFinding, controlId: value })}
-                                required
-                              >
-                                <SelectTrigger id="control">
-                                  <SelectValue placeholder="Sélectionner un contrôle" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {availableControls.map((control) => (
-                                    <SelectItem key={control.id} value={control.id}>
-                                      {control.referenceCode} - {control.title}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <Label htmlFor="category" className="required">Catégorie</Label>
-                              <Select
-                                value={newFinding.category}
-                                onValueChange={(value) => setNewFinding({ ...newFinding, category: value as FindingCategory })}
-                                required
-                              >
-                                <SelectTrigger id="category">
-                                  <SelectValue placeholder="Sélectionner une catégorie" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="non_conformity_major">Non-conformité majeure</SelectItem>
-                                  <SelectItem value="non_conformity_minor">Non-conformité mineure</SelectItem>
-                                  <SelectItem value="sensitive_point">Point sensible</SelectItem>
-                                  <SelectItem value="improvement_opportunity">Opportunité d'amélioration</SelectItem>
-                                  <SelectItem value="strength">Point fort</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-                          
-                          <div className="flex justify-end">
-                            <Button type="submit" disabled={isSubmittingFinding}>
-                              {isSubmittingFinding ? 'Ajout...' : 'Ajouter le constat'}
-                            </Button>
-                          </div>
-                        </form>
-                      </CardContent>
-                    </Card>
-                  </>
-                ) : (
-                  <Card>
-                    <CardContent className="pt-6 text-center py-8">
-                      <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <h3 className="text-lg font-medium mb-2">Aucune étape sélectionnée</h3>
-                      <p className="text-muted-foreground mb-6">
-                        Veuillez sélectionner une étape pour afficher les détails et ajouter des constats
-                      </p>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </div>
-          )}
-        </TabsContent>
-        
-        <TabsContent value="findings" className="animate-fade-in">
-          <div className="space-y-6">
-            {auditSteps.map((step) => {
-              const findings = getFindingsByAuditStepId(step.id);
-              
-              return (
-                <Card key={step.id}>
-                  <CardHeader className="pb-2">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">
-                        {step.title}
-                      </CardTitle>
-                      <Badge variant="outline">
-                        Étape {step.order}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {findings.length === 0 ? (
-                      <div className="text-center py-4">
-                        <p className="text-muted-foreground">Aucun constat pour cette étape</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {findings.map((finding) => {
-                          const control = getControlById(finding.controlId);
-                          return (
-                            <div key={finding.id} className="rounded-md border p-4">
-                              <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
-                                <div className="flex items-center">
-                                  <div className="font-medium text-sm mr-2">
-                                    {control?.referenceCode || 'Contrôle'}
-                                  </div>
-                                  {getCategoryBadge(finding.category)}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  {getStatusBadge(finding.status)}
-                                </div>
-                              </div>
-                              
-                              <div className="mb-3">
-                                <div className="text-sm font-medium mb-1 flex items-center">
-                                  <span className="mr-2">Constat brut</span>
-                                  {finding.status === 'draft' && (
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-6 px-2"
-                                      onClick={() => handleRefineFinding(finding.id)}
-                                      disabled={isRefinementLoading[finding.id]}
-                                    >
-                                      {isRefinementLoading[finding.id] ? (
-                                        <span>Reformulation...</span>
-                                      ) : (
-                                        <>
-                                          <Sparkles className="h-3 w-3 mr-1" />
-                                          <span>Reformuler</span>
-                                        </>
-                                      )}
-                                    </Button>
-                                  )}
-                                </div>
-                                <div className="text-sm p-3 bg-muted/50 rounded-md">
-                                  {finding.rawText}
-                                </div>
-                              </div>
-                              
-                              {finding.refinedText && (
-                                <div className="mb-3">
-                                  <div className="text-sm font-medium mb-1 flex items-center">
-                                    <span className="mr-2">Constat reformulé</span>
-                                    {finding.status === 'pending_review' && user?.role !== 'auditor' && (
-                                      <Button 
-                                        variant="ghost" 
-                                        size="sm" 
-                                        className="h-6 px-2"
-                                        onClick={() => handleValidateFinding(finding.id)}
-                                      >
-                                        <Check className="h-3 w-3 mr-1" />
-                                        <span>Valider</span>
-                                      </Button>
-                                    )}
-                                  </div>
-                                  <div className="text-sm p-3 bg-accent/50 rounded-md">
-                                    {finding.refinedText}
-                                  </div>
-                                </div>
-                              )}
-                              
-                              <div className="text-xs text-muted-foreground flex items-center justify-between mt-4">
-                                <div>
-                                  Ajouté le {new Date(finding.createdAt).toLocaleDateString('fr-FR')}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  {finding.status === 'draft' && (
-                                    <Button size="sm" variant="ghost" className="h-7 px-2">
-                                      <Edit className="h-3 w-3 mr-1" />
-                                      Modifier
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full" 
-                      onClick={() => {
-                        setSelectedStepId(step.id);
-                        setActiveTab('steps');
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Ajouter un constat à cette étape
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
-          </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-};
-
-export default AuditDetail;
