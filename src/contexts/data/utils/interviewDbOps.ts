@@ -1,3 +1,4 @@
+
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -288,9 +289,9 @@ export interface InterviewInsert {
   control_refs?: string;
 }
 
-export const createInterviewsInDB = async (interviews: Array<Partial<InterviewInsert>>): Promise<boolean> => {
+export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[]): Promise<boolean> => {
   try {
-    console.log(`Inserting ${interviews.length} interviews into database`);
+    console.log(`Attempting to insert ${interviews.length} interviews into database`);
     
     // Ensure each interview has the required fields
     const validInterviews = interviews.filter(interview => 
@@ -302,10 +303,10 @@ export const createInterviewsInDB = async (interviews: Array<Partial<InterviewIn
       interview.title && 
       interview.start_time && 
       interview.duration_minutes
-    );
+    ) as InterviewInsert[];
     
     if (validInterviews.length === 0) {
-      console.error('No valid interviews to insert');
+      console.error('No valid interviews to insert, missing required fields');
       return false;
     }
     
@@ -329,8 +330,7 @@ export const createInterviewsInDB = async (interviews: Array<Partial<InterviewIn
       return interviewCopy;
     });
     
-    // The type assertion here is safe because we've validated that each object has
-    // the required title, start_time, and duration_minutes fields
+    // Insert the interviews
     const { data, error } = await supabase
       .from('audit_interviews')
       .insert(finalInterviews)

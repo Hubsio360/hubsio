@@ -111,7 +111,6 @@ export const generatePlanSchedule = async (
       }
       
       // Create a simple interview without using topicId in the UUID format
-      // This avoids the issue with non-UUID strings for theme_id and topic_id
       dbInterviewsToCreate.push({
         audit_id: auditId,
         title: `Interview: Thématique ${topicId.replace(/theme-/g, '')}`,
