@@ -10,6 +10,8 @@ export const useAuditInterviews = () => {
   const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
     setLoading(true);
     try {
+      console.log('Fetching interviews for audit:', auditId); // Debug log
+      
       // Vérifier si c'est un UUID valide avant d'interroger la base de données
       // Si ce n'est pas un UUID, on retourne un tableau vide simulé pour le développement
       if (!isValidUUID(auditId)) {
@@ -28,6 +30,8 @@ export const useAuditInterviews = () => {
         return [];
       }
       
+      console.log('Raw interview data:', data); // Debug log
+      
       const formattedInterviews = (data || []).map(interview => ({
         id: interview.id,
         auditId: interview.audit_id,
@@ -42,6 +46,7 @@ export const useAuditInterviews = () => {
         controlRefs: interview.control_refs || undefined
       }));
       
+      console.log('Formatted interviews:', formattedInterviews); // Debug log
       setInterviews(formattedInterviews);
       return formattedInterviews;
     } catch (error) {
@@ -257,47 +262,13 @@ export const useAuditInterviews = () => {
   const generateAuditPlan = async (auditId: string, startDate: string, endDate: string): Promise<boolean> => {
     try {
       // Vérifier si c'est un UUID valide avant d'interroger la base de données
-      // Pour le développement, nous allons générer un plan local si ce n'est pas un UUID valide
       if (!isValidUUID(auditId)) {
         console.log(`ID d'audit non valide pour UUID: ${auditId}, génération d'un plan local`);
         
-        // Générer quelques interviews de test directement dans l'état local
-        const start = new Date(startDate);
-        const interviewsToCreate = [];
-        
-        // Créer quelques interviews factices pour la génération locale
-        const testThemes = [
-          { id: 'theme-1', name: 'ADMIN' },
-          { id: 'theme-2', name: 'Exploitation & réseaux' },
-          { id: 'theme-5', name: 'Sécurité des ressources humaines' },
-          { id: 'theme-12', name: 'Cloture' }
-        ];
-        
-        for (let i = 0; i < testThemes.length; i++) {
-          const theme = testThemes[i];
-          const interviewDate = new Date(start);
-          interviewDate.setDate(start.getDate() + Math.floor(i / 2));
-          
-          // Distribuer les interviews dans la journée (9h-17h)
-          const hourOffset = (i % 2) * 3; // 3 heures par interview
-          interviewDate.setHours(9 + hourOffset, 0, 0, 0);
-          
-          const interview: AuditInterview = {
-            id: `interview-${Date.now()}-${i}`,
-            auditId: auditId,
-            themeId: theme.id,
-            title: `Interview: ${theme.name}`,
-            description: `Interview sur le thème: ${theme.name}`,
-            startTime: interviewDate.toISOString(),
-            durationMinutes: 60,
-            location: 'À déterminer',
-          };
-          
-          interviewsToCreate.push(interview);
-        }
-        
-        // Mettre à jour l'état local avec les interviews générées
-        setInterviews(interviewsToCreate);
+        // Pour le développement, simuler la création locale de données
+        // Cette partie devrait être remplacée par une vraie implémentation pour la production
+        const localInterviews = generateLocalInterviews(auditId, startDate, endDate);
+        setInterviews(localInterviews);
         return true;
       }
       
@@ -381,6 +352,45 @@ export const useAuditInterviews = () => {
       console.error('Error generating audit plan:', error);
       return false;
     }
+  };
+
+  // Fonction pour générer des interviews locales pour le développement
+  const generateLocalInterviews = (auditId: string, startDate: string, endDate: string): AuditInterview[] => {
+    const start = new Date(startDate);
+    const localInterviews = [];
+    
+    // Créer quelques interviews factices pour la génération locale
+    const testThemes = [
+      { id: 'theme-1', name: 'ADMIN' },
+      { id: 'theme-2', name: 'Exploitation & réseaux' },
+      { id: 'theme-5', name: 'Sécurité des ressources humaines' },
+      { id: 'theme-12', name: 'Cloture' }
+    ];
+    
+    for (let i = 0; i < testThemes.length; i++) {
+      const theme = testThemes[i];
+      const interviewDate = new Date(start);
+      interviewDate.setDate(start.getDate() + Math.floor(i / 2));
+      
+      // Distribuer les interviews dans la journée (9h-17h)
+      const hourOffset = (i % 2) * 3; // 3 heures par interview
+      interviewDate.setHours(9 + hourOffset, 0, 0, 0);
+      
+      const interview: AuditInterview = {
+        id: `interview-${Date.now()}-${i}`,
+        auditId: auditId,
+        themeId: theme.id,
+        title: `Interview: ${theme.name}`,
+        description: `Interview sur le thème: ${theme.name}`,
+        startTime: interviewDate.toISOString(),
+        durationMinutes: 60,
+        location: 'À déterminer',
+      };
+      
+      localInterviews.push(interview);
+    }
+    
+    return localInterviews;
   };
 
   // Fonction utilitaire pour vérifier si une chaîne est un UUID valide

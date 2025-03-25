@@ -21,6 +21,12 @@ export const importStandardAuditPlan = async (
       return acc;
     }, {});
 
+    // Maintenir une map de thèmes pour éviter les doublons et gérer les IDs
+    const themeMap = new Map<string, string>();
+    themes.forEach(theme => {
+      themeMap.set(theme.name, theme.id);
+    });
+
     // Si aucun thème n'est disponible, créons des thèmes standard ISO 27001
     if (themes.length === 0 && Object.keys(themeInterviews).length === 0) {
       const standardThemes = [
@@ -78,16 +84,12 @@ export const importStandardAuditPlan = async (
 
         // Créer les thèmes standard
         for (const themeData of standardThemes) {
-          await addTheme(themeData);
+          const newTheme = await addTheme(themeData);
+          if (newTheme) {
+            themeMap.set(themeData.name, newTheme.id);
+          }
         }
       }
-    }
-
-    // S'assurer que nous avons des thèmes valides avant de continuer
-    let themeMap = new Map<string, string>();
-    
-    for (const theme of themes) {
-      themeMap.set(theme.name, theme.id);
     }
 
     // Mapper les thèmes avec les clauses ISO standards pour la création automatique de topics
@@ -126,10 +128,10 @@ export const importStandardAuditPlan = async (
         if (topic) {
           // Trouver les contrôles associés au thème
           const clauseRefs = themeToClausesMap[themeName] || [];
-          if (clauseRefs.length > 0) {
+          if (clauseRefs.length > 0 && standardClauses.length > 0) {
             // Filtrer les clauses standards correspondantes
             const relevantClauseIds = standardClauses
-              .filter(clause => clauseRefs.some(ref => clause.referenceCode.startsWith(ref)))
+              .filter(clause => clauseRefs.some(ref => clause.referenceCode && clause.referenceCode.startsWith(ref)))
               .map(clause => clause.id);
             
             if (relevantClauseIds.length > 0) {
@@ -139,7 +141,13 @@ export const importStandardAuditPlan = async (
         }
       }
 
-      // Création des interviews
+      // Vérifier que themeId est défini avant de créer les interviews
+      if (!themeId) {
+        console.error(`Impossible de créer des interviews pour le thème ${themeName} car son ID est manquant.`);
+        continue;
+      }
+
+      // Création des interviews avec le themeId valide
       for (const interview of interviews) {
         const dateTimeParts = interview['Date-Heure'].split(' → ');
         const startDateTime = new Date(dateTimeParts[0]);
@@ -149,16 +157,20 @@ export const importStandardAuditPlan = async (
           const endTime = new Date(dateTimeParts[1]);
           durationMinutes = Math.round((endTime.getTime() - startDateTime.getTime()) / (1000 * 60));
         }
-
-        await addInterview({
-          auditId,
-          themeId,
-          title: interview['Titre'],
-          description: `Thématique: ${themeName}`,
-          startTime: startDateTime.toISOString(),
-          durationMinutes,
-          controlRefs: interview['Clause/Contrôle'],
-        });
+        
+        try {
+          await addInterview({
+            auditId,
+            themeId,
+            title: interview['Titre'],
+            description: `Thématique: ${themeName}`,
+            startTime: startDateTime.toISOString(),
+            durationMinutes,
+            controlRefs: interview['Clause/Contrôle'],
+          });
+        } catch (error) {
+          console.error('Erreur lors de la création de l\'interview:', error);
+        }
       }
     }
 

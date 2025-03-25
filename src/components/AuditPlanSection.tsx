@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -32,16 +31,15 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
 
-  // Charger les données de base
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
         await fetchTopics();
         const interviewsData = await fetchInterviewsByAuditId(auditId);
+        console.log('Loaded interviews:', interviewsData);
         setInterviews(interviewsData);
         
-        // Organiser les interviews par thème
         const themeMap: Record<string, AuditInterview[]> = {};
         interviewsData.forEach(interview => {
           const theme = interview.themeId || 'Sans thème';
@@ -66,15 +64,15 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     if (auditId) {
       loadData();
     }
-  }, [auditId]);
+  }, [auditId, fetchInterviewsByAuditId, fetchTopics, toast]);
 
-  // Charger les interviews après génération du plan
   const refreshInterviews = async () => {
     try {
+      console.log('Refreshing interviews for audit:', auditId);
       const interviewsData = await fetchInterviewsByAuditId(auditId);
+      console.log('Refreshed interviews:', interviewsData);
       setInterviews(interviewsData);
       
-      // Mettre à jour les interviews par thème
       const themeMap: Record<string, AuditInterview[]> = {};
       interviewsData.forEach(interview => {
         const theme = interview.themeId || 'Sans thème';
@@ -85,7 +83,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       });
       setInterviewsByTheme(themeMap);
       
-      // Si des interviews ont été générées, passer à l'onglet calendrier
       if (interviewsData.length > 0 && activeTab === 'generate') {
         setActiveTab('calendar');
       }
@@ -94,25 +91,21 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   };
 
-  // Gérer l'édition d'une interview
   const handleEditInterview = (interview: AuditInterview) => {
     setSelectedInterview(interview);
     setIsEditDrawerOpen(true);
   };
 
-  // Fermer le tiroir d'édition
   const handleCloseEditDrawer = () => {
     setIsEditDrawerOpen(false);
     setSelectedInterview(null);
   };
 
-  // Sauvegarder les modifications d'une interview
   const handleSaveInterview = () => {
     refreshInterviews();
     handleCloseEditDrawer();
   };
 
-  // Supprimer une interview
   const handleDeleteInterview = () => {
     refreshInterviews();
     handleCloseEditDrawer();
@@ -239,7 +232,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           </TabsContent>
         </Tabs>
         
-        {/* Tiroir pour l'édition des interviews */}
         <EditInterviewDrawer
           interview={selectedInterview}
           open={isEditDrawerOpen}

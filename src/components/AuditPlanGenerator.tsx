@@ -122,8 +122,8 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       
       if (success) {
         toast({
-          title: 'Plan d\'audit importé',
-          description: 'Le plan d\'audit standard a été importé avec succès',
+          title: 'Plan d\'audit créé',
+          description: 'Le plan d\'audit standard a été créé avec succès',
           variant: 'default',
         });
         
@@ -135,7 +135,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       } else {
         toast({
           title: 'Erreur',
-          description: 'Une erreur est survenue lors de l\'importation du plan d\'audit standard',
+          description: 'Une erreur est survenue lors de la création du plan d\'audit standard',
           variant: 'destructive',
         });
         setImportSuccess(false);
@@ -144,7 +144,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       console.error('Error importing standard audit plan:', error);
       toast({
         title: 'Erreur',
-        description: 'Une erreur est survenue lors de l\'importation du plan d\'audit standard',
+        description: 'Une erreur est survenue lors de la création du plan d\'audit standard',
         variant: 'destructive',
       });
       setImportSuccess(false);
@@ -235,9 +235,9 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             
             {importSuccess === true && (
               <Alert className="bg-green-50 border-green-200">
-                <AlertTitle className="text-green-600">Plan d'audit importé avec succès</AlertTitle>
+                <AlertTitle className="text-green-600">Plan d'audit créé avec succès</AlertTitle>
                 <AlertDescription className="text-green-600">
-                  Le plan d'audit standard a été importé. Vous pouvez maintenant visualiser et modifier les interviews dans l'onglet Calendrier.
+                  Le plan d'audit standard a été créé. Vous pouvez maintenant visualiser et modifier les interviews dans l'onglet Calendrier.
                 </AlertDescription>
               </Alert>
             )}
@@ -245,9 +245,9 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             {importSuccess === false && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Erreur d'importation</AlertTitle>
+                <AlertTitle>Erreur de création</AlertTitle>
                 <AlertDescription>
-                  Une erreur est survenue lors de l'importation du plan d'audit. Veuillez réessayer.
+                  Une erreur est survenue lors de la création du plan d'audit. Veuillez réessayer.
                 </AlertDescription>
               </Alert>
             )}
