@@ -1,3 +1,4 @@
+
 export * from './useCompanies';
 export * from './useAudits';
 export * from './useFrameworks';
@@ -10,3 +11,4 @@ export * from './useAuditAssignments';
 export * from './useThemes';
 export * from './useStandardClauses';
 export * from './useUsers';
+export * from './useAuth';

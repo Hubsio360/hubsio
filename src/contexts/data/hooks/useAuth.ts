@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuth = () => {
@@ -15,16 +15,24 @@ export const useAuth = () => {
         
       if (error) throw error;
       
-      // Make sure to map the users to include the role property
-      return (data || []).map(user => ({
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at
-      }));
+      // Make sure to map the users to include the role property and handle the "reviewer" role mapping
+      return (data || []).map(user => {
+        // Convert "reviewer" to "viewer" to match UserRole type
+        let mappedRole: UserRole = user.role as UserRole;
+        if (user.role === 'reviewer') {
+          mappedRole = 'viewer';
+        }
+        
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: mappedRole,
+          avatar: user.avatar,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        };
+      });
     } catch (error) {
       console.error('Error fetching users:', error);
       return [];
