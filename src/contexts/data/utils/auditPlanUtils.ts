@@ -23,7 +23,7 @@ export const importStandardAuditPlan = async (
     // Utiliser planData ou créer un plan standard
     let planToUse = planData && Array.isArray(planData) && planData.length > 0 
       ? planData 
-      : createStandardPlan();
+      : createStandardPlan(themes);
     
     console.log(`Using ${planToUse === planData ? 'provided' : 'standard'} plan with ${planToUse.length} items`);
     
@@ -88,6 +88,12 @@ export const importStandardAuditPlan = async (
     };
 
     console.log(`Processing ${Object.keys(themeInterviews).length} themes for audit ID: ${auditId}`);
+    
+    // Si le plan est vide ou ne contient pas toutes les thématiques, générer un plan complet
+    if (Object.keys(themeInterviews).length < themes.length) {
+      console.log(`Plan is missing themes, generating complete plan for all ${themes.length} themes`);
+      return generateFullAuditPlan(auditId, themes, standardClauses, addInterview, addTopic, associateControlsWithTopic, themeToClausesMap);
+    }
     
     // Traitement de chaque thème
     for (const [themeName, interviews] of Object.entries(themeInterviews) as [string, any[]][]) {
@@ -213,8 +219,145 @@ export const importStandardAuditPlan = async (
   }
 };
 
+// Nouvelle fonction pour générer un plan d'audit complet pour toutes les thématiques
+const generateFullAuditPlan = async (
+  auditId: string,
+  themes: AuditTheme[],
+  standardClauses: StandardClause[],
+  addInterview: (interview: any) => Promise<any>,
+  addTopic?: (topic: Omit<AuditTopic, 'id'>) => Promise<AuditTopic | null>,
+  associateControlsWithTopic?: (topicId: string, controlIds: string[]) => Promise<boolean>,
+  themeToClausesMap?: Record<string, string[]>
+): Promise<boolean> => {
+  try {
+    console.log(`Generating complete audit plan for all ${themes.length} themes`);
+    
+    // Dates de début et dates suivantes
+    const startDate = new Date();
+    startDate.setHours(9, 0, 0, 0);
+    
+    // Créer des interviews pour chaque thème
+    let currentDate = new Date(startDate);
+    let morningSlot = true; // Alterner entre matin et après-midi
+    
+    for (const theme of themes) {
+      if (!theme || !theme.id || !theme.name) continue;
+      
+      console.log(`Processing theme: ${theme.name} (${theme.id})`);
+      
+      // Création de topic si les fonctions nécessaires sont disponibles
+      if (addTopic && associateControlsWithTopic && themeToClausesMap) {
+        const topicName = `Topic - ${theme.name}`;
+        try {
+          const topic = await addTopic({
+            name: topicName,
+            description: `Topic automatiquement créé pour le thème ${theme.name}`
+          });
+          
+          if (topic && topic.id) {
+            // Association avec les contrôles pertinents
+            const clauseRefs = themeToClausesMap[theme.name] || [];
+            if (clauseRefs.length > 0 && Array.isArray(standardClauses) && standardClauses.length > 0) {
+              // Filtrer les clauses standards correspondantes
+              const relevantClauseIds = standardClauses
+                .filter(clause => clause && clause.referenceCode && 
+                  clauseRefs.some(ref => clause.referenceCode.startsWith(ref)))
+                .map(clause => clause.id);
+              
+              if (relevantClauseIds.length > 0) {
+                console.log(`Associating ${relevantClauseIds.length} controls with topic: ${topic.id}`);
+                await associateControlsWithTopic(topic.id, relevantClauseIds);
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error creating topic for theme ${theme.name}:`, error);
+        }
+      }
+      
+      // Gérer les heures de début
+      let interviewTime = new Date(currentDate);
+      if (!morningSlot) {
+        interviewTime.setHours(14, 0, 0, 0); // Après-midi
+      }
+      
+      let controlRefs = "";
+      if (themeToClausesMap && themeToClausesMap[theme.name]) {
+        controlRefs = themeToClausesMap[theme.name].join(', ');
+      }
+      
+      // Créer l'interview
+      const interviewData = {
+        auditId,
+        themeId: theme.id,
+        title: `Interview: ${theme.name}`,
+        description: `Thématique: ${theme.name}${theme.description ? ` - ${theme.description}` : ''}`,
+        startTime: interviewTime.toISOString(),
+        durationMinutes: 90, // 1h30 par interview
+        controlRefs: controlRefs,
+        location: 'À déterminer'
+      };
+      
+      console.log(`Adding interview for theme ${theme.name}: ${interviewTime.toLocaleString()}`);
+      await addInterview(interviewData);
+      
+      // Passer au créneau suivant
+      if (morningSlot) {
+        morningSlot = false;
+      } else {
+        morningSlot = true;
+        // Passer au jour suivant si on a fini la journée
+        currentDate.setDate(currentDate.getDate() + 1);
+        
+        // Si c'est un weekend, passer au lundi
+        const dayOfWeek = currentDate.getDay();
+        if (dayOfWeek === 0) { // Dimanche
+          currentDate.setDate(currentDate.getDate() + 1);
+        } else if (dayOfWeek === 6) { // Samedi
+          currentDate.setDate(currentDate.getDate() + 2);
+        }
+      }
+    }
+    
+    // Ajouter une réunion d'ouverture au début
+    const openingMeeting = {
+      auditId,
+      themeId: themes.find(t => t.name === 'ADMIN')?.id,
+      title: 'Réunion d\'ouverture',
+      description: 'Présentation de l\'audit et des objectifs',
+      startTime: startDate.toISOString(),
+      durationMinutes: 60,
+      location: 'Salle de réunion principale'
+    };
+    
+    await addInterview(openingMeeting);
+    
+    // Ajouter une réunion de clôture à la fin
+    const closingDate = new Date(currentDate);
+    closingDate.setHours(16, 0, 0, 0);
+    
+    const closingMeeting = {
+      auditId,
+      themeId: themes.find(t => t.name === 'Cloture')?.id,
+      title: 'Réunion de clôture',
+      description: 'Présentation des conclusions préliminaires',
+      startTime: closingDate.toISOString(),
+      durationMinutes: 60,
+      location: 'Salle de réunion principale'
+    };
+    
+    await addInterview(closingMeeting);
+    
+    console.log(`Successfully generated complete audit plan for audit ID: ${auditId}`);
+    return true;
+  } catch (error) {
+    console.error('Error generating complete audit plan:', error);
+    return false;
+  }
+};
+
 // Fonction pour générer un plan standard avec des dates relatives
-const createStandardPlan = (): AuditInterview[] => {
+const createStandardPlan = (themes: AuditTheme[] = []): AuditInterview[] => {
   console.log('Creating standard plan with relative dates');
   const now = new Date();
   const tomorrow = new Date();
@@ -233,49 +376,121 @@ const createStandardPlan = (): AuditInterview[] => {
   const tomorrowAfternoonStart = new Date(tomorrow);
   tomorrowAfternoonStart.setHours(14, 0, 0, 0);
 
+  // Obtenir les IDs des thèmes standard
+  const adminThemeId = themes.find(t => t.name === 'ADMIN')?.id || 'theme-1';
+  const exploitationThemeId = themes.find(t => t.name === 'Exploitation & réseaux')?.id || 'theme-2';
+  const rhThemeId = themes.find(t => t.name === 'Sécurité des ressources humaines')?.id || 'theme-5';
+  const clotureThemeId = themes.find(t => t.name === 'Cloture')?.id || 'theme-12';
+  
+  // Si on a d'autres thèmes disponibles, on les ajoute également
+  const otherThemes = themes.filter(t => 
+    t.name !== 'ADMIN' && 
+    t.name !== 'Exploitation & réseaux' && 
+    t.name !== 'Sécurité des ressources humaines' && 
+    t.name !== 'Cloture'
+  );
+  
   // Générer des IDs uniques pour les interviews du plan standard
   const genInterviewId = () => `interview-standard-${Math.random().toString(36).substring(2, 7)}`;
   
+  // Créer le plan standard de base
   const standardPlan = [
     {
       id: genInterviewId(),
       startTime: morningStart.toISOString(),
-      themeId: 'theme-1',
+      themeId: adminThemeId,
       title: 'Réunion d\'ouverture',
       description: 'Présentation de l\'audit et des objectifs',
       durationMinutes: 60,
       location: 'Salle de réunion principale',
+      Thème: 'ADMIN',
+      'Date-Heure': morningStart.toLocaleString(),
+      'Titre': 'Réunion d\'ouverture',
+      'Clause/Contrôle': null
     },
     {
       id: genInterviewId(),
       startTime: afternoonStart.toISOString(),
-      themeId: 'theme-2',
+      themeId: exploitationThemeId,
       title: 'Sécurité des communications',
       description: 'Revue des mécanismes de protection des communications',
       durationMinutes: 90,
       location: 'Bureau DSI',
       controlRefs: 'A.8.15 Sécurité des communications, A.8.16 Transfert d\'informations',
+      Thème: 'Exploitation & réseaux',
+      'Date-Heure': afternoonStart.toLocaleString(),
+      'Titre': 'Sécurité des communications',
+      'Clause/Contrôle': 'A.8.15 Sécurité des communications, A.8.16 Transfert d\'informations'
     },
     {
       id: genInterviewId(),
       startTime: tomorrowMorningStart.toISOString(),
-      themeId: 'theme-5',
+      themeId: rhThemeId,
       title: 'Gestion des ressources humaines',
       description: 'Sécurité des RH et sensibilisation du personnel',
       durationMinutes: 90,
       location: 'Salle de formation',
       controlRefs: 'A.7 Sécurité des ressources humaines',
+      Thème: 'Sécurité des ressources humaines',
+      'Date-Heure': tomorrowMorningStart.toLocaleString(),
+      'Titre': 'Gestion des ressources humaines',
+      'Clause/Contrôle': 'A.7 Sécurité des ressources humaines'
     },
     {
       id: genInterviewId(),
       startTime: tomorrowAfternoonStart.toISOString(),
-      themeId: 'theme-12',
+      themeId: clotureThemeId,
       title: 'Réunion de clôture',
       description: 'Présentation des conclusions préliminaires',
       durationMinutes: 60,
       location: 'Salle de réunion principale',
+      Thème: 'Cloture',
+      'Date-Heure': tomorrowAfternoonStart.toLocaleString(),
+      'Titre': 'Réunion de clôture',
+      'Clause/Contrôle': null
     }
   ];
+  
+  // Ajouter d'autres thèmes si disponibles
+  let dayOffset = 2; // Commencer le 3ème jour
+  
+  otherThemes.forEach((theme, index) => {
+    const interviewDate = new Date(now);
+    interviewDate.setDate(now.getDate() + dayOffset);
+    
+    // Alterner entre matin et après-midi
+    const isMorning = index % 2 === 0;
+    interviewDate.setHours(isMorning ? 9 : 14, 0, 0, 0);
+    
+    // Si on a déjà prévu deux interviews pour la journée, passer au jour suivant
+    if (index > 0 && index % 2 === 0) {
+      dayOffset++;
+    }
+    
+    // Éviter les weekends
+    const dayOfWeek = interviewDate.getDay();
+    if (dayOfWeek === 0) { // Dimanche
+      interviewDate.setDate(interviewDate.getDate() + 1);
+      dayOffset++;
+    } else if (dayOfWeek === 6) { // Samedi
+      interviewDate.setDate(interviewDate.getDate() + 2);
+      dayOffset += 2;
+    }
+    
+    standardPlan.push({
+      id: genInterviewId(),
+      startTime: interviewDate.toISOString(),
+      themeId: theme.id,
+      title: `Interview: ${theme.name}`,
+      description: `Thématique: ${theme.name}`,
+      durationMinutes: 90,
+      location: 'À déterminer',
+      Thème: theme.name,
+      'Date-Heure': interviewDate.toLocaleString(),
+      'Titre': `Interview: ${theme.name}`,
+      'Clause/Contrôle': null
+    });
+  });
   
   return standardPlan as unknown as AuditInterview[];
 };

@@ -42,7 +42,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     await controlsHook.fetchControls();
   };
 
-  const handleImportStandardAuditPlan = async (auditId: string, planData: any[]): Promise<boolean> => {
+  const handleImportStandardAuditPlan = async (auditId: string, planData: any[], customThemes?: any[]): Promise<boolean> => {
     console.log(`DataProvider: Starting import of standard audit plan for audit ID: ${auditId}`);
     
     if (!auditId) {
@@ -51,8 +51,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     
     try {
-      // Assurez-vous que les thèmes et les clauses standard sont chargés
-      const themes = await themesHook.fetchThemes();
+      // Utiliser les thèmes personnalisés s'ils sont fournis, sinon charger tous les thèmes
+      let themes;
+      if (customThemes && Array.isArray(customThemes) && customThemes.length > 0) {
+        console.log(`DataProvider: Using ${customThemes.length} custom themes`);
+        themes = customThemes;
+      } else {
+        themes = await themesHook.fetchThemes();
+        console.log(`DataProvider: Loaded ${themes.length} themes from database`);
+      }
+      
       const clauses = await standardClausesHook.fetchStandardClauses();
       
       console.log(`DataProvider: Loaded ${themes.length} themes and ${clauses.length} standard clauses`);

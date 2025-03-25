@@ -27,7 +27,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   endDate,
   onPlanGenerated
 }) => {
-  const { generateAuditPlan, fetchTopics, topics, themes, importStandardAuditPlan } = useData();
+  const { generateAuditPlan, fetchTopics, topics, themes, fetchThemes, importStandardAuditPlan } = useData();
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -36,15 +36,28 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   const [activeTab, setActiveTab] = useState('dates');
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [importSuccess, setImportSuccess] = useState<boolean | null>(null);
+  const [availableThemes, setAvailableThemes] = useState<any[]>([]);
 
   // Charge les thèmes au chargement du composant
   useEffect(() => {
     const loadInitialData = async () => {
-      await fetchTopics();
+      try {
+        await fetchTopics();
+        const themeData = await fetchThemes();
+        setAvailableThemes(themeData);
+        
+        // Par défaut, toutes les thématiques sont sélectionnées
+        if (themeData && themeData.length > 0) {
+          const themeIds = themeData.map(theme => theme.id);
+          setSelectedThemes(themeIds);
+        }
+      } catch (error) {
+        console.error("Erreur lors du chargement des données initiales:", error);
+      }
     };
     
     loadInitialData();
-  }, [fetchTopics]);
+  }, [fetchTopics, fetchThemes]);
 
   const handleGeneratePlan = async () => {
     if (!planStartDate || !planEndDate) {
@@ -111,36 +124,28 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
       return;
     }
     
-    // Charger ici le plan d'audit standard (qui serait normalement fourni par l'utilisateur ou chargé depuis un fichier)
-    // Pour cet exemple, nous utilisons un plan d'audit standard formaté selon le JSON fourni
-    const demoStandardPlan = [
-      {
-        "Date-Heure": "March 17, 2025 8:30 AM (GMT+1) → 9:00 AM",
-        "Thème": "ADMIN",
-        "Titre": "Réunion d'ouverture",
-        "Clause/Contrôle": null
-      },
-      {
-        "Date-Heure": "March 17, 2025 9:00 AM (GMT+1) → 10:00 AM",
-        "Thème": "Exploitation & réseaux",
-        "Titre": "Sécurité des communications",
-        "Clause/Contrôle": "A.8.15 Sécurité des communications , A.8.16 Transfert d'informations "
-      },
-      // Plus d'entrées ici...
-      {
-        "Date-Heure": "March 18, 2025 5:00 PM (GMT+1) → 5:30 PM",
-        "Thème": "Cloture",
-        "Titre": "Réunion de cloture",
-        "Clause/Contrôle": null
-      }
-    ];
-
+    // Vérifier qu'il y a des thèmes sélectionnés
+    if (selectedThemes.length === 0) {
+      toast({
+        title: 'Aucune thématique sélectionnée',
+        description: 'Veuillez sélectionner au moins une thématique pour le plan d\'audit',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setIsImporting(true);
     setImportSuccess(null);
     
     try {
-      console.log('Calling importStandardAuditPlan with auditId:', auditId);
-      const success = await importStandardAuditPlan(auditId, demoStandardPlan);
+      // Filtrer les thèmes disponibles selon les thèmes sélectionnés
+      const selectedThemesData = availableThemes.filter(theme => selectedThemes.includes(theme.id));
+      
+      console.log(`Selected themes: ${selectedThemesData.map(t => t.name).join(', ')}`);
+      
+      // Créer le plan d'audit avec planData vide pour forcer l'utilisation du plan standard
+      // mais avec les thèmes sélectionnés
+      const success = await importStandardAuditPlan(auditId, [], selectedThemesData);
       
       if (success) {
         toast({
@@ -198,6 +203,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
   };
 
   const handleThemeSelectionChange = (selectedThemeIds: string[]) => {
+    console.log(`Theme selection changed to: ${selectedThemeIds.join(', ')}`);
     setSelectedThemes(selectedThemeIds);
   };
 
@@ -259,7 +265,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
               <Alert className="bg-green-50 border-green-200">
                 <AlertTitle className="text-green-600">Plan d'audit créé avec succès</AlertTitle>
                 <AlertDescription className="text-green-600">
-                  Le plan d'audit standard a été créé. Vous pouvez maintenant visualiser et modifier les interviews dans l'onglet Calendrier.
+                  Le plan d'audit standard a été créé avec {selectedThemes.length} thématiques. Vous pouvez maintenant visualiser et modifier les interviews dans l'onglet Calendrier.
                 </AlertDescription>
               </Alert>
             )}
@@ -291,7 +297,7 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             <Button variant="outline" onClick={() => setActiveTab('dates')}>
               Retour aux dates
             </Button>
-            <Button onClick={handleImportStandardPlan} disabled={isImporting}>
+            <Button onClick={handleImportStandardPlan} disabled={isImporting || selectedThemes.length === 0}>
               {isImporting ? (
                 <>
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
