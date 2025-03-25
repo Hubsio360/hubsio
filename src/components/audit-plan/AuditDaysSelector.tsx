@@ -5,8 +5,10 @@ import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays, isBefore, isAfter, isSameDay, parseISO } from 'date-fns';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Calendar as CalendarIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 interface AuditDaysSelectorProps {
   startDate: string;
