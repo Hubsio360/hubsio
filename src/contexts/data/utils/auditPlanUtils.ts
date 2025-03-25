@@ -1,5 +1,5 @@
 
-import { AuditTheme, StandardClause, AuditTopic } from '@/types';
+import { AuditTheme, StandardClause, AuditTopic, AuditInterview } from '@/types';
 
 export const importStandardAuditPlan = async (
   auditId: string, 
@@ -214,7 +214,8 @@ export const importStandardAuditPlan = async (
 };
 
 // Fonction pour générer un plan standard avec des dates relatives
-const createStandardPlan = () => {
+const createStandardPlan = (): AuditInterview[] => {
+  console.log('Creating standard plan with relative dates');
   const now = new Date();
   const tomorrow = new Date();
   tomorrow.setDate(now.getDate() + 1);
@@ -231,44 +232,50 @@ const createStandardPlan = () => {
   
   const tomorrowAfternoonStart = new Date(tomorrow);
   tomorrowAfternoonStart.setHours(14, 0, 0, 0);
+
+  // Générer des IDs uniques pour les interviews du plan standard
+  const genInterviewId = () => `interview-standard-${Math.random().toString(36).substring(2, 7)}`;
   
   const standardPlan = [
     {
-      'Date-Heure': morningStart.toISOString(),
-      'Thème': 'ADMIN',
-      'Titre': 'Réunion d\'ouverture',
-      'Clause/Contrôle': null,
-      durationMinutes: 60
+      id: genInterviewId(),
+      startTime: morningStart.toISOString(),
+      themeId: 'theme-1',
+      title: 'Réunion d\'ouverture',
+      description: 'Présentation de l\'audit et des objectifs',
+      durationMinutes: 60,
+      location: 'Salle de réunion principale',
     },
     {
-      'Date-Heure': afternoonStart.toISOString(),
-      'Thème': 'Exploitation & réseaux',
-      'Titre': 'Sécurité des communications',
-      'Clause/Contrôle': 'A.8.15 Sécurité des communications, A.8.16 Transfert d\'informations',
-      durationMinutes: 90
+      id: genInterviewId(),
+      startTime: afternoonStart.toISOString(),
+      themeId: 'theme-2',
+      title: 'Sécurité des communications',
+      description: 'Revue des mécanismes de protection des communications',
+      durationMinutes: 90,
+      location: 'Bureau DSI',
+      controlRefs: 'A.8.15 Sécurité des communications, A.8.16 Transfert d\'informations',
     },
     {
-      'Date-Heure': tomorrowMorningStart.toISOString(),
-      'Thème': 'Sécurité des ressources humaines',
-      'Titre': 'Gestion des ressources humaines',
-      'Clause/Contrôle': 'A.7 Sécurité des ressources humaines',
-      durationMinutes: 90
+      id: genInterviewId(),
+      startTime: tomorrowMorningStart.toISOString(),
+      themeId: 'theme-5',
+      title: 'Gestion des ressources humaines',
+      description: 'Sécurité des RH et sensibilisation du personnel',
+      durationMinutes: 90,
+      location: 'Salle de formation',
+      controlRefs: 'A.7 Sécurité des ressources humaines',
     },
     {
-      'Date-Heure': tomorrowAfternoonStart.toISOString(),
-      'Thème': 'Gouvernance',
-      'Titre': 'Politiques de sécurité',
-      'Clause/Contrôle': 'A.5 Politiques de sécurité de l\'information',
-      durationMinutes: 120
-    },
-    {
-      'Date-Heure': new Date(tomorrowAfternoonStart.getTime() + 180 * 60000).toISOString(),
-      'Thème': 'Cloture',
-      'Titre': 'Réunion de clôture',
-      'Clause/Contrôle': null,
-      durationMinutes: 60
+      id: genInterviewId(),
+      startTime: tomorrowAfternoonStart.toISOString(),
+      themeId: 'theme-12',
+      title: 'Réunion de clôture',
+      description: 'Présentation des conclusions préliminaires',
+      durationMinutes: 60,
+      location: 'Salle de réunion principale',
     }
   ];
   
-  return standardPlan;
+  return standardPlan as unknown as AuditInterview[];
 };

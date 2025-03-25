@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,21 +14,27 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuditPlanCalendarProps {
   auditId: string;
+  interviews: AuditInterview[];
+  loading?: boolean;
   onEditInterview?: (interview: AuditInterview) => void;
 }
 
-const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditInterview }) => {
-  const { fetchInterviewsByAuditId, getParticipantsByInterviewId, themes } = useData();
-  const [interviews, setInterviews] = useState<AuditInterview[]>([]);
+const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ 
+  auditId, 
+  interviews, 
+  loading = false,
+  onEditInterview 
+}) => {
+  const { getParticipantsByInterviewId, themes } = useData();
   const [participants, setParticipants] = useState<Record<string, InterviewParticipant[]>>({});
   const [users, setUsers] = useState<Record<string, User>>({});
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [participantsError, setParticipantsError] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fonction memoizée pour calculer les jours qui contiennent des interviews
-  const getInterviewDays = useCallback(() => {
+  const interviewDays = useMemo(() => {
     const days = new Set<number>();
     
     interviews.forEach((interview) => {
@@ -51,85 +57,93 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
     return Array.from(days).map(timestamp => new Date(timestamp));
   }, [interviews]);
 
-  // Fonction pour charger les interviews
-  const loadInterviews = useCallback(async () => {
-    if (!auditId) return;
-    
-    setLoading(true);
-    setLoadError(null);
-    
-    try {
-      const interviewsData = await fetchInterviewsByAuditId(auditId);
-      
-      if (interviewsData && Array.isArray(interviewsData)) {
-        setInterviews(interviewsData);
-        
-        // Charger les participants pour chaque interview
-        if (interviewsData.length > 0) {
-          const participantsMap: Record<string, InterviewParticipant[]> = {};
-          
-          await Promise.all(
-            interviewsData.map(async (interview) => {
-              if (interview && interview.id) {
-                try {
-                  const interviewParticipants = await getParticipantsByInterviewId(interview.id);
-                  if (interviewParticipants && Array.isArray(interviewParticipants)) {
-                    participantsMap[interview.id] = interviewParticipants;
-                  }
-                } catch (error) {
-                  console.error(`Error loading participants for interview ${interview.id}:`, error);
-                }
-              }
-            })
-          );
-          
-          setParticipants(participantsMap);
-        }
-      } else {
-        setInterviews([]);
-        console.warn('No interviews data or invalid data returned');
-      }
-    } catch (error) {
-      console.error('Error loading audit interviews:', error);
-      setLoadError('Impossible de charger le plan d\'audit');
-    } finally {
-      setLoading(false);
-    }
-  }, [auditId, fetchInterviewsByAuditId, getParticipantsByInterviewId]);
-
-  // Charger les interviews au démarrage
+  // Charger les participants pour chaque interview
   useEffect(() => {
-    if (auditId) {
-      loadInterviews();
-    }
-  }, [auditId, loadInterviews]);
+    const loadParticipants = async () => {
+      // Ne charger les participants que si nous avons des interviews
+      if (!interviews || interviews.length === 0) {
+        return;
+      }
+      
+      setLoadingParticipants(true);
+      setParticipantsError(null);
+      
+      try {
+        const participantsMap: Record<string, InterviewParticipant[]> = {};
+        
+        const uniqueInterviewIds = interviews
+          .filter(interview => interview && interview.id && typeof interview.id === 'string')
+          .map(interview => interview.id);
+        
+        console.log(`Loading participants for ${uniqueInterviewIds.length} interviews`);
+        
+        // Utiliser Promise.allSettled pour éviter l'échec complet si une requête échoue
+        const results = await Promise.allSettled(
+          uniqueInterviewIds.map(async (interviewId) => {
+            try {
+              // Vérifier si l'ID est au format attendu par la DB
+              // Pour les interviews générées localement, nous pouvons simplement retourner un tableau vide
+              if (!interviewId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+                return { interviewId, participants: [] };
+              }
+              
+              const interviewParticipants = await getParticipantsByInterviewId(interviewId);
+              return { interviewId, participants: interviewParticipants || [] };
+            } catch (error) {
+              console.error(`Error loading participants for interview ${interviewId}:`, error);
+              return { interviewId, participants: [], error };
+            }
+          })
+        );
+        
+        // Traiter les résultats
+        results.forEach((result) => {
+          if (result.status === 'fulfilled') {
+            const { interviewId, participants } = result.value;
+            participantsMap[interviewId] = participants;
+          }
+        });
+        
+        setParticipants(participantsMap);
+      } catch (error) {
+        console.error('Error loading participants:', error);
+        setParticipantsError('Impossible de charger les participants');
+      } finally {
+        setLoadingParticipants(false);
+      }
+    };
+    
+    loadParticipants();
+  }, [interviews, getParticipantsByInterviewId]);
 
   // Filtrer les interviews par date sélectionnée
-  const selectedDateInterviews = interviews
-    .filter((interview) => {
-      if (!selectedDate || !interview.startTime) return false;
-      
-      try {
-        const interviewDate = parseISO(interview.startTime);
-        if (isNaN(interviewDate.getTime())) return false;
+  const selectedDateInterviews = useMemo(() => {
+    return interviews
+      .filter((interview) => {
+        if (!selectedDate || !interview.startTime) return false;
         
-        return (
-          interviewDate.getDate() === selectedDate.getDate() &&
-          interviewDate.getMonth() === selectedDate.getMonth() &&
-          interviewDate.getFullYear() === selectedDate.getFullYear()
-        );
-      } catch (error) {
-        console.error('Error parsing date:', interview.startTime);
-        return false;
-      }
-    })
-    .sort((a, b) => {
-      try {
-        return parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
-      } catch (error) {
-        return 0;
-      }
-    });
+        try {
+          const interviewDate = parseISO(interview.startTime);
+          if (isNaN(interviewDate.getTime())) return false;
+          
+          return (
+            interviewDate.getDate() === selectedDate.getDate() &&
+            interviewDate.getMonth() === selectedDate.getMonth() &&
+            interviewDate.getFullYear() === selectedDate.getFullYear()
+          );
+        } catch (error) {
+          console.error('Error parsing date:', interview.startTime);
+          return false;
+        }
+      })
+      .sort((a, b) => {
+        try {
+          return parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
+        } catch (error) {
+          return 0;
+        }
+      });
+  }, [interviews, selectedDate]);
 
   // Fonction pour calculer l'heure de fin d'une interview
   const getEndTime = (startTime: string, durationMinutes: number) => {
@@ -184,11 +198,6 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
     return theme ? theme.name : 'Sans thème';
   };
 
-  // Gestionnaire pour réessayer le chargement
-  const handleRetry = () => {
-    loadInterviews();
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="md:col-span-1">
@@ -202,9 +211,9 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
             selected={selectedDate}
             onSelect={setSelectedDate}
             locale={fr}
-            className="rounded-md border mx-auto"
+            className="rounded-md border mx-auto pointer-events-auto"
             modifiers={{
-              hasInterview: getInterviewDays(),
+              hasInterview: interviewDays,
             }}
             modifiersClassNames={{
               hasInterview: 'bg-blue-100 font-bold',
@@ -228,18 +237,13 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
                 )}
               </CardTitle>
               <CardDescription>
-                {loadError ? (
-                  'Erreur de chargement'
+                {loading ? (
+                  'Chargement des interviews...'
                 ) : selectedDateInterviews.length > 0
                   ? `${selectedDateInterviews.length} interview${selectedDateInterviews.length > 1 ? 's' : ''} planifiée${selectedDateInterviews.length > 1 ? 's' : ''}`
                   : 'Aucune interview planifiée pour cette date'}
               </CardDescription>
             </div>
-            {loadError && (
-              <Button variant="outline" size="sm" onClick={handleRetry}>
-                Réessayer
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -247,13 +251,6 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
             <div className="py-8 text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-muted-foreground">Chargement du plan d'audit...</p>
-            </div>
-          ) : loadError ? (
-            <div className="py-8 text-center border rounded-lg">
-              <p className="text-muted-foreground">{loadError}</p>
-              <Button variant="outline" className="mt-4" onClick={handleRetry}>
-                Réessayer
-              </Button>
             </div>
           ) : selectedDateInterviews.length > 0 ? (
             <ScrollArea className="h-[400px] pr-4">
