@@ -28,29 +28,97 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [activeTab, setActiveTab] = useState('calendar');
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedInterview, setSelectedInterview] = useState<AuditInterview | null>(null);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
   const [loadAttempted, setLoadAttempted] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
       if (!auditId) {
         console.log('No audit ID provided, skipping data load');
         setLoading(false);
+        setInitialLoadComplete(true);
+        return;
+      }
+      
+      if (loadAttempted && initialLoadComplete) {
+        // Évite les rechargements répétés qui causent le scintillement
         return;
       }
       
       setLoading(true);
+      setLoadError(null);
+      
       try {
+        // Chargement des topics avec gestion d'erreur silencieuse
         try {
           await fetchTopics();
         } catch (topicError) {
           console.error('Error loading topics, continuing with interviews:', topicError);
         }
         
-        const interviewsData = await fetchInterviewsByAuditId(auditId);
-        console.log('Loaded interviews:', interviewsData);
+        // Chargement des interviews
+        try {
+          const interviewsData = await fetchInterviewsByAuditId(auditId);
+          console.log('Loaded interviews:', interviewsData);
+          
+          if (interviewsData && Array.isArray(interviewsData)) {
+            setInterviews(interviewsData);
+            
+            // Organiser les interviews par thème
+            const themeMap: Record<string, AuditInterview[]> = {};
+            interviewsData.forEach(interview => {
+              const theme = interview.themeId || 'Sans thème';
+              if (!themeMap[theme]) {
+                themeMap[theme] = [];
+              }
+              themeMap[theme].push(interview);
+            });
+            setInterviewsByTheme(themeMap);
+          } else {
+            console.warn('No valid interviews data returned');
+            setInterviews([]);
+            setInterviewsByTheme({});
+          }
+        } catch (interviewError) {
+          console.error('Error loading interviews:', interviewError);
+          setLoadError('Impossible de charger les interviews');
+          setInterviews([]);
+          setInterviewsByTheme({});
+        }
+      } catch (error) {
+        console.error('Error loading audit plan data:', error);
+        setLoadError('Impossible de charger les données du plan d\'audit');
+      } finally {
+        setLoading(false);
+        setLoadAttempted(true);
+        setInitialLoadComplete(true);
+      }
+    };
+    
+    if (auditId) {
+      loadData();
+    }
+  }, [auditId, fetchInterviewsByAuditId, fetchTopics, loadAttempted, initialLoadComplete]);
+
+  const refreshInterviews = async () => {
+    if (!auditId) {
+      console.log('No audit ID provided, skipping refresh');
+      return;
+    }
+    
+    setLoading(true);
+    setLoadError(null);
+    
+    try {
+      console.log('Refreshing interviews for audit:', auditId);
+      const interviewsData = await fetchInterviewsByAuditId(auditId);
+      console.log('Refreshed interviews:', interviewsData);
+      
+      if (interviewsData && Array.isArray(interviewsData)) {
         setInterviews(interviewsData);
         
         const themeMap: Record<string, AuditInterview[]> = {};
@@ -62,51 +130,16 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           themeMap[theme].push(interview);
         });
         setInterviewsByTheme(themeMap);
-      } catch (error) {
-        console.error('Error loading audit plan data:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les données du plan d\'audit',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-        setLoadAttempted(true);
-      }
-    };
-    
-    if (auditId) {
-      loadData();
-    }
-  }, [auditId, fetchInterviewsByAuditId, fetchTopics, toast]);
-
-  const refreshInterviews = async () => {
-    if (!auditId) {
-      console.log('No audit ID provided, skipping refresh');
-      return;
-    }
-    
-    try {
-      console.log('Refreshing interviews for audit:', auditId);
-      const interviewsData = await fetchInterviewsByAuditId(auditId);
-      console.log('Refreshed interviews:', interviewsData);
-      setInterviews(interviewsData);
-      
-      const themeMap: Record<string, AuditInterview[]> = {};
-      interviewsData.forEach(interview => {
-        const theme = interview.themeId || 'Sans thème';
-        if (!themeMap[theme]) {
-          themeMap[theme] = [];
+        
+        if (interviewsData.length > 0 && activeTab === 'generate') {
+          setActiveTab('calendar');
         }
-        themeMap[theme].push(interview);
-      });
-      setInterviewsByTheme(themeMap);
-      
-      if (interviewsData.length > 0 && activeTab === 'generate') {
-        setActiveTab('calendar');
       }
     } catch (error) {
       console.error('Error refreshing interviews:', error);
+      setLoadError('Impossible de rafraîchir les interviews');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -170,6 +203,20 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Chargement du plan d'audit...</p>
               </div>
+            ) : loadError ? (
+              <div className="py-8 text-center border rounded-lg">
+                <p className="text-muted-foreground">{loadError}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4" 
+                  onClick={() => {
+                    setLoadAttempted(false);
+                    setInitialLoadComplete(false);
+                  }}
+                >
+                  Réessayer
+                </Button>
+              </div>
             ) : interviews.length > 0 ? (
               <AuditPlanCalendar 
                 auditId={auditId} 
@@ -194,6 +241,20 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
               <div className="py-8 text-center">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
                 <p className="text-muted-foreground">Chargement des thématiques...</p>
+              </div>
+            ) : loadError ? (
+              <div className="py-8 text-center border rounded-lg">
+                <p className="text-muted-foreground">{loadError}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4" 
+                  onClick={() => {
+                    setLoadAttempted(false);
+                    setInitialLoadComplete(false);
+                  }}
+                >
+                  Réessayer
+                </Button>
               </div>
             ) : Object.keys(interviewsByTheme).length > 0 ? (
               <div className="space-y-6">

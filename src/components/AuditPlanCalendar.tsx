@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow, format, isToday, isTomorrow, parseISO, addMinutes } from 'date-fns';
 import { useData } from '@/contexts/DataContext';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuditPlanCalendarProps {
@@ -25,101 +24,156 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
   const [users, setUsers] = useState<Record<string, User>>({});
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Fonction memoizée pour calculer les jours qui contiennent des interviews
+  const getInterviewDays = useCallback(() => {
+    const days = new Set<number>();
+    
+    interviews.forEach((interview) => {
+      try {
+        const date = parseISO(interview.startTime);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = date.getMonth();
+          const day = date.getDate();
+          
+          // Créer une date sans heure pour comparer uniquement les jours
+          const dayDate = new Date(year, month, day);
+          days.add(dayDate.getTime());
+        }
+      } catch (error) {
+        console.error('Invalid date in interview:', interview.startTime);
+      }
+    });
+    
+    return Array.from(days).map(timestamp => new Date(timestamp));
+  }, [interviews]);
+
   // Fonction pour charger les interviews
-  const loadInterviews = async () => {
+  const loadInterviews = useCallback(async () => {
+    if (!auditId) return;
+    
     setLoading(true);
+    setLoadError(null);
+    
     try {
       const interviewsData = await fetchInterviewsByAuditId(auditId);
-      setInterviews(interviewsData);
       
-      // Charger les participants pour chaque interview
-      const participantsMap: Record<string, InterviewParticipant[]> = {};
-      
-      await Promise.all(
-        interviewsData.map(async (interview) => {
-          const interviewParticipants = await getParticipantsByInterviewId(interview.id);
-          participantsMap[interview.id] = interviewParticipants;
-        })
-      );
-      
-      setParticipants(participantsMap);
+      if (interviewsData && Array.isArray(interviewsData)) {
+        setInterviews(interviewsData);
+        
+        // Charger les participants pour chaque interview
+        if (interviewsData.length > 0) {
+          const participantsMap: Record<string, InterviewParticipant[]> = {};
+          
+          await Promise.all(
+            interviewsData.map(async (interview) => {
+              if (interview && interview.id) {
+                try {
+                  const interviewParticipants = await getParticipantsByInterviewId(interview.id);
+                  if (interviewParticipants && Array.isArray(interviewParticipants)) {
+                    participantsMap[interview.id] = interviewParticipants;
+                  }
+                } catch (error) {
+                  console.error(`Error loading participants for interview ${interview.id}:`, error);
+                }
+              }
+            })
+          );
+          
+          setParticipants(participantsMap);
+        }
+      } else {
+        setInterviews([]);
+        console.warn('No interviews data or invalid data returned');
+      }
     } catch (error) {
       console.error('Error loading audit interviews:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible de charger le plan d\'audit',
-        variant: 'destructive',
-      });
+      setLoadError('Impossible de charger le plan d\'audit');
     } finally {
       setLoading(false);
     }
-  };
+  }, [auditId, fetchInterviewsByAuditId, getParticipantsByInterviewId]);
 
   // Charger les interviews au démarrage
   useEffect(() => {
     if (auditId) {
       loadInterviews();
     }
-  }, [auditId]);
+  }, [auditId, loadInterviews]);
 
   // Filtrer les interviews par date sélectionnée
-  const selectedDateInterviews = interviews.filter((interview) => {
-    if (!selectedDate) return false;
-    
-    const interviewDate = parseISO(interview.startTime);
-    return (
-      interviewDate.getDate() === selectedDate.getDate() &&
-      interviewDate.getMonth() === selectedDate.getMonth() &&
-      interviewDate.getFullYear() === selectedDate.getFullYear()
-    );
-  }).sort((a, b) => 
-    parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime()
-  );
+  const selectedDateInterviews = interviews
+    .filter((interview) => {
+      if (!selectedDate || !interview.startTime) return false;
+      
+      try {
+        const interviewDate = parseISO(interview.startTime);
+        if (isNaN(interviewDate.getTime())) return false;
+        
+        return (
+          interviewDate.getDate() === selectedDate.getDate() &&
+          interviewDate.getMonth() === selectedDate.getMonth() &&
+          interviewDate.getFullYear() === selectedDate.getFullYear()
+        );
+      } catch (error) {
+        console.error('Error parsing date:', interview.startTime);
+        return false;
+      }
+    })
+    .sort((a, b) => {
+      try {
+        return parseISO(a.startTime).getTime() - parseISO(b.startTime).getTime();
+      } catch (error) {
+        return 0;
+      }
+    });
 
   // Fonction pour calculer l'heure de fin d'une interview
   const getEndTime = (startTime: string, durationMinutes: number) => {
-    const date = parseISO(startTime);
-    return addMinutes(date, durationMinutes);
-  };
-
-  // Fonction pour calculer les jours qui contiennent des interviews (pour le badge du calendrier)
-  const getInterviewDays = () => {
-    const days = new Set<number>();
-    
-    interviews.forEach((interview) => {
-      const date = parseISO(interview.startTime);
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const day = date.getDate();
-      
-      // Créer une date sans heure pour comparer uniquement les jours
-      const dayDate = new Date(year, month, day);
-      days.add(dayDate.getTime());
-    });
-    
-    return Array.from(days).map(timestamp => new Date(timestamp));
+    try {
+      const date = parseISO(startTime);
+      if (isNaN(date.getTime())) return new Date();
+      return addMinutes(date, durationMinutes);
+    } catch (error) {
+      console.error('Error calculating end time:', error);
+      return new Date();
+    }
   };
 
   // Formatter l'heure de l'interview
   const formatInterviewTime = (startTime: string, durationMinutes: number) => {
-    const start = parseISO(startTime);
-    const end = addMinutes(start, durationMinutes);
-    
-    return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
+    try {
+      const start = parseISO(startTime);
+      if (isNaN(start.getTime())) return "Heure invalide";
+      
+      const end = getEndTime(startTime, durationMinutes);
+      
+      return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}`;
+    } catch (error) {
+      console.error('Error formatting interview time:', error);
+      return "Heure invalide";
+    }
   };
 
   // Formatter la date relative (aujourd'hui, demain, etc.)
   const formatRelativeDate = (dateString: string) => {
-    const date = parseISO(dateString);
-    
-    if (isToday(date)) {
-      return 'Aujourd\'hui';
-    } else if (isTomorrow(date)) {
-      return 'Demain';
-    } else {
-      return format(date, 'EEEE d MMMM', { locale: fr });
+    try {
+      const date = parseISO(dateString);
+      if (isNaN(date.getTime())) return "Date invalide";
+      
+      if (isToday(date)) {
+        return 'Aujourd\'hui';
+      } else if (isTomorrow(date)) {
+        return 'Demain';
+      } else {
+        return format(date, 'EEEE d MMMM', { locale: fr });
+      }
+    } catch (error) {
+      console.error('Error formatting relative date:', error);
+      return "Date invalide";
     }
   };
 
@@ -128,6 +182,11 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
     if (!themeId) return 'Sans thème';
     const theme = themes.find(t => t.id === themeId);
     return theme ? theme.name : 'Sans thème';
+  };
+
+  // Gestionnaire pour réessayer le chargement
+  const handleRetry = () => {
+    loadInterviews();
   };
 
   return (
@@ -169,11 +228,18 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
                 )}
               </CardTitle>
               <CardDescription>
-                {selectedDateInterviews.length > 0
+                {loadError ? (
+                  'Erreur de chargement'
+                ) : selectedDateInterviews.length > 0
                   ? `${selectedDateInterviews.length} interview${selectedDateInterviews.length > 1 ? 's' : ''} planifiée${selectedDateInterviews.length > 1 ? 's' : ''}`
                   : 'Aucune interview planifiée pour cette date'}
               </CardDescription>
             </div>
+            {loadError && (
+              <Button variant="outline" size="sm" onClick={handleRetry}>
+                Réessayer
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -181,6 +247,13 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({ auditId, onEditIn
             <div className="py-8 text-center">
               <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-muted-foreground">Chargement du plan d'audit...</p>
+            </div>
+          ) : loadError ? (
+            <div className="py-8 text-center border rounded-lg">
+              <p className="text-muted-foreground">{loadError}</p>
+              <Button variant="outline" className="mt-4" onClick={handleRetry}>
+                Réessayer
+              </Button>
             </div>
           ) : selectedDateInterviews.length > 0 ? (
             <ScrollArea className="h-[400px] pr-4">
