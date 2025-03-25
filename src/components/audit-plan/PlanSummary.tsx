@@ -60,12 +60,17 @@ const PlanSummary: React.FC<PlanSummaryProps> = ({
         <Separator />
         
         <div className="flex items-center justify-between">
-          <span>Thématiques</span>
+          <span>Thématiques à auditer</span>
           <span className="font-medium">{topicsCount}</span>
         </div>
         
         <div className="flex items-center justify-between">
-          <span>Entretiens prévus</span>
+          <span>Entretiens thématiques</span>
+          <span className="font-medium">{topicsCount}</span>
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span>Total entretiens</span>
           <span className="font-medium">{interviewsCount}</span>
         </div>
         

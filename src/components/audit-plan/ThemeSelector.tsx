@@ -7,12 +7,14 @@ interface ThemeSelectorProps {
   auditId: string;
   selectedTopicIds: string[];
   onSelectionChange: (topicIds: string[]) => void;
+  excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
 }
 
 const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   auditId,
   selectedTopicIds,
-  onSelectionChange
+  onSelectionChange,
+  excludedThemeNames = ['ADMIN', 'Cloture']
 }) => {
   return (
     <Card>
@@ -25,7 +27,8 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       <CardContent>
         <TopicsList 
           auditId={auditId} 
-          onSelectionChange={onSelectionChange} 
+          onSelectionChange={onSelectionChange}
+          excludedThemeNames={excludedThemeNames}
         />
       </CardContent>
     </Card>

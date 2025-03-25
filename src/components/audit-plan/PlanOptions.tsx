@@ -16,6 +16,7 @@ interface PlanOptionsProps {
   themeDurations: Record<string, number>;
   selectedDays: string[];
   totalHours: number;
+  systemThemeNames?: string[];
   onTopicSelectionChange: (topicIds: string[]) => void;
   onDurationChange: (themeId: string, duration: number) => void;
   onSelectedDaysChange: (days: string[]) => void;
@@ -30,6 +31,7 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({
   themeDurations,
   selectedDays,
   totalHours,
+  systemThemeNames = ['ADMIN', 'Cloture'],
   onTopicSelectionChange,
   onDurationChange,
   onSelectedDaysChange
@@ -48,13 +50,15 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({
         auditId={auditId}
         selectedTopicIds={selectedTopicIds}
         onSelectionChange={onTopicSelectionChange}
+        excludedThemeNames={systemThemeNames}
       />
       
       {selectedTopicIds.length > 0 && themes.length > 0 && (
         <ThemeDurationSelector
-          themes={themes.filter(theme => selectedTopicIds.includes(theme.id))}
+          themes={themes}
           themeDurations={themeDurations}
           onDurationChange={onDurationChange}
+          excludedThemeNames={systemThemeNames}
         />
       )}
       

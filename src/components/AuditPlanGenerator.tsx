@@ -34,6 +34,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     requiredDays,
     hasOpeningClosing,
     themes,
+    systemThemeNames,
     handleThemeDurationChange,
     generatePlan
   } = useAuditPlanGenerator({
@@ -64,6 +65,7 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
               themeDurations={themeDurations}
               selectedDays={selectedDays}
               totalHours={totalHours}
+              systemThemeNames={systemThemeNames}
               onTopicSelectionChange={setSelectedTopicIds}
               onDurationChange={handleThemeDurationChange}
               onSelectedDaysChange={setSelectedDays}
@@ -72,7 +74,10 @@ export const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
             <div>
               <PlanActions 
                 generating={generating}
-                selectedTopicIds={selectedTopicIds}
+                selectedTopicIds={selectedTopicIds.filter(id => {
+                  const theme = themes.find(t => t.id === id);
+                  return theme && !systemThemeNames.includes(theme.name);
+                })}
                 selectedDays={selectedDays}
                 businessDays={selectedDays.length}
                 requiredDays={requiredDays}

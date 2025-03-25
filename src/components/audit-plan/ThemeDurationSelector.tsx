@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { AuditTheme } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,14 +9,21 @@ interface ThemeDurationSelectorProps {
   themes: AuditTheme[];
   themeDurations: Record<string, number>;
   onDurationChange: (themeId: string, duration: number) => void;
+  excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
 }
 
 const ThemeDurationSelector: React.FC<ThemeDurationSelectorProps> = ({
   themes,
   themeDurations,
-  onDurationChange
+  onDurationChange,
+  excludedThemeNames = ['ADMIN', 'Cloture']
 }) => {
-  if (!themes || themes.length === 0) {
+  // Filtrer les thèmes systèmes 
+  const filteredThemes = themes.filter(theme => 
+    !excludedThemeNames.includes(theme.name)
+  );
+  
+  if (!filteredThemes || filteredThemes.length === 0) {
     return <div className="text-muted-foreground">Aucune thématique disponible</div>;
   }
 
@@ -27,7 +34,7 @@ const ThemeDurationSelector: React.FC<ThemeDurationSelectorProps> = ({
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {themes.map((theme) => (
+          {filteredThemes.map((theme) => (
             <div key={theme.id} className="grid grid-cols-1 gap-2">
               <div className="flex justify-between items-center">
                 <Label htmlFor={`theme-duration-${theme.id}`} className="font-medium">

@@ -36,6 +36,9 @@ export const useAuditPlanGenerator = ({
   const [initialLoad, setInitialLoad] = useState(false);
   const [maxHoursPerDay] = useState(8); // 8 hours per day maximum
 
+  // Les thèmes systèmes pour les réunions d'ouverture et de clôture
+  const SYSTEM_THEME_NAMES = ['ADMIN', 'Cloture'];
+
   // Default durations for opening and closing meetings
   const OPENING_MEETING_DURATION = 60; // 60 minutes
   const CLOSING_MEETING_DURATION = 60; // 60 minutes
@@ -53,8 +56,17 @@ export const useAuditPlanGenerator = ({
         const existingInterviewsData = await fetchInterviewsByAuditId(auditId);
         setExistingInterviews(existingInterviewsData.length);
         
-        // Calculate unique themes from existing interviews
-        const uniqueThemes = new Set(existingInterviewsData.map(interview => interview.themeId).filter(Boolean));
+        // Calculate unique themes from existing interviews (excluding system themes)
+        const uniqueThemes = new Set(
+          existingInterviewsData
+            .filter(interview => {
+              const theme = themes.find(t => t.id === interview.themeId);
+              return theme && !SYSTEM_THEME_NAMES.includes(theme.name);
+            })
+            .map(interview => interview.themeId)
+            .filter(Boolean)
+        );
+        
         setExistingThemes(uniqueThemes.size);
         
         // Load available themes
@@ -90,23 +102,18 @@ export const useAuditPlanGenerator = ({
     // Add time for opening and closing meetings
     if (hasOpeningClosing) {
       totalMinutes += OPENING_MEETING_DURATION + CLOSING_MEETING_DURATION;
-      interviewCount += 2;
+      interviewCount += 2; // Ajouter 2 pour les réunions d'ouverture et de clôture
     }
     
-    // Add time for each selected topic/theme
+    // Add time for each selected topic/theme (excluding system themes)
     selectedTopicIds.forEach(topicId => {
-      // Find all themes related to this topic
-      const relatedThemeIds = themes
-        .filter(theme => theme.id === topicId) // For now, assuming topic IDs match theme IDs
-        .map(theme => theme.id);
-      
-      relatedThemeIds.forEach(themeId => {
-        if (themeId) {
-          const duration = themeDurations[themeId] || 60;
-          totalMinutes += duration;
-          interviewCount += 1;
-        }
-      });
+      // Vérifier que le thème n'est pas un thème système
+      const theme = themes.find(t => t.id === topicId);
+      if (theme && !SYSTEM_THEME_NAMES.includes(theme.name)) {
+        const duration = themeDurations[topicId] || 60;
+        totalMinutes += duration;
+        interviewCount += 1; // Une interview par thématique
+      }
     });
 
     // Convert minutes to hours
@@ -124,7 +131,7 @@ export const useAuditPlanGenerator = ({
       requiredDays: days,
       availableHoursPerDay
     };
-  }, [selectedTopicIds, themeDurations, themes, hasOpeningClosing, maxHoursPerDay]);
+  }, [selectedTopicIds, themeDurations, themes, hasOpeningClosing, maxHoursPerDay, SYSTEM_THEME_NAMES]);
 
   // Handle duration change for a specific theme
   const handleThemeDurationChange = (themeId: string, duration: number) => {
@@ -220,6 +227,7 @@ export const useAuditPlanGenerator = ({
     requiredDays,
     hasOpeningClosing,
     themes,
+    systemThemeNames: SYSTEM_THEME_NAMES,
     handleThemeDurationChange,
     generatePlan
   };

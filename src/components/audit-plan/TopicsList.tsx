@@ -9,9 +9,14 @@ import { useData } from '@/contexts/DataContext';
 interface TopicsListProps {
   auditId?: string;
   onSelectionChange?: (selectedThemes: string[]) => void;
+  excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
 }
 
-const TopicsList: React.FC<TopicsListProps> = ({ onSelectionChange, auditId }) => {
+const TopicsList: React.FC<TopicsListProps> = ({ 
+  onSelectionChange, 
+  auditId,
+  excludedThemeNames = ['ADMIN', 'Cloture']
+}) => {
   const { themes, fetchThemes, fetchInterviewsByAuditId } = useData();
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,10 +31,16 @@ const TopicsList: React.FC<TopicsListProps> = ({ onSelectionChange, auditId }) =
       setLoading(true);
       try {
         const themeData = await fetchThemes();
-        setAvailableThemes(themeData);
         
-        // Par défaut, toutes les thématiques sont sélectionnées
-        const themeIds = themeData.map(theme => theme.id);
+        // Filtrer les thèmes exclus (ADMIN, Cloture)
+        const filteredThemes = themeData.filter(theme => 
+          !excludedThemeNames.includes(theme.name)
+        );
+        
+        setAvailableThemes(filteredThemes);
+        
+        // Par défaut, toutes les thématiques non-exclues sont sélectionnées
+        const themeIds = filteredThemes.map(theme => theme.id);
         setSelectedThemes(themeIds);
         
         // Si un auditId est fourni, vérifier quelles thématiques sont déjà utilisées
@@ -62,7 +73,7 @@ const TopicsList: React.FC<TopicsListProps> = ({ onSelectionChange, auditId }) =
     };
 
     loadThemes();
-  }, [fetchThemes, fetchInterviewsByAuditId, auditId]); 
+  }, [fetchThemes, fetchInterviewsByAuditId, auditId, excludedThemeNames]);
 
   const handleThemeToggle = (themeId: string) => {
     setSelectedThemes(prev => {
@@ -103,7 +114,8 @@ const TopicsList: React.FC<TopicsListProps> = ({ onSelectionChange, auditId }) =
     <div className="space-y-2">
       <Label>Sélectionnez les thématiques d'audit à inclure</Label>
       <p className="text-sm text-muted-foreground mb-4">
-        Les topics et contrôles associés seront automatiquement créés selon la norme ISO 27001
+        Les topics et contrôles associés seront automatiquement créés selon la norme ISO 27001.
+        Les réunions d'ouverture et de clôture sont automatiquement incluses.
       </p>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
