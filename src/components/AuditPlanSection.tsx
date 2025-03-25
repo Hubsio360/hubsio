@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Plus, Layers, RefreshCw } from 'lucide-react';
 import AuditPlanCalendar from './AuditPlanCalendar';
-import AuditPlanGenerator from './AuditPlanGenerator';
+import { AuditPlanGenerator } from './AuditPlanGenerator';
 import EditInterviewDrawer from './EditInterviewDrawer';
 import { useToast } from '@/hooks/use-toast';
 
@@ -174,6 +174,10 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   };
 
+  const handleRefreshClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    refreshInterviews();
+  };
+
   const handleEditInterview = (interview: AuditInterview) => {
     setSelectedInterview(interview);
     setIsEditDrawerOpen(true);
@@ -226,7 +230,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={refreshInterviews}
+                    onClick={handleRefreshClick}
                     disabled={loading}
                   >
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
