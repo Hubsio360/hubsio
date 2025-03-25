@@ -211,7 +211,7 @@ const AuditPlanCalendar: React.FC<AuditPlanCalendarProps> = ({
             selected={selectedDate}
             onSelect={setSelectedDate}
             locale={fr}
-            className="rounded-md border mx-auto pointer-events-auto"
+            className="rounded-md border mx-auto pointer-events-auto max-w-full"
             modifiers={{
               hasInterview: interviewDays,
             }}

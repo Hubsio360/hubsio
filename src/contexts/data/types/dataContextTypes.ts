@@ -73,6 +73,7 @@ export interface DataContextProps {
   getControlsByTopicId: (topicId: string) => Promise<string[]>;
   
   fetchInterviewsByAuditId: (auditId: string) => Promise<AuditInterview[]>;
+  hasPlanForAudit: (auditId: string) => Promise<boolean>;
   addInterview: (interview: Omit<AuditInterview, 'id'>) => Promise<AuditInterview | null>;
   updateInterview: (id: string, updates: Partial<AuditInterview>) => Promise<AuditInterview | null>;
   deleteInterview: (id: string) => Promise<boolean>;

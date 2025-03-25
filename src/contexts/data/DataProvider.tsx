@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -83,6 +84,17 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  // Vérifier si un audit a un plan existant dans la base de données
+  const hasPlanForAudit = async (auditId: string): Promise<boolean> => {
+    try {
+      const interviews = await auditInterviewsHook.fetchRealInterviewsFromDB(auditId);
+      return interviews.length > 0;
+    } catch (error) {
+      console.error('Error checking if audit has a plan:', error);
+      return false;
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -135,6 +147,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         getControlsByTopicId: auditTopicsHook.getControlsByTopicId,
         
         fetchInterviewsByAuditId: auditInterviewsHook.fetchInterviewsByAuditId,
+        hasPlanForAudit,
         addInterview: auditInterviewsHook.addInterview,
         updateInterview: auditInterviewsHook.updateInterview,
         deleteInterview: auditInterviewsHook.deleteInterview,

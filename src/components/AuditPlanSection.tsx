@@ -70,12 +70,18 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         
         if (interviewsData && Array.isArray(interviewsData)) {
           // Si des interviews existent dans la base de données, le plan existe
-          setPlanExists(interviewsData.length > 0);
-          setInterviews(interviewsData);
+          // IMPORTANT: N'utiliser que les interviews avec un vrai ID de base de données (UUID format)
+          const realInterviews = interviewsData.filter(interview => 
+            interview.id && typeof interview.id === 'string' && 
+            interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+          );
+          
+          setPlanExists(realInterviews.length > 0);
+          setInterviews(realInterviews);
           
           // Organiser les interviews par thème
           const themeMap: Record<string, AuditInterview[]> = {};
-          interviewsData.forEach(interview => {
+          realInterviews.forEach(interview => {
             const theme = interview.themeId || 'Sans thème';
             if (!themeMap[theme]) {
               themeMap[theme] = [];
@@ -129,12 +135,18 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       console.log('Refreshed interviews:', interviewsData);
       
       if (interviewsData && Array.isArray(interviewsData)) {
+        // Filtrer pour n'avoir que les vrais interviews (avec UUID valide)
+        const realInterviews = interviewsData.filter(interview => 
+          interview.id && typeof interview.id === 'string' && 
+          interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
+        );
+        
         // Mettre à jour l'état du plan
-        setPlanExists(interviewsData.length > 0);
-        setInterviews(interviewsData);
+        setPlanExists(realInterviews.length > 0);
+        setInterviews(realInterviews);
         
         const themeMap: Record<string, AuditInterview[]> = {};
-        interviewsData.forEach(interview => {
+        realInterviews.forEach(interview => {
           const theme = interview.themeId || 'Sans thème';
           if (!themeMap[theme]) {
             themeMap[theme] = [];
@@ -148,7 +160,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           description: "Le plan d'audit a été actualisé avec succès",
         });
         
-        if (interviewsData.length > 0 && activeTab === 'generate') {
+        if (realInterviews.length > 0 && activeTab === 'generate') {
           setActiveTab('calendar');
         }
       } else {
