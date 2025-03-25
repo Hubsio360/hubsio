@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -633,5 +634,270 @@ const AuditDetail = () => {
               
               <div className="space-y-2">
                 <div className="flex items-center">
-                  <UserIcon
+                  <UserIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground mr-2">Client:</span>
+                  <span>{company?.name || 'Non défini'}</span>
+                </div>
+                
+                <div className="flex items-center">
+                  <FileCheck className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground mr-2">Statut:</span>
+                  <span>{audit.status}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Périmètre</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              {audit.scope || 'Aucun périmètre défini'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="mb-8">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg">Étapes de l'audit</CardTitle>
+            <CardDescription>
+              Sélectionnez une étape pour voir ses constats
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="steps">Étapes</TabsTrigger>
+                <TabsTrigger value="findings">Constats</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="steps">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {auditSteps.length > 0 ? (
+                    auditSteps.map((step) => (
+                      <Card 
+                        key={step.id} 
+                        className={`cursor-pointer hover:border-primary transition-colors ${
+                          selectedStepId === step.id ? 'border-primary' : ''
+                        }`}
+                        onClick={() => setSelectedStepId(step.id)}
+                      >
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-base">
+                            {step.name}
+                          </CardTitle>
+                          <CardDescription>
+                            {step.controlIds.length} contrôle(s)
+                          </CardDescription>
+                        </CardHeader>
+                        <CardFooter className="pt-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="ml-auto"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStepId(step.id);
+                              setActiveTab('findings');
+                            }}
+                          >
+                            Voir les constats
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="col-span-2 text-center p-8">
+                      <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Aucune étape d'audit</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Cet audit ne comporte pas encore d'étapes.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="findings">
+                {selectedStep ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-medium">{selectedStep.name}</h3>
+                        <p className="text-muted-foreground">
+                          {stepFindings.length} constat(s)
+                        </p>
+                      </div>
+                      
+                      <Button onClick={() => setActiveTab('steps')} variant="outline" size="sm">
+                        Revenir aux étapes
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-base">Ajouter un constat</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <form onSubmit={handleAddFinding} className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="controlId">Contrôle concerné</Label>
+                                <Select
+                                  value={newFinding.controlId}
+                                  onValueChange={(value) => setNewFinding({...newFinding, controlId: value})}
+                                >
+                                  <SelectTrigger id="controlId">
+                                    <SelectValue placeholder="Sélectionner un contrôle" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {availableControls.map((control) => (
+                                      <SelectItem key={control.id} value={control.id}>
+                                        {control.id.substring(0, 6)} - {control.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="space-y-2">
+                                <Label htmlFor="category">Catégorie</Label>
+                                <Select
+                                  value={newFinding.category}
+                                  onValueChange={(value: FindingCategory) => 
+                                    setNewFinding({...newFinding, category: value})
+                                  }
+                                >
+                                  <SelectTrigger id="category">
+                                    <SelectValue placeholder="Sélectionner une catégorie" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="non_conformity_major">Non-conformité majeure</SelectItem>
+                                    <SelectItem value="non_conformity_minor">Non-conformité mineure</SelectItem>
+                                    <SelectItem value="sensitive_point">Point sensible</SelectItem>
+                                    <SelectItem value="improvement_opportunity">Opportunité d'amélioration</SelectItem>
+                                    <SelectItem value="strength">Point fort</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label htmlFor="rawText">Description du constat</Label>
+                              <Textarea
+                                id="rawText"
+                                value={newFinding.rawText}
+                                onChange={(e) => setNewFinding({...newFinding, rawText: e.target.value})}
+                                placeholder="Décrivez votre constat..."
+                                rows={4}
+                              />
+                            </div>
+                            
+                            <Button type="submit" disabled={isSubmittingFinding}>
+                              {isSubmittingFinding ? "Ajout en cours..." : "Ajouter le constat"}
+                            </Button>
+                          </form>
+                        </CardContent>
+                      </Card>
+                      
+                      {stepFindings.length > 0 ? (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-medium">Constats existants</h3>
+                          
+                          {stepFindings.map((finding) => {
+                            const control = finding.controlId ? getControlById(finding.controlId) : null;
+                            return (
+                              <Card key={finding.id}>
+                                <CardHeader className="pb-2">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                      {getCategoryBadge(finding.category)}
+                                      {getStatusBadge(finding.status)}
+                                    </div>
+                                    <CardDescription>
+                                      {control ? `${control.id.substring(0, 6)} - ${control.name}` : 'Contrôle inconnu'}
+                                    </CardDescription>
+                                  </div>
+                                </CardHeader>
+                                <CardContent className="pb-2">
+                                  <div className="space-y-4">
+                                    <div>
+                                      <h4 className="text-sm font-medium text-muted-foreground mb-1">Texte brut</h4>
+                                      <p>{finding.rawText}</p>
+                                    </div>
+                                    
+                                    {finding.refinedText && (
+                                      <div>
+                                        <h4 className="text-sm font-medium text-muted-foreground mb-1">Texte reformulé</h4>
+                                        <p>{finding.refinedText}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CardContent>
+                                <CardFooter className="flex justify-end gap-2">
+                                  {finding.status === 'draft' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRefineFinding(finding.id)}
+                                      disabled={isRefinementLoading[finding.id]}
+                                    >
+                                      <Sparkles className="mr-2 h-4 w-4" />
+                                      {isRefinementLoading[finding.id] ? "Reformulation..." : "Reformuler"}
+                                    </Button>
+                                  )}
+                                  
+                                  {finding.status === 'pending_review' && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleValidateFinding(finding.id)}
+                                    >
+                                      <Check className="mr-2 h-4 w-4" />
+                                      Valider
+                                    </Button>
+                                  )}
+                                </CardFooter>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center p-8 bg-muted/50 rounded-lg">
+                          <ListChecks className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-medium mb-2">Aucun constat</h3>
+                          <p className="text-muted-foreground mb-4">
+                            Cette étape ne comporte pas encore de constats.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center p-8 bg-muted/50 rounded-lg">
+                    <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Aucune étape sélectionnée</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Veuillez sélectionner une étape pour voir ses constats.
+                    </p>
+                    <Button onClick={() => setActiveTab('steps')} variant="outline">
+                      Voir les étapes
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
 
+export default AuditDetail;
