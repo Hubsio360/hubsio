@@ -9,6 +9,7 @@ import AuditDaysSelector from './AuditDaysSelector';
 
 interface PlanOptionsProps {
   auditId: string;
+  frameworkId?: string; // Add frameworkId
   startDate: string;
   endDate: string;
   selectedTopicIds: string[];
@@ -25,6 +26,7 @@ interface PlanOptionsProps {
 
 const PlanOptions: React.FC<PlanOptionsProps> = ({
   auditId,
+  frameworkId,
   startDate,
   endDate,
   selectedTopicIds,
@@ -50,6 +52,7 @@ const PlanOptions: React.FC<PlanOptionsProps> = ({
       
       <ThemeSelector 
         auditId={auditId}
+        frameworkId={frameworkId}
         selectedTopicIds={selectedTopicIds}
         onSelectionChange={onTopicSelectionChange}
         excludedThemeNames={systemThemeNames}

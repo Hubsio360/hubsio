@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
@@ -13,6 +12,7 @@ import {
 
 interface UseAuditPlanGeneratorProps {
   auditId: string;
+  frameworkId?: string;
   startDate: string;
   endDate: string;
   onPlanGenerated?: (targetTab?: string) => void;
@@ -20,6 +20,7 @@ interface UseAuditPlanGeneratorProps {
 
 export const useAuditPlanGenerator = ({
   auditId,
+  frameworkId,
   startDate,
   endDate,
   onPlanGenerated
@@ -41,14 +42,12 @@ export const useAuditPlanGenerator = ({
   const [existingInterviews, setExistingInterviews] = useState<number>(0);
   const [existingThemes, setExistingThemes] = useState<number>(0);
   const [initialLoad, setInitialLoad] = useState(false);
-  const [maxHoursPerDay] = useState(8); // 8 hours per day maximum
+  const [maxHoursPerDay] = useState(8);
 
   const [previewInterviews, setPreviewInterviews] = useState<Partial<AuditInterview>[]>([]);
   
-  // Always include opening and closing meetings
   const hasOpeningClosing = true;
 
-  // Initialize the selected days with business days from the audit date range
   useEffect(() => {
     if (startDate && endDate && !initialLoad) {
       const businessDays = getBusinessDays(startDate, endDate);
@@ -56,17 +55,14 @@ export const useAuditPlanGenerator = ({
     }
   }, [startDate, endDate, initialLoad]);
 
-  // Load existing data for this audit
   useEffect(() => {
     const loadExistingData = async () => {
       if (!auditId || initialLoad) return;
       
       try {
-        // Load existing interviews for this audit
         const existingInterviewsData = await fetchInterviewsByAuditId(auditId);
         setExistingInterviews(existingInterviewsData.length);
         
-        // Calculate unique themes from existing interviews (excluding system themes)
         const uniqueThemes = new Set(
           existingInterviewsData
             .filter(interview => {
@@ -79,14 +75,12 @@ export const useAuditPlanGenerator = ({
         
         setExistingThemes(uniqueThemes.size);
         
-        // Load available themes
         await fetchThemes();
         await fetchTopics();
 
-        // Initialize theme durations with defaults
         const initialThemeDurations: Record<string, number> = {};
         themes.forEach(theme => {
-          initialThemeDurations[theme.id] = 60; // Default 60 minutes
+          initialThemeDurations[theme.id] = 60;
         });
         setThemeDurations(initialThemeDurations);
         
@@ -99,26 +93,22 @@ export const useAuditPlanGenerator = ({
     loadExistingData();
   }, [auditId, fetchInterviewsByAuditId, fetchThemes, fetchTopics, initialLoad, themes]);
 
-  // Reset selected days when audit dates change 
   useEffect(() => {
     if (startDate && endDate && selectedDays.length > 0 && initialLoad) {
       const start = parseISO(startDate);
       const end = parseISO(endDate);
       
-      // Filter out days that are now outside the range
       const validDays = selectedDays.filter(day => {
         const date = new Date(day);
         return date >= start && date <= end;
       });
       
-      // Only update if we actually removed days
       if (validDays.length !== selectedDays.length) {
         setSelectedDays(validDays);
       }
     }
   }, [startDate, endDate, selectedDays, initialLoad]);
 
-  // Calculate total interview hours and required days using the utility hook
   const {
     totalHours,
     totalInterviews,
@@ -132,7 +122,6 @@ export const useAuditPlanGenerator = ({
     maxHoursPerDay
   });
 
-  // Generate preview interviews whenever selected days or topics change
   useEffect(() => {
     const interviews = generatePreviewInterviews(
       selectedDays,
@@ -146,7 +135,6 @@ export const useAuditPlanGenerator = ({
     setPreviewInterviews(interviews);
   }, [selectedDays, selectedTopicIds, themeDurations, hasOpeningClosing, themes]);
 
-  // Handle duration change for a specific theme
   const handleThemeDurationChange = (themeId: string, duration: number) => {
     setThemeDurations(prev => ({
       ...prev,
@@ -182,7 +170,6 @@ export const useAuditPlanGenerator = ({
       return;
     }
 
-    // Check if we have enough days selected
     if (selectedDays.length < requiredDays) {
       toast({
         title: "Jours insuffisants",
@@ -204,7 +191,6 @@ export const useAuditPlanGenerator = ({
         themeDurations
       });
       
-      // Generate the audit plan with correct arguments
       const success = await generateAuditPlan(auditId, startDate, endDate, {
         topicIds: selectedTopicIds,
         selectedDays: selectedDays,
@@ -218,7 +204,6 @@ export const useAuditPlanGenerator = ({
           description: "Le plan d'audit a été généré avec succès et enregistré en base de données",
         });
 
-        // Notify parent component about successful generation
         if (onPlanGenerated) {
           onPlanGenerated('calendar');
         }
@@ -257,6 +242,7 @@ export const useAuditPlanGenerator = ({
     handleThemeDurationChange,
     generatePlan,
     availableHoursPerDay,
-    previewInterviews
+    previewInterviews,
+    frameworkId
   };
 };

@@ -95,6 +95,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const fetchThemesByFrameworkId = async (frameworkId: string) => {
+    return auditInterviewsHook.fetchThemesByFrameworkId(frameworkId);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -159,7 +163,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         importStandardAuditPlan: handleImportStandardAuditPlan,
         fetchUsers: usersHook.fetchUsers,
         getUserById: usersHook.getUserById,
-        getUsersByRole: usersHook.getUsersByRole
+        getUsersByRole: usersHook.getUsersByRole,
+        fetchThemesByFrameworkId
       }}
     >
       {children}

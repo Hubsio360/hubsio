@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -13,12 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuditPlanSectionProps {
   auditId: string;
+  frameworkId?: string;
   startDate: string;
   endDate: string;
 }
 
 const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   auditId,
+  frameworkId,
   startDate,
   endDate,
 }) => {
@@ -363,6 +364,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           <TabsContent value="generate" className="mt-0">
             <AuditPlanGenerator
               auditId={auditId}
+              frameworkId={frameworkId}
               startDate={startDate}
               endDate={endDate}
               onPlanGenerated={refreshInterviews}
@@ -383,3 +385,4 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
 };
 
 export default AuditPlanSection;
+

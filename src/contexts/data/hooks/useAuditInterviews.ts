@@ -11,6 +11,7 @@ import {
   getParticipantsByInterviewIdFromDB 
 } from '../utils/interviewDbOps';
 import { generatePlanSchedule, checkAuditHasPlan } from '../utils/interviewPlanGenerator';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook pour gérer les entretiens d'audit
@@ -18,6 +19,8 @@ import { generatePlanSchedule, checkAuditHasPlan } from '../utils/interviewPlanG
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [loading, setLoading] = useState(false);
+  const [frameworkThemes, setFrameworkThemes] = useState<{id: string, name: string, description: string}[]>([]);
+  const [loadingThemes, setLoadingThemes] = useState(false);
 
   const fetchRealInterviewsFromDB = fetchInterviewsFromDB;
 
@@ -41,6 +44,93 @@ export const useAuditInterviews = () => {
       return [];
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchThemesByFrameworkId = async (frameworkId: string): Promise<{id: string, name: string, description: string}[]> => {
+    setLoadingThemes(true);
+    try {
+      console.log('Récupération des thématiques pour le framework:', frameworkId);
+      
+      if (!frameworkId || frameworkId.length === 0) {
+        console.log('ID de framework invalide fourni, retour tableau vide');
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      // Fetch themes related to this framework
+      // First, get all controls associated with this framework
+      const { data: controls, error: controlsError } = await supabase
+        .from('framework_controls')
+        .select('id')
+        .eq('framework_id', frameworkId);
+        
+      if (controlsError) {
+        console.error('Erreur lors de la récupération des contrôles:', controlsError);
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      if (!controls || controls.length === 0) {
+        console.log('Aucun contrôle trouvé pour ce framework');
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      const controlIds = controls.map(control => control.id);
+      
+      // Then get all topics that have these controls
+      const { data: topics, error: topicsError } = await supabase
+        .from('topic_controls')
+        .select('topic_id')
+        .in('control_id', controlIds);
+        
+      if (topicsError) {
+        console.error('Erreur lors de la récupération des topics:', topicsError);
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      if (!topics || topics.length === 0) {
+        console.log('Aucun topic trouvé pour ces contrôles');
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      const topicIds = [...new Set(topics.map(topic => topic.topic_id))];
+      
+      // Finally, get all themes for these topics
+      const { data: themes, error: themesError } = await supabase
+        .from('audit_themes')
+        .select('*')
+        .order('name');
+        
+      if (themesError) {
+        console.error('Erreur lors de la récupération des thématiques:', themesError);
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      if (!themes || themes.length === 0) {
+        console.log('Aucune thématique trouvée');
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      const formattedThemes = themes.map(theme => ({
+        id: theme.id,
+        name: theme.name,
+        description: theme.description || ''
+      }));
+      
+      setFrameworkThemes(formattedThemes);
+      return formattedThemes;
+    } catch (error) {
+      console.error('Erreur dans fetchThemesByFrameworkId:', error);
+      setFrameworkThemes([]);
+      return [];
+    } finally {
+      setLoadingThemes(false);
     }
   };
 
@@ -149,6 +239,9 @@ export const useAuditInterviews = () => {
     removeParticipant,
     getParticipantsByInterviewId,
     generateAuditPlan,
-    hasPlanForAudit
+    hasPlanForAudit,
+    frameworkThemes,
+    loadingThemes,
+    fetchThemesByFrameworkId
   };
 };

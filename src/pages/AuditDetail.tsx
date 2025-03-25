@@ -103,8 +103,8 @@ const getStatusBadge = (status: FindingStatus) => {
   }
 };
 
-const AuditDetail = () => {
-  const { id } = useParams<{ id: string }>();
+const AuditDetail: React.FC = () => {
+  const { id: auditId } = useParams<{ id: string }>();
   const { 
     getAuditById, 
     getCompanyById, 
@@ -145,7 +145,7 @@ const AuditDetail = () => {
   const [auditAuditors, setAuditAuditors] = useState<{ userId: string, roleInAudit: 'lead' | 'participant' }[]>([]);
   const [availableUsers, setAvailableUsers] = useState<User[]>([]);
 
-  if (!id) {
+  if (!auditId) {
     return (
       <div className="container mx-auto py-8 px-4">
         <Alert variant="destructive">
@@ -157,7 +157,7 @@ const AuditDetail = () => {
     );
   }
 
-  const audit = getAuditById(id);
+  const audit = getAuditById(auditId);
   
   if (!audit) {
     return (
@@ -173,7 +173,7 @@ const AuditDetail = () => {
 
   const company = getCompanyById(audit.companyId);
   const framework = getFrameworkById(audit.frameworkId);
-  const auditSteps = getAuditStepsByAuditId(id);
+  const auditSteps = getAuditStepsByAuditId(auditId);
   
   const selectedStep = selectedStepId 
     ? auditSteps.find(step => step.id === selectedStepId) 
@@ -358,7 +358,7 @@ const AuditDetail = () => {
   const handleOpenEditDialog = async () => {
     setIsLoadingAuditors(true);
     try {
-      const auditors = await getAuditAuditors(id || '');
+      const auditors = await getAuditAuditors(auditId || '');
       setAuditAuditors(auditors);
       
       const fetchedUsers = await getUsers();
@@ -418,10 +418,10 @@ const AuditDetail = () => {
         frameworkId: editFormData.frameworkId || audit.frameworkId
       };
       
-      await updateAudit(id || '', updates);
+      await updateAudit(auditId || '', updates);
       
       if (editFormData.auditorIds.length > 0) {
-        await assignAuditors(id || '', editFormData.auditorIds);
+        await assignAuditors(auditId || '', editFormData.auditorIds);
       }
       
       toast({
@@ -595,9 +595,10 @@ const AuditDetail = () => {
       {showPlanSection && (
         <div className="mb-8">
           <AuditPlanSection 
-            auditId={id || ''} 
-            startDate={audit.startDate} 
-            endDate={audit.endDate} 
+            auditId={auditId} 
+            frameworkId={audit?.frameworkId}
+            startDate={audit?.startDate || ''} 
+            endDate={audit?.endDate || ''} 
           />
         </div>
       )}

@@ -8,14 +8,20 @@ import { useData } from '@/contexts/DataContext';
 
 interface TopicsListProps {
   auditId?: string;
+  frameworkId?: string;
   onSelectionChange?: (selectedThemes: string[]) => void;
   excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
+  frameworkThemes?: {id: string, name: string, description: string}[];
+  loadingThemes?: boolean;
 }
 
 const TopicsList: React.FC<TopicsListProps> = ({ 
   onSelectionChange, 
   auditId,
-  excludedThemeNames = ['ADMIN', 'Cloture']
+  frameworkId,
+  excludedThemeNames = ['ADMIN', 'Cloture'],
+  frameworkThemes,
+  loadingThemes = false
 }) => {
   const { themes, fetchThemes, fetchInterviewsByAuditId } = useData();
   const [selectedThemes, setSelectedThemes] = useState<string[]>([]);
@@ -23,6 +29,11 @@ const TopicsList: React.FC<TopicsListProps> = ({
   const [availableThemes, setAvailableThemes] = useState<AuditTheme[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [existingThemes, setExistingThemes] = useState<Set<string>>(new Set());
+
+  // Determine which themes to use - framework specific or all themes
+  const themesToUse = frameworkThemes && frameworkThemes.length > 0 
+    ? frameworkThemes 
+    : availableThemes;
 
   useEffect(() => {
     const loadThemes = async () => {
@@ -75,6 +86,19 @@ const TopicsList: React.FC<TopicsListProps> = ({
     loadThemes();
   }, [fetchThemes, fetchInterviewsByAuditId, auditId, excludedThemeNames]);
 
+  // Update selections when frameworkThemes changes
+  useEffect(() => {
+    if (frameworkThemes && frameworkThemes.length > 0 && initialLoadComplete) {
+      const themeIds = frameworkThemes.map(theme => theme.id);
+      setSelectedThemes(themeIds);
+      
+      // Notify parent of the change
+      if (onSelectionChange) {
+        onSelectionChange(themeIds);
+      }
+    }
+  }, [frameworkThemes, initialLoadComplete, onSelectionChange]);
+
   const handleThemeToggle = (themeId: string) => {
     setSelectedThemes(prev => {
       const newSelection = prev.includes(themeId)
@@ -90,7 +114,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
     });
   };
 
-  if (loading) {
+  if (loading || loadingThemes) {
     return (
       <div className="flex justify-center items-center py-6 border rounded-md">
         <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
@@ -99,12 +123,14 @@ const TopicsList: React.FC<TopicsListProps> = ({
     );
   }
 
-  if (availableThemes.length === 0) {
+  if (themesToUse.length === 0) {
     return (
       <div className="text-center py-6 border rounded-md">
         <h3 className="text-lg font-medium mb-2">Aucune thématique disponible</h3>
         <p className="text-sm text-muted-foreground">
-          Aucune thématique d'audit n'est disponible. Contactez l'administrateur pour en ajouter.
+          {frameworkId 
+            ? "Aucune thématique n'est associée à ce référentiel. Contactez l'administrateur pour en ajouter."
+            : "Aucune thématique d'audit n'est disponible. Contactez l'administrateur pour en ajouter."}
         </p>
       </div>
     );
@@ -119,7 +145,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
       </p>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
-          {availableThemes.map((theme) => {
+          {themesToUse.map((theme) => {
             const isExisting = existingThemes.has(theme.id);
             return (
               <div 
@@ -158,7 +184,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           {selectedThemes.length > 0 
-            ? `${selectedThemes.length} thématique(s) incluse(s) sur ${availableThemes.length}`
+            ? `${selectedThemes.length} thématique(s) incluse(s) sur ${themesToUse.length}`
             : "Attention : aucune thématique sélectionnée. Le plan d'audit sera vide."}
         </p>
       </div>

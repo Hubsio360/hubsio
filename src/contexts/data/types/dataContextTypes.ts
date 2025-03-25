@@ -1,3 +1,4 @@
+
 import { 
   Company, 
   Audit, 
@@ -93,4 +94,7 @@ export interface DataContextProps {
   fetchUsers: () => Promise<User[]>;
   getUserById: (id: string) => User | undefined;
   getUsersByRole: (roles: ('admin' | 'auditor' | 'viewer')[]) => User[];
+  
+  // Add the new function to fetch themes by framework ID
+  fetchThemesByFrameworkId: (frameworkId: string) => Promise<{id: string, name: string, description: string}[]>;
 }
