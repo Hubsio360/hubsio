@@ -29,7 +29,7 @@ export const formatAuditForSupabase = (audit: Omit<Audit, 'id'>): AuditInsert =>
   end_date: audit.endDate,
   scope: audit.scope || null,
   created_by_id: audit.createdById,
-  status: audit.status,
+  status: audit.status as Database['public']['Enums']['audit_status'],
 });
 
 /**
@@ -41,7 +41,7 @@ export const formatAuditUpdatesForSupabase = (updates: Partial<Audit>): Partial<
   if (updates.startDate) auditData.start_date = updates.startDate;
   if (updates.endDate) auditData.end_date = updates.endDate;
   if (updates.scope !== undefined) auditData.scope = updates.scope || null;
-  if (updates.status) auditData.status = updates.status;
+  if (updates.status) auditData.status = updates.status as Database['public']['Enums']['audit_status'];
   if (updates.frameworkId) auditData.framework_id = updates.frameworkId;
   if (updates.companyId) auditData.company_id = updates.companyId;
   
