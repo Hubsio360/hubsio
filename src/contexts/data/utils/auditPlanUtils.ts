@@ -1,4 +1,3 @@
-
 import { AuditTheme, StandardClause, AuditTopic, AuditInterview } from '@/types';
 
 export const importStandardAuditPlan = async (
@@ -103,9 +102,10 @@ export const importStandardAuditPlan = async (
       if (!themeId) {
         console.log(`Theme '${themeName}' not found in theme map, creating it`);
         try {
-          const newTheme = await addTheme({ name: themeName });
-          if (newTheme && newTheme.id) {
-            themeId = newTheme.id;
+          const themeLabel = themeName;
+          const defaultTheme = await addTheme({ name: themeLabel, description: "" });
+          if (defaultTheme && defaultTheme.id) {
+            themeId = defaultTheme.id;
             themeMap.set(themeName, themeId);
             console.log(`Created new theme: ${themeName} with ID ${themeId}`);
           } else {

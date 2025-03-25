@@ -5,10 +5,154 @@ export interface StandardClause {
   referenceCode: string;
   title: string;
   standardId: string;
+  description?: string;
 }
 
 export interface AuditTheme {
   id: string;
   name: string;
   description: string;
+}
+
+// Types pour les audits et interviews
+export interface AuditInterview {
+  id: string;
+  auditId: string;
+  topicId?: string;
+  themeId?: string;
+  title: string;
+  description?: string;
+  startTime: string;
+  durationMinutes: number;
+  location?: string;
+  meetingLink?: string;
+  controlRefs?: string;
+}
+
+export interface InterviewParticipant {
+  interviewId: string;
+  userId: string;
+  role: string;
+  notificationSent: boolean;
+}
+
+// Types pour les utilisateurs
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: UserRole;
+  avatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type UserRole = 'admin' | 'auditor' | 'viewer';
+
+// Types pour les audits et les étapes d'audit
+export interface Audit {
+  id: string;
+  companyId: string;
+  frameworkId: string;
+  createdById: string;
+  startDate: string;
+  endDate: string;
+  status: AuditStatus;
+  scope?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type AuditStatus = 'draft' | 'planned' | 'in_progress' | 'completed' | 'cancelled';
+
+export interface AuditStep {
+  id: string;
+  auditId: string;
+  title: string;
+  description?: string;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Types pour les entreprises
+export interface Company {
+  id: string;
+  name: string;
+  activity?: string;
+  creationYear?: number;
+  parentCompany?: string;
+  marketScope?: string;
+  lastAuditDate?: string;
+}
+
+// Types pour les frameworks et contrôles
+export interface Framework {
+  id: string;
+  name: string;
+  version: string;
+}
+
+export interface FrameworkControl {
+  id: string;
+  frameworkId: string;
+  referenceCode: string;
+  title: string;
+  description?: string;
+}
+
+export interface FrameworkImport {
+  name: string;
+  version: string;
+  controls: Omit<FrameworkControl, 'id' | 'frameworkId'>[];
+}
+
+export interface FrameworkImportResult {
+  framework: Framework;
+  controlsCount: number;
+}
+
+// Types pour les sujets d'audit
+export interface AuditTopic {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+// Types pour les constats (findings)
+export interface Finding {
+  id: string;
+  auditStepId: string;
+  controlId: string;
+  authorId: string;
+  rawText: string;
+  refinedText?: string;
+  category: FindingCategory;
+  status: FindingStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type FindingCategory = 'conformity' | 'non_conformity' | 'observation' | 'recommendation';
+export type FindingStatus = 'draft' | 'review' | 'approved' | 'rejected';
+
+// Types supplémentaires pouvant être utilisés dans l'application
+export interface AuditReport {
+  auditId: string;
+  markdownContent: string;
+  classification?: string;
+  pdfUrl?: string;
+  generatedAt: string;
+  updatedAt: string;
+}
+
+export interface Invoice {
+  auditId: string;
+  amount?: number;
+  currency?: string;
+  dueDate?: string;
+  status: string;
+  webhookUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
