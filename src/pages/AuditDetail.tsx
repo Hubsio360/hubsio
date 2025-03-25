@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { AuditorsSelect } from '@/components/AuditorsSelect';
-import { Audit, FindingCategory, FindingStatus, User } from '@/types';
+import { Audit, FindingCategory, FindingStatus, User, UserRole } from '@/types';
 import {
   AlertCircle,
   AlertTriangle,
@@ -144,7 +143,7 @@ const AuditDetail = () => {
   });
   const [isLoadingAuditors, setIsLoadingAuditors] = useState(false);
   const [auditAuditors, setAuditAuditors] = useState<{ userId: string, roleInAudit: 'lead' | 'participant' }[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<{id: string, name: string, email: string, avatar?: string, role: string}[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
 
   if (!id) {
     return (
@@ -222,7 +221,7 @@ const AuditDetail = () => {
   const availableControls = selectedStep
     ? controls.filter(control => 
         control.frameworkId === audit.frameworkId && 
-        selectedStep.controlIds.includes(control.id)
+        selectedStep.controlIds?.includes(control.id)
       )
     : [];
     
@@ -363,13 +362,7 @@ const AuditDetail = () => {
       setAuditAuditors(auditors);
       
       const fetchedUsers = await getUsers();
-      setAvailableUsers(fetchedUsers.map(u => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        avatar: u.avatar,
-        role: u.role
-      })));
+      setAvailableUsers(fetchedUsers);
       
       setEditFormData({
         scope: audit?.scope || '',
@@ -689,10 +682,10 @@ const AuditDetail = () => {
                       >
                         <CardHeader className="pb-2">
                           <CardTitle className="text-base">
-                            {step.name}
+                            {step.title}
                           </CardTitle>
                           <CardDescription>
-                            {step.controlIds.length} contrôle(s)
+                            {step.controlIds?.length || 0} contrôle(s)
                           </CardDescription>
                         </CardHeader>
                         <CardFooter className="pt-0">
@@ -728,7 +721,7 @@ const AuditDetail = () => {
                   <div>
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h3 className="text-lg font-medium">{selectedStep.name}</h3>
+                        <h3 className="text-lg font-medium">{selectedStep.title}</h3>
                         <p className="text-muted-foreground">
                           {stepFindings.length} constat(s)
                         </p>
@@ -759,7 +752,7 @@ const AuditDetail = () => {
                                   <SelectContent>
                                     {availableControls.map((control) => (
                                       <SelectItem key={control.id} value={control.id}>
-                                        {control.id.substring(0, 6)} - {control.name}
+                                        {control.referenceCode} - {control.title}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -821,7 +814,7 @@ const AuditDetail = () => {
                                       {getStatusBadge(finding.status)}
                                     </div>
                                     <CardDescription>
-                                      {control ? `${control.id.substring(0, 6)} - ${control.name}` : 'Contrôle inconnu'}
+                                      {control ? `${control.referenceCode} - ${control.title}` : 'Contrôle inconnu'}
                                     </CardDescription>
                                   </div>
                                 </CardHeader>
@@ -901,3 +894,4 @@ const AuditDetail = () => {
 };
 
 export default AuditDetail;
+
