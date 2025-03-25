@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -36,7 +35,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [dataLoaded, setDataLoaded] = useState(false);
   const [planExists, setPlanExists] = useState(false);
 
-  // Fonction memoizée pour charger les données
   const loadData = useCallback(async () => {
     if (!auditId) {
       console.log('No audit ID provided, skipping data load');
@@ -56,21 +54,17 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     setLoadError(null);
     
     try {
-      // Chargement des topics avec gestion d'erreur silencieuse
       try {
         await fetchTopics();
       } catch (topicError) {
         console.error('Error loading topics, continuing with interviews:', topicError);
       }
       
-      // Chargement des interviews
       try {
         const interviewsData = await fetchInterviewsByAuditId(auditId);
         console.log('Loaded interviews:', interviewsData);
         
         if (interviewsData && Array.isArray(interviewsData)) {
-          // Si des interviews existent dans la base de données, le plan existe
-          // IMPORTANT: N'utiliser que les interviews avec un vrai ID de base de données (UUID format)
           const realInterviews = interviewsData.filter(interview => 
             interview.id && typeof interview.id === 'string' && 
             interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
@@ -79,7 +73,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           setPlanExists(realInterviews.length > 0);
           setInterviews(realInterviews);
           
-          // Organiser les interviews par thème
           const themeMap: Record<string, AuditInterview[]> = {};
           realInterviews.forEach(interview => {
             const theme = interview.themeId || 'Sans thème';
@@ -112,14 +105,13 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   }, [auditId, fetchInterviewsByAuditId, fetchTopics, loading, dataLoaded]);
 
-  // Charger les données une seule fois au démarrage
   useEffect(() => {
     if (auditId && !dataLoaded) {
       loadData();
     }
   }, [auditId, loadData, dataLoaded]);
 
-  const refreshInterviews = async () => {
+  const refreshInterviews = async (targetTab?: string) => {
     if (!auditId) {
       console.log('No audit ID provided, skipping refresh');
       return;
@@ -135,13 +127,11 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       console.log('Refreshed interviews:', interviewsData);
       
       if (interviewsData && Array.isArray(interviewsData)) {
-        // Filtrer pour n'avoir que les vrais interviews (avec UUID valide)
         const realInterviews = interviewsData.filter(interview => 
           interview.id && typeof interview.id === 'string' && 
           interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
         );
         
-        // Mettre à jour l'état du plan
         setPlanExists(realInterviews.length > 0);
         setInterviews(realInterviews);
         
@@ -160,8 +150,12 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           description: "Le plan d'audit a été actualisé avec succès",
         });
         
-        if (realInterviews.length > 0 && activeTab === 'generate') {
-          setActiveTab('calendar');
+        if (realInterviews.length > 0) {
+          if (targetTab) {
+            setActiveTab(targetTab);
+          } else if (activeTab === 'generate') {
+            setActiveTab('calendar');
+          }
         }
       } else {
         setPlanExists(false);
@@ -200,7 +194,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     handleCloseEditDrawer();
   };
 
-  // Si aucun plan n'existe et qu'on est sur l'onglet calendrier, rediriger vers l'onglet génération
   useEffect(() => {
     if (dataLoaded && !planExists && activeTab !== 'generate') {
       setActiveTab('generate');
