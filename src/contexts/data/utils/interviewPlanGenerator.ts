@@ -1,11 +1,38 @@
 
-import { setHours, setMinutes } from 'date-fns';
+import { setHours, setMinutes, parseISO, addMinutes } from 'date-fns';
 import { isValidUUID } from './interviewUtils';
-import { isDuringLunch } from './interviewUtils';
 import { deleteExistingInterviews, createInterviewsInDB, fetchInterviewsFromDB, InterviewInsert } from './interviewDbOps';
 
+// Constantes pour les horaires et pauses
+const WORKING_DAY_START = 9; // 9h00
+const MORNING_BREAK_TIME = 10; // 10h00
+const LUNCH_BREAK_START = 12; // 12h00
+const LUNCH_BREAK_END = 13; // 13h00
+const AFTERNOON_BREAK_TIME = 16; // 16h00
+const WORKING_DAY_END = 18; // 18h00
+const BREAK_DURATION = 15; // 15 minutes
+const LUNCH_DURATION = 60; // 60 minutes
+
 /**
- * Generate an audit plan with interviews
+ * Vérifie si un horaire est pendant la pause déjeuner (12h-13h)
+ */
+const isDuringLunch = (time: Date): boolean => {
+  const hour = time.getHours();
+  return hour === LUNCH_BREAK_START;
+};
+
+/**
+ * Vérifie si un horaire est pendant une pause café (10h ou 16h)
+ */
+const isDuringCoffeeBreak = (time: Date): boolean => {
+  const hour = time.getHours();
+  const minute = time.getMinutes();
+  return (hour === MORNING_BREAK_TIME && minute === 0) || 
+         (hour === AFTERNOON_BREAK_TIME && minute === 0);
+};
+
+/**
+ * Génère un planning d'audit équilibré sur les jours disponibles
  */
 export const generatePlanSchedule = async (
   auditId: string, 
@@ -19,10 +46,10 @@ export const generatePlanSchedule = async (
   }
 ): Promise<boolean> => {
   try {
-    console.log(`Generating audit plan for audit ID: ${auditId} with options:`, options);
+    console.log(`Génération d'un plan d'audit ID: ${auditId} avec options:`, options);
     
     if (!auditId) {
-      console.error('No audit ID provided for plan generation');
+      console.error('Aucun ID d\'audit fourni pour la génération du plan');
       return false;
     }
     
@@ -32,32 +59,39 @@ export const generatePlanSchedule = async (
     const themeDurations = options?.themeDurations || {};
     
     if (selectedDays.length === 0) {
-      console.error('No days selected for the audit plan');
+      console.error('Aucun jour sélectionné pour le plan d\'audit');
       return false;
     }
     
     if (!isValidUUID(auditId)) {
-      console.error(`Invalid UUID format for auditId: ${auditId}`);
+      console.error(`Format UUID invalide pour auditId: ${auditId}`);
       return false;
     }
     
-    // Delete existing interviews first
+    // Supprimer les entretiens existants
     const deleteResult = await deleteExistingInterviews(auditId);
     if (!deleteResult) {
       return false;
     }
     
-    // Sort selected days chronologically
+    // Trier les jours sélectionnés chronologiquement
     const sortedDays = [...selectedDays].sort((a, b) => 
       new Date(a).getTime() - new Date(b).getTime()
     );
     
-    // Create database-ready interview objects
+    // Calculer la durée totale des entretiens thématiques
+    let totalThematicDuration = 0;
+    topicIds.forEach(topicId => {
+      const duration = themeDurations[topicId] || 60;
+      totalThematicDuration += duration;
+    });
+    
+    // Préparer les données des entretiens à créer
     const dbInterviewsToCreate: InterviewInsert[] = [];
     
-    // First day - Opening meeting
+    // Jour 1 - Réunion d'ouverture à 9h
     const firstDay = new Date(sortedDays[0]);
-    setHours(firstDay, 9);
+    setHours(firstDay, WORKING_DAY_START);
     setMinutes(firstDay, 0);
     
     dbInterviewsToCreate.push({
@@ -69,48 +103,93 @@ export const generatePlanSchedule = async (
       location: "Salle de réunion principale"
     });
     
-    // Schedule topic interviews
-    let currentDay = 0;
-    let currentTime = new Date(sortedDays[currentDay]);
-    setHours(currentTime, 10);
+    // Calculer comment équilibrer les thèmes sur les jours disponibles
+    // Durée disponible par jour en minutes (en excluant pauses et déjeuner)
+    const effectiveMinutesPerDay = (maxHoursPerDay * 60) - LUNCH_DURATION - (BREAK_DURATION * 2);
+    const numAvailableDays = sortedDays.length;
+    
+    // Distribuer les interviews de façon équilibrée
+    let idealMinutesPerDay = Math.ceil(totalThematicDuration / numAvailableDays);
+    if (idealMinutesPerDay > effectiveMinutesPerDay) {
+      idealMinutesPerDay = effectiveMinutesPerDay;
+    }
+    
+    // Planifier les entretiens thématiques
+    let currentDayIndex = 0;
+    let currentTime = new Date(sortedDays[currentDayIndex]);
+    // Commencer après la réunion d'ouverture le premier jour
+    setHours(currentTime, WORKING_DAY_START + 1);
     setMinutes(currentTime, 0);
     
-    const getNextTimeSlot = (currentTime: Date, durationMinutes: number): Date => {
-      let nextTime = new Date(currentTime);
-      nextTime = new Date(nextTime.getTime() + durationMinutes * 60000);
-      
-      if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && isDuringLunch(nextTime))) {
-        nextTime = new Date(nextTime);
-        setHours(nextTime, 13);
-        setMinutes(nextTime, 30);
-      }
-      
-      if (nextTime.getHours() >= 17) {
-        currentDay++;
-        
-        if (currentDay >= sortedDays.length) {
-          console.log("Warning: Not enough days to schedule all interviews");
-          currentDay = sortedDays.length - 1; // Fallback to last day
-        }
-        
-        nextTime = new Date(sortedDays[currentDay]);
-        setHours(nextTime, 9);
-        setMinutes(nextTime, 0);
-      }
-      
-      return nextTime;
-    };
+    let minutesScheduledToday = 60; // Compter la réunion d'ouverture pour le premier jour
     
     for (const topicId of topicIds) {
       const duration = themeDurations[topicId] || 60;
       
-      if (isDuringLunch(currentTime) || 
-          isDuringLunch(new Date(currentTime.getTime() + duration * 60000))) {
-        setHours(currentTime, 13);
-        setMinutes(currentTime, 30);
+      // Vérifier s'il reste assez de temps aujourd'hui
+      const timeAfterInterview = addMinutes(new Date(currentTime), duration);
+      
+      // Cas spéciaux: pause café de 10h
+      if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() === 0) {
+        currentTime = addMinutes(currentTime, BREAK_DURATION);
+        dbInterviewsToCreate.push({
+          audit_id: auditId,
+          title: "Pause café",
+          description: "Pause de 15 minutes",
+          start_time: new Date(currentTime).toISOString(),
+          duration_minutes: BREAK_DURATION,
+          location: "Salle de pause"
+        });
+        currentTime = addMinutes(currentTime, BREAK_DURATION);
       }
       
-      // Create a simple interview
+      // Cas spéciaux: déjeuner
+      if (isDuringLunch(currentTime) || isDuringLunch(timeAfterInterview)) {
+        dbInterviewsToCreate.push({
+          audit_id: auditId,
+          title: "Pause déjeuner",
+          description: "Pause d'une heure",
+          start_time: new Date(currentTime).toISOString(),
+          duration_minutes: LUNCH_DURATION,
+          location: "Restaurant d'entreprise"
+        });
+        currentTime = new Date(currentTime);
+        setHours(currentTime, LUNCH_BREAK_END);
+        setMinutes(currentTime, 0);
+      }
+      
+      // Cas spéciaux: pause café de l'après-midi
+      if (currentTime.getHours() === AFTERNOON_BREAK_TIME && currentTime.getMinutes() === 0) {
+        dbInterviewsToCreate.push({
+          audit_id: auditId,
+          title: "Pause café",
+          description: "Pause de 15 minutes",
+          start_time: new Date(currentTime).toISOString(),
+          duration_minutes: BREAK_DURATION,
+          location: "Salle de pause"
+        });
+        currentTime = addMinutes(currentTime, BREAK_DURATION);
+      }
+      
+      // Passer au jour suivant si:
+      // 1. Nous avons dépassé le temps idéal par jour
+      // 2. L'entretien ne peut pas se terminer avant 18h
+      // 3. Nous avons assez de jours pour répartir la charge
+      if ((minutesScheduledToday + duration > idealMinutesPerDay && currentDayIndex < sortedDays.length - 1) ||
+          (currentTime.getHours() >= WORKING_DAY_END - 1 && duration > 30)) {
+        currentDayIndex++;
+        currentTime = new Date(sortedDays[currentDayIndex]);
+        setHours(currentTime, WORKING_DAY_START);
+        setMinutes(currentTime, 0);
+        minutesScheduledToday = 0;
+        
+        // Si c'est 9h, vérifiez à nouveau pour les pauses
+        if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() === 0) {
+          currentTime = addMinutes(currentTime, BREAK_DURATION);
+        }
+      }
+      
+      // Créer l'entretien
       dbInterviewsToCreate.push({
         audit_id: auditId,
         title: `Interview: Thématique ${topicId.replace(/theme-/g, '')}`,
@@ -120,13 +199,15 @@ export const generatePlanSchedule = async (
         location: "À déterminer"
       });
       
-      currentTime = getNextTimeSlot(currentTime, duration);
+      // Mettre à jour le temps et les minutes programmées aujourd'hui
+      currentTime = addMinutes(new Date(currentTime), duration);
+      minutesScheduledToday += duration;
     }
     
-    // Last day - Closing meeting
+    // Dernier jour - Réunion de clôture à 16h15 (après la pause de 16h)
     const lastDay = new Date(sortedDays[sortedDays.length - 1]);
-    setHours(lastDay, 16);
-    setMinutes(lastDay, 0);
+    setHours(lastDay, AFTERNOON_BREAK_TIME);
+    setMinutes(lastDay, 15);
     
     dbInterviewsToCreate.push({
       audit_id: auditId,
@@ -137,32 +218,32 @@ export const generatePlanSchedule = async (
       location: "Salle de réunion principale"
     });
     
-    // Insert all interviews at once
+    // Insérer tous les entretiens en une seule fois
     if (dbInterviewsToCreate.length > 0) {
       const insertResult = await createInterviewsInDB(dbInterviewsToCreate);
       if (insertResult) {
         return true;
       }
     } else {
-      console.error('No interviews to create');
+      console.error('Aucun entretien à créer');
     }
     
     return false;
   } catch (error) {
-    console.error('Error generating audit plan:', error);
+    console.error('Erreur lors de la génération du plan d\'audit:', error);
     return false;
   }
 };
 
 /**
- * Function to check if an audit has an existing plan
+ * Fonction pour vérifier si un audit a un plan existant
  */
 export const checkAuditHasPlan = async (auditId: string): Promise<boolean> => {
   try {
     const interviews = await fetchInterviewsFromDB(auditId);
     return interviews.length > 0;
   } catch (error) {
-    console.error('Error checking if audit has a plan:', error);
+    console.error('Erreur lors de la vérification si l\'audit a un plan:', error);
     return false;
   }
 };

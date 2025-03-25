@@ -13,7 +13,7 @@ import {
 import { generatePlanSchedule, checkAuditHasPlan } from '../utils/interviewPlanGenerator';
 
 /**
- * Hook for managing audit interviews
+ * Hook pour gérer les entretiens d'audit
  */
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
@@ -24,10 +24,10 @@ export const useAuditInterviews = () => {
   const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
     setLoading(true);
     try {
-      console.log('Fetching interviews for audit:', auditId);
+      console.log('Récupération des entretiens pour l\'audit:', auditId);
       
       if (!auditId || auditId.length === 0) {
-        console.log('Invalid audit ID provided, returning empty array');
+        console.log('ID d\'audit invalide fourni, retour tableau vide');
         setInterviews([]);
         return [];
       }
@@ -36,7 +36,7 @@ export const useAuditInterviews = () => {
       setInterviews(interviews);
       return interviews;
     } catch (error) {
-      console.error('Error in fetchInterviewsByAuditId:', error);
+      console.error('Erreur dans fetchInterviewsByAuditId:', error);
       setInterviews([]);
       return [];
     } finally {
@@ -54,7 +54,7 @@ export const useAuditInterviews = () => {
       
       return newInterview;
     } catch (error) {
-      console.error('Error in addInterview:', error);
+      console.error('Erreur dans addInterview:', error);
       return null;
     }
   };
@@ -74,7 +74,7 @@ export const useAuditInterviews = () => {
       
       return updatedInterview;
     } catch (error) {
-      console.error('Error in updateInterview:', error);
+      console.error('Erreur dans updateInterview:', error);
       return null;
     }
   };
@@ -89,7 +89,7 @@ export const useAuditInterviews = () => {
       
       return success;
     } catch (error) {
-      console.error('Error in deleteInterview:', error);
+      console.error('Erreur dans deleteInterview:', error);
       return false;
     }
   };
@@ -125,14 +125,14 @@ export const useAuditInterviews = () => {
       const success = await generatePlanSchedule(auditId, startDate, endDate, options);
       
       if (success) {
-        // After successful DB creation, refresh the interviews state
+        // Après la création réussie en DB, rafraîchir l'état des entretiens
         const newInterviews = await fetchInterviewsFromDB(auditId);
         setInterviews(newInterviews);
       }
       
       return success;
     } catch (error) {
-      console.error('Error in generateAuditPlan:', error);
+      console.error('Erreur dans generateAuditPlan:', error);
       return false;
     }
   };

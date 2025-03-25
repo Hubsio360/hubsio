@@ -2,66 +2,105 @@
 import { addMinutes, addDays, setHours, setMinutes, isWeekend, parseISO, eachDayOfInterval } from 'date-fns';
 import { AuditInterview } from '@/types';
 
-// Constants for meeting durations
+// Constantes pour les horaires et pauses
+export const WORKING_DAY_START = 9; // 9h00
+export const MORNING_BREAK_TIME = 10; // 10h00
+export const LUNCH_BREAK_START = 12; // 12h00
+export const LUNCH_BREAK_END = 13; // 13h00
+export const AFTERNOON_BREAK_TIME = 16; // 16h00
+export const WORKING_DAY_END = 18; // 18h00
+export const BREAK_DURATION = 15; // 15 minutes
+export const LUNCH_DURATION = 60; // 60 minutes
+
+// Constantes pour les durées des réunions
 export const OPENING_MEETING_DURATION = 60; // 60 minutes
 export const CLOSING_MEETING_DURATION = 60; // 60 minutes
 
-// System theme names
+// Noms des thématiques système
 export const SYSTEM_THEME_NAMES = ['ADMIN', 'Cloture'];
 
 /**
- * Checks if a given time is during lunch break (12:00-13:30)
+ * Vérifie si un horaire est pendant la pause déjeuner (12h-13h)
  */
 export const isDuringLunch = (time: Date): boolean => {
   const hour = time.getHours();
-  const minute = time.getMinutes();
-  return (hour === 12) || (hour === 13 && minute < 30);
+  return hour === LUNCH_BREAK_START;
 };
 
 /**
- * Gets the next available time slot based on current time and duration
+ * Vérifie si un horaire est pendant une pause café (10h ou 16h)
+ */
+export const isDuringBreak = (time: Date): boolean => {
+  const hour = time.getHours();
+  const minute = time.getMinutes();
+  return (hour === MORNING_BREAK_TIME && minute === 0) || 
+         (hour === AFTERNOON_BREAK_TIME && minute === 0);
+};
+
+/**
+ * Trouve le prochain créneau horaire disponible
  */
 export const getNextTimeSlot = (
   currentTime: Date, 
   durationMinutes: number, 
   sortedDays: string[], 
-  currentDayIndex: number
-): { nextTime: Date, newDayIndex: number } => {
+  currentDayIndex: number,
+  minutesScheduledToday: number,
+  idealMinutesPerDay: number
+): { nextTime: Date, newDayIndex: number, newMinutesScheduled: number } => {
   let nextTime = new Date(currentTime);
   let newDayIndex = currentDayIndex;
+  let newMinutesScheduled = minutesScheduledToday;
   
-  // Add the interview duration
+  // Ajouter la durée de l'entretien
   nextTime = addMinutes(nextTime, durationMinutes);
+  newMinutesScheduled += durationMinutes;
   
-  // If we're now in the lunch break, move to after lunch
-  if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && isDuringLunch(nextTime))) {
+  // Si nous sommes maintenant dans la pause de 10h
+  if (nextTime.getHours() === MORNING_BREAK_TIME && nextTime.getMinutes() <= BREAK_DURATION) {
     nextTime = new Date(nextTime);
-    setHours(nextTime, 13);
-    setMinutes(nextTime, 30);
+    setHours(nextTime, MORNING_BREAK_TIME);
+    setMinutes(nextTime, BREAK_DURATION);
   }
   
-  // If we've gone past the end of the day (5 PM), move to the next day
-  if (nextTime.getHours() >= 17) {
-    newDayIndex++;
-    
-    // If we've used all selected days, we can't schedule more
-    if (newDayIndex >= sortedDays.length) {
-      console.log("Not enough days to schedule all interviews");
-      // Reset to first day if we run out of days (for preview purposes)
-      newDayIndex = 0;
-    }
-    
-    // Set time to 9 AM on the next day
-    nextTime = new Date(sortedDays[newDayIndex]);
-    setHours(nextTime, 9);
+  // Si nous sommes maintenant dans la pause déjeuner
+  if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && nextTime.getHours() < LUNCH_BREAK_END)) {
+    nextTime = new Date(nextTime);
+    setHours(nextTime, LUNCH_BREAK_END);
     setMinutes(nextTime, 0);
   }
   
-  return { nextTime, newDayIndex };
+  // Si nous sommes maintenant dans la pause de 16h
+  if (nextTime.getHours() === AFTERNOON_BREAK_TIME && nextTime.getMinutes() <= BREAK_DURATION) {
+    nextTime = new Date(nextTime);
+    setHours(nextTime, AFTERNOON_BREAK_TIME);
+    setMinutes(nextTime, BREAK_DURATION);
+  }
+  
+  // Si nous avons dépassé la limite idéale de minutes par jour ou si nous sommes en fin de journée
+  if ((newMinutesScheduled > idealMinutesPerDay && newDayIndex < sortedDays.length - 1) || 
+      nextTime.getHours() >= WORKING_DAY_END) {
+    newDayIndex++;
+    
+    // Si nous avons utilisé tous les jours sélectionnés
+    if (newDayIndex >= sortedDays.length) {
+      console.log("Pas assez de jours pour planifier tous les entretiens");
+      // Revenir au premier jour pour la prévisualisation
+      newDayIndex = 0;
+    }
+    
+    // Définir l'heure à 9h le jour suivant
+    nextTime = new Date(sortedDays[newDayIndex]);
+    setHours(nextTime, WORKING_DAY_START);
+    setMinutes(nextTime, 0);
+    newMinutesScheduled = 0;
+  }
+  
+  return { nextTime, newDayIndex, newMinutesScheduled };
 };
 
 /**
- * Gets all business days between start and end dates
+ * Récupère tous les jours ouvrables entre les dates de début et de fin
  */
 export const getBusinessDays = (startDate: string, endDate: string): string[] => {
   if (!startDate || !endDate) return [];
@@ -69,18 +108,18 @@ export const getBusinessDays = (startDate: string, endDate: string): string[] =>
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   
-  // Get all days in the range
+  // Récupérer tous les jours dans la plage
   const days = eachDayOfInterval({ start, end });
   
-  // Filter out weekends
+  // Filtrer les week-ends
   const businessDays = days.filter(day => !isWeekend(day));
   
-  // Convert to ISO strings
+  // Convertir en chaînes ISO
   return businessDays.map(day => day.toISOString());
 };
 
 /**
- * Generate preview interviews based on selected topics, themes, days and durations
+ * Génère une prévisualisation des entretiens basée sur les paramètres sélectionnés
  */
 export const generatePreviewInterviews = (
   selectedDays: string[],
@@ -95,17 +134,39 @@ export const generatePreviewInterviews = (
   }
 
   try {
-    // Sort selected days chronologically
+    // Trier les jours sélectionnés chronologiquement
     const sortedDays = [...selectedDays].sort((a, b) => 
       new Date(a).getTime() - new Date(b).getTime()
     );
     
     const interviewsToPreview: Partial<AuditInterview>[] = [];
 
-    // Always start with an opening meeting on the first day
+    // Calculer la durée totale des thématiques
+    let totalThematicDuration = 0;
+    let thematicCount = 0;
+    
+    selectedTopicIds.forEach(topicId => {
+      const theme = themes.find(t => t.id === topicId);
+      if (theme && !systemThemeNames.includes(theme.name)) {
+        totalThematicDuration += themeDurations[topicId] || 60;
+        thematicCount++;
+      }
+    });
+    
+    // Calculer la répartition idéale par jour
+    const effectiveMinutesPerDay = ((WORKING_DAY_END - WORKING_DAY_START) * 60) - LUNCH_DURATION - (BREAK_DURATION * 2);
+    const numAvailableDays = sortedDays.length;
+    
+    // Durée idéale par jour pour équilibrer la charge
+    let idealMinutesPerDay = Math.min(
+      Math.ceil(totalThematicDuration / numAvailableDays),
+      effectiveMinutesPerDay
+    );
+    
+    // Toujours commencer avec une réunion d'ouverture le premier jour
     if (hasOpeningClosing && sortedDays.length > 0) {
       const firstDay = new Date(sortedDays[0]);
-      setHours(firstDay, 9);
+      setHours(firstDay, WORKING_DAY_START);
       setMinutes(firstDay, 0);
       
       interviewsToPreview.push({
@@ -117,37 +178,119 @@ export const generatePreviewInterviews = (
       });
     }
     
-    // Generate interviews for each topic/theme
+    // Générer les entretiens pour chaque thématique
     let currentDayIndex = 0;
     let currentTime = new Date(sortedDays[currentDayIndex]);
+    let minutesScheduledToday = 0;
     
-    // If we have an opening meeting, start after it
+    // Si nous avons une réunion d'ouverture, commencer après
     if (hasOpeningClosing) {
-      setHours(currentTime, 10);
+      setHours(currentTime, WORKING_DAY_START + 1);
       setMinutes(currentTime, 0);
+      minutesScheduledToday = OPENING_MEETING_DURATION;
     } else {
-      setHours(currentTime, 9);
+      setHours(currentTime, WORKING_DAY_START);
       setMinutes(currentTime, 0);
     }
     
-    // Schedule each thematic interview
+    // Ajouter une pause café matinale
+    if (currentTime.getHours() <= MORNING_BREAK_TIME) {
+      const breakTime = new Date(currentTime);
+      setHours(breakTime, MORNING_BREAK_TIME);
+      setMinutes(breakTime, 0);
+      
+      interviewsToPreview.push({
+        title: "Pause café",
+        description: "Pause de 15 minutes",
+        startTime: breakTime.toISOString(),
+        durationMinutes: BREAK_DURATION,
+        location: "Salle de pause",
+      });
+      
+      // Passer au-delà de la pause
+      if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() < BREAK_DURATION) {
+        currentTime = new Date(currentTime);
+        setMinutes(currentTime, BREAK_DURATION);
+      }
+    }
+    
+    // Planifier chaque entretien thématique
     for (const topicId of selectedTopicIds) {
       const theme = themes.find(t => t.id === topicId);
       if (!theme || systemThemeNames.includes(theme.name)) continue;
       
-      // Default duration if not specified
+      // Durée par défaut si non spécifiée
       const duration = themeDurations[topicId] || 60;
       
-      // If the current time would lead to an interview going into lunch, skip to after lunch
-      if (isDuringLunch(currentTime) || 
-          isDuringLunch(addMinutes(currentTime, duration))) {
-        const lunchTime = new Date(currentTime);
-        setHours(lunchTime, 13);
-        setMinutes(lunchTime, 30);
-        currentTime = lunchTime;
+      // Vérifier les pauses
+      if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() < BREAK_DURATION) {
+        currentTime = new Date(currentTime);
+        setMinutes(currentTime, BREAK_DURATION);
       }
       
-      // Create the interview
+      // Vérifier le déjeuner
+      if (isDuringLunch(currentTime)) {
+        const lunchTime = new Date(currentTime);
+        
+        interviewsToPreview.push({
+          title: "Pause déjeuner",
+          description: "Pause d'une heure",
+          startTime: lunchTime.toISOString(),
+          durationMinutes: LUNCH_DURATION,
+          location: "Restaurant d'entreprise",
+        });
+        
+        setHours(currentTime, LUNCH_BREAK_END);
+        setMinutes(currentTime, 0);
+      }
+      
+      // Vérifier la pause de l'après-midi
+      if (currentTime.getHours() === AFTERNOON_BREAK_TIME && currentTime.getMinutes() < BREAK_DURATION) {
+        const breakTime = new Date(currentTime);
+        setMinutes(breakTime, 0);
+        
+        interviewsToPreview.push({
+          title: "Pause café",
+          description: "Pause de 15 minutes",
+          startTime: breakTime.toISOString(),
+          durationMinutes: BREAK_DURATION,
+          location: "Salle de pause",
+        });
+        
+        currentTime = new Date(currentTime);
+        setMinutes(currentTime, BREAK_DURATION);
+      }
+      
+      // Vérifier si nous devons passer au jour suivant pour équilibrer la charge
+      if ((minutesScheduledToday + duration > idealMinutesPerDay && currentDayIndex < sortedDays.length - 1) ||
+          currentTime.getHours() >= WORKING_DAY_END - 1) {
+        currentDayIndex++;
+        
+        if (currentDayIndex >= sortedDays.length) {
+          // Revenir au premier jour pour la prévisualisation
+          currentDayIndex = 0;
+        }
+        
+        currentTime = new Date(sortedDays[currentDayIndex]);
+        setHours(currentTime, WORKING_DAY_START);
+        setMinutes(currentTime, 0);
+        minutesScheduledToday = 0;
+        
+        // Ajouter une pause café pour ce nouveau jour
+        const breakTime = new Date(currentTime);
+        setHours(breakTime, MORNING_BREAK_TIME);
+        setMinutes(breakTime, 0);
+        
+        interviewsToPreview.push({
+          title: "Pause café",
+          description: "Pause de 15 minutes",
+          startTime: breakTime.toISOString(),
+          durationMinutes: BREAK_DURATION,
+          location: "Salle de pause",
+        });
+      }
+      
+      // Créer l'entretien
       interviewsToPreview.push({
         themeId: topicId,
         title: `Interview: ${theme.name}`,
@@ -157,17 +300,54 @@ export const generatePreviewInterviews = (
         location: "À déterminer",
       });
       
-      // Move to the next time slot
-      const nextSlot = getNextTimeSlot(currentTime, duration, sortedDays, currentDayIndex);
+      // Passer au créneau horaire suivant et mettre à jour les minutes programmées
+      const nextSlot = getNextTimeSlot(
+        currentTime, 
+        duration, 
+        sortedDays, 
+        currentDayIndex,
+        minutesScheduledToday,
+        idealMinutesPerDay
+      );
+      
       currentTime = nextSlot.nextTime;
       currentDayIndex = nextSlot.newDayIndex;
+      minutesScheduledToday = nextSlot.newMinutesScheduled;
+      
+      // Ajouter une pause de l'après-midi si nécessaire
+      if (currentDayIndex === currentDayIndex && // Si on est toujours sur le même jour
+          currentTime.getHours() < AFTERNOON_BREAK_TIME && // Et qu'on n'a pas encore atteint 16h
+          minutesScheduledToday > 0) { // Et qu'on a déjà programmé quelque chose aujourd'hui
+        
+        const breakTime = new Date(sortedDays[currentDayIndex]);
+        setHours(breakTime, AFTERNOON_BREAK_TIME);
+        setMinutes(breakTime, 0);
+        
+        // Si on n'a pas déjà ajouté une pause à 16h pour ce jour
+        const hasBreakAlready = interviewsToPreview.some(i => {
+          const iTime = new Date(i.startTime || '');
+          return iTime.getHours() === AFTERNOON_BREAK_TIME && 
+                 iTime.getMinutes() === 0 &&
+                 iTime.toDateString() === breakTime.toDateString();
+        });
+        
+        if (!hasBreakAlready) {
+          interviewsToPreview.push({
+            title: "Pause café",
+            description: "Pause de 15 minutes",
+            startTime: breakTime.toISOString(),
+            durationMinutes: BREAK_DURATION,
+            location: "Salle de pause",
+          });
+        }
+      }
     }
     
-    // Add closing meeting on the last day if applicable
+    // Ajouter une réunion de clôture le dernier jour
     if (hasOpeningClosing && sortedDays.length > 0) {
       const lastDay = new Date(sortedDays[sortedDays.length - 1]);
-      setHours(lastDay, 16);
-      setMinutes(lastDay, 0);
+      setHours(lastDay, AFTERNOON_BREAK_TIME);
+      setMinutes(lastDay, 15); // Juste après la pause de l'après-midi
       
       interviewsToPreview.push({
         title: "Réunion de clôture",
@@ -178,9 +358,12 @@ export const generatePreviewInterviews = (
       });
     }
     
-    return interviewsToPreview;
+    // Trier les entretiens chronologiquement
+    return interviewsToPreview.sort((a, b) => {
+      return new Date(a.startTime || '').getTime() - new Date(b.startTime || '').getTime();
+    });
   } catch (error) {
-    console.error("Error generating preview interviews:", error);
+    console.error("Erreur lors de la génération des entretiens de prévisualisation:", error);
     return [];
   }
 };

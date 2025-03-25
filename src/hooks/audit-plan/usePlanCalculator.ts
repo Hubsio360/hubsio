@@ -1,7 +1,15 @@
 
 import { useMemo } from 'react';
 import { AuditTheme } from '@/types';
-import { OPENING_MEETING_DURATION, CLOSING_MEETING_DURATION, SYSTEM_THEME_NAMES } from './useInterviewScheduler';
+import { 
+  OPENING_MEETING_DURATION, 
+  CLOSING_MEETING_DURATION, 
+  SYSTEM_THEME_NAMES,
+  BREAK_DURATION,
+  LUNCH_DURATION,
+  WORKING_DAY_START,
+  WORKING_DAY_END
+} from './useInterviewScheduler';
 
 interface UsePlanCalculatorProps {
   selectedTopicIds: string[];
@@ -18,36 +26,40 @@ export const usePlanCalculator = ({
   hasOpeningClosing,
   maxHoursPerDay
 }: UsePlanCalculatorProps) => {
-  // Calculate total interview hours and required days
+  // Calculer le total des heures d'entretien et les jours requis
   return useMemo(() => {
-    // Calculate the total interview time in minutes
+    // Calculer la durée totale des entretiens en minutes
     let totalMinutes = 0;
     let interviewCount = 0;
     
-    // Add time for opening and closing meetings
+    // Ajouter du temps pour les réunions d'ouverture et de clôture
     if (hasOpeningClosing) {
       totalMinutes += OPENING_MEETING_DURATION + CLOSING_MEETING_DURATION;
-      interviewCount += 2; // Add 2 for opening and closing meetings
+      interviewCount += 2; // Ajouter 2 pour les réunions d'ouverture et de clôture
     }
     
-    // Add time for each selected topic/theme (excluding system themes)
+    // Ajouter du temps pour chaque thématique sélectionnée (hors thématiques système)
     selectedTopicIds.forEach(topicId => {
-      // Check that the theme is not a system theme
+      // Vérifier que la thématique n'est pas une thématique système
       const theme = themes.find(t => t.id === topicId);
       if (theme && !SYSTEM_THEME_NAMES.includes(theme.name)) {
         const duration = themeDurations[topicId] || 60;
         totalMinutes += duration;
-        interviewCount += 1; // One interview per theme
+        interviewCount += 1; // Un entretien par thématique
       }
     });
 
-    // Convert minutes to hours
+    // Convertir les minutes en heures
     const hours = Math.ceil(totalMinutes / 60);
     
-    // Calculate available hours per day, accounting for lunch break
-    const availableHoursPerDay = maxHoursPerDay - 1.5; // 8 hour day minus 1.5 hour lunch break
+    // Calculer les heures disponibles par jour, en tenant compte des pauses
+    // Note: On ne compte pas les pauses dans la durée totale des entretiens
+    // car ce sont des périodes distinctes qui n'impactent pas la durée de travail effectif
+    const workdayHours = WORKING_DAY_END - WORKING_DAY_START;
+    const pausesHours = (LUNCH_DURATION + (BREAK_DURATION * 2)) / 60;
+    const availableHoursPerDay = Math.min(maxHoursPerDay, workdayHours - pausesHours);
     
-    // Calculate required days
+    // Calculer les jours requis
     const days = Math.ceil(hours / availableHoursPerDay);
     
     return {
