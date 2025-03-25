@@ -274,13 +274,34 @@ export const deleteExistingInterviews = async (auditId: string): Promise<boolean
 /**
  * Create multiple interviews in the database
  */
-export const createInterviewsInDB = async (interviews: any[]): Promise<boolean> => {
+export const createInterviewsInDB = async (interviews: Array<{
+  audit_id: string;
+  topic_id?: string;
+  theme_id?: string;
+  title: string;
+  description?: string;
+  start_time: string;
+  duration_minutes: number;
+  location?: string;
+  meeting_link?: string;
+  control_refs?: string;
+}>): Promise<boolean> => {
   try {
     console.log(`Inserting ${interviews.length} interviews into database`);
     
+    // Ensure each interview has the required fields
+    const validInterviews = interviews.filter(interview => 
+      interview.title && interview.start_time && interview.duration_minutes
+    );
+    
+    if (validInterviews.length === 0) {
+      console.error('No valid interviews to insert');
+      return false;
+    }
+    
     const { data, error } = await supabase
       .from('audit_interviews')
-      .insert(interviews)
+      .insert(validInterviews)
       .select();
       
     if (error) {

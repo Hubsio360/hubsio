@@ -1,6 +1,6 @@
 
-import { setHours, setMinutes, isDuringLunch } from 'date-fns';
-import { isValidUUID } from './interviewUtils';
+import { setHours, setMinutes } from 'date-fns';
+import { isValidUUID, isDuringLunch } from './interviewUtils';
 import { deleteExistingInterviews, createInterviewsInDB, fetchInterviewsFromDB } from './interviewDbOps';
 
 /**
