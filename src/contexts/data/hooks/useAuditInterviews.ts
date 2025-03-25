@@ -59,50 +59,24 @@ export const useAuditInterviews = () => {
       
       try {
         if (isValidUUID(auditId)) {
-          const { data, error } = await selectAuditInterviews()
-            .eq('audit_id', auditId)
-            .order('start_time');
+          const interviews = await fetchRealInterviewsFromDB(auditId);
           
-          if (error) {
-            console.error('Error fetching audit interviews from DB:', error);
-            const localInterviews = generateLocalInterviews(auditId);
-            setInterviews(localInterviews);
-            return localInterviews;
-          }
-          
-          console.log('Raw interview data:', data); // Debug log
-          
-          if (data && data.length > 0) {
-            const formattedInterviews = data.map(interview => ({
-              id: interview.id,
-              auditId: interview.audit_id,
-              topicId: interview.topic_id,
-              themeId: interview.theme_id || undefined,
-              title: interview.title,
-              description: interview.description,
-              startTime: interview.start_time,
-              durationMinutes: interview.duration_minutes,
-              location: interview.location,
-              meetingLink: interview.meeting_link,
-              controlRefs: interview.control_refs || undefined
-            }));
-            
-            console.log('Formatted interviews:', formattedInterviews); // Debug log
-            setInterviews(formattedInterviews);
-            return formattedInterviews;
+          if (interviews.length > 0) {
+            console.log(`Found ${interviews.length} interviews in database`);
+            setInterviews(interviews);
+            return interviews;
           }
         }
         
-        const localInterviews = generateLocalInterviews(auditId);
-        console.log('Generating local interviews for audit:', auditId, localInterviews);
-        setInterviews(localInterviews);
-        return localInterviews;
+        // If no valid interviews found in DB, return empty array
+        console.log('No interviews found in database for audit:', auditId);
+        setInterviews([]);
+        return [];
         
       } catch (fetchError) {
         console.error('Error in fetch operation:', fetchError);
-        const localInterviews = generateLocalInterviews(auditId);
-        setInterviews(localInterviews);
-        return localInterviews;
+        setInterviews([]);
+        return [];
       }
     } finally {
       setLoading(false);
@@ -338,26 +312,54 @@ export const useAuditInterviews = () => {
         return false;
       }
       
-      const interviewsToCreate: Omit<AuditInterview, 'id'>[] = [];
+      if (!isValidUUID(auditId)) {
+        console.error(`Invalid UUID format for auditId: ${auditId}`);
+        return false;
+      }
       
+      // Delete existing interviews first
+      try {
+        console.log(`Deleting existing interviews for audit: ${auditId}`);
+        
+        const { error: deleteError } = await supabase
+          .from('audit_interviews')
+          .delete()
+          .eq('audit_id', auditId);
+        
+        if (deleteError) {
+          console.error("Error deleting existing interviews:", deleteError);
+          return false;
+        } else {
+          console.log("Successfully deleted existing interviews");
+        }
+      } catch (deleteError) {
+        console.error('Error during deletion of existing interviews:', deleteError);
+        return false;
+      }
+      
+      // Sort selected days chronologically
       const sortedDays = [...selectedDays].sort((a, b) => 
         new Date(a).getTime() - new Date(b).getTime()
       );
       
+      // Create database-ready interview objects
+      const dbInterviewsToCreate: any[] = [];
+      
+      // First day - Opening meeting
       const firstDay = new Date(sortedDays[0]);
       setHours(firstDay, 9);
       setMinutes(firstDay, 0);
       
-      interviewsToCreate.push({
-        auditId,
+      dbInterviewsToCreate.push({
+        audit_id: auditId,
         title: "Réunion d'ouverture",
         description: "Présentation de l'audit et des objectifs",
-        startTime: firstDay.toISOString(),
-        durationMinutes: 60,
-        location: "Salle de réunion principale",
-        themeId: undefined,
+        start_time: firstDay.toISOString(),
+        duration_minutes: 60,
+        location: "Salle de réunion principale"
       });
       
+      // Schedule topic interviews
       let currentDay = 0;
       let currentTime = new Date(sortedDays[currentDay]);
       setHours(currentTime, 10);
@@ -384,7 +386,7 @@ export const useAuditInterviews = () => {
           
           if (currentDay >= sortedDays.length) {
             console.log("Warning: Not enough days to schedule all interviews");
-            currentDay = 0;
+            currentDay = sortedDays.length - 1; // Fallback to last day
           }
           
           nextTime = new Date(sortedDays[currentDay]);
@@ -404,130 +406,63 @@ export const useAuditInterviews = () => {
           setMinutes(currentTime, 30);
         }
         
-        interviewsToCreate.push({
-          auditId,
-          topicId,
-          themeId: topicId,
+        dbInterviewsToCreate.push({
+          audit_id: auditId,
+          topic_id: topicId,
+          theme_id: topicId,
           title: `Interview: ${topicId}`,
           description: `Entretien sur la thématique`,
-          startTime: currentTime.toISOString(),
-          durationMinutes: duration,
-          location: "À déterminer",
+          start_time: currentTime.toISOString(),
+          duration_minutes: duration,
+          location: "À déterminer"
         });
         
         currentTime = getNextTimeSlot(currentTime, duration);
       }
       
+      // Last day - Closing meeting
       const lastDay = new Date(sortedDays[sortedDays.length - 1]);
       setHours(lastDay, 16);
       setMinutes(lastDay, 0);
       
-      interviewsToCreate.push({
-        auditId,
+      dbInterviewsToCreate.push({
+        audit_id: auditId,
         title: "Réunion de clôture",
         description: "Présentation des conclusions préliminaires",
-        startTime: lastDay.toISOString(),
-        durationMinutes: 60,
-        location: "Salle de réunion principale",
-        themeId: undefined,
+        start_time: lastDay.toISOString(),
+        duration_minutes: 60,
+        location: "Salle de réunion principale"
       });
       
-      if (isValidUUID(auditId)) {
-        try {
-          console.log("About to delete existing interviews for audit:", auditId);
+      // Insert all interviews at once
+      if (dbInterviewsToCreate.length > 0) {
+        console.log(`Inserting ${dbInterviewsToCreate.length} interviews into database`);
+        
+        const { data, error: insertError } = await supabase
+          .from('audit_interviews')
+          .insert(dbInterviewsToCreate)
+          .select();
           
-          const { error: deleteError } = await supabase
-            .from('audit_interviews')
-            .delete()
-            .eq('audit_id', auditId);
-          
-          if (deleteError) {
-            console.error("Error deleting existing interviews:", deleteError);
-          } else {
-            console.log("Successfully deleted existing interviews");
-          }
-
-          const dbInterviewsToCreate = interviewsToCreate.map(interview => ({
-            audit_id: auditId,
-            topic_id: interview.topicId,
-            theme_id: interview.themeId,
-            title: interview.title,
-            description: interview.description,
-            start_time: interview.startTime,
-            duration_minutes: interview.durationMinutes,
-            location: interview.location,
-            meeting_link: interview.meetingLink,
-            control_refs: interview.controlRefs
-          }));
-          
-          if (dbInterviewsToCreate.length > 0) {
-            console.log("Inserting interviews into DB:", dbInterviewsToCreate);
-            
-            const { data, error: insertError } = await supabase
-              .from('audit_interviews')
-              .insert(dbInterviewsToCreate)
-              .select();
-              
-            if (insertError) {
-              console.error('Error creating audit interviews in DB:', insertError);
-            } else {
-              console.log('Successfully inserted interviews into DB:', data);
-            }
-          }
-        } catch (dbError) {
-          console.error('Database operation error:', dbError);
+        if (insertError) {
+          console.error('Error creating audit interviews in DB:', insertError);
           return false;
+        } else {
+          console.log(`Successfully inserted ${data?.length || 0} interviews into DB`);
+          
+          // After successful DB creation, refresh the interviews state
+          const newInterviews = await fetchRealInterviewsFromDB(auditId);
+          setInterviews(newInterviews);
+          
+          return true;
         }
       } else {
-        console.warn("Invalid UUID format for auditId:", auditId);
+        console.error('No interviews to create');
         return false;
       }
-      
-      setInterviews(interviewsToCreate as AuditInterview[]);
-      return true;
     } catch (error) {
       console.error('Error generating audit plan:', error);
       return false;
     }
-  };
-
-  const generateLocalInterviews = (auditId: string): AuditInterview[] => {
-    console.log(`Generating local interviews for audit ID: ${auditId}`);
-    const start = new Date();
-    const localInterviews = [];
-    
-    const testThemes = [
-      { id: 'theme-1', name: 'ADMIN' },
-      { id: 'theme-2', name: 'Exploitation & réseaux' },
-      { id: 'theme-5', name: 'Sécurité des ressources humaines' },
-      { id: 'theme-12', name: 'Cloture' }
-    ];
-    
-    for (let i = 0; i < testThemes.length; i++) {
-      const theme = testThemes[i];
-      const interviewDate = new Date(start);
-      interviewDate.setDate(start.getDate() + Math.floor(i / 2));
-      
-      const hourOffset = (i % 2) * 3;
-      interviewDate.setHours(9 + hourOffset, 0, 0, 0);
-      
-      const uniqueId = `interview-${auditId.substring(0, 8)}-${i}`;
-      
-      const interview: AuditInterview = {
-        id: uniqueId,
-        auditId: auditId,
-        themeId: theme.id,
-        title: `Interview: ${theme.name}`,
-        description: `Interview sur le thème: ${theme.name}`,
-        startTime: interviewDate.toISOString(),
-        durationMinutes: 60,
-        location: 'À déterminer',
-      };
-      
-      localInterviews.push(interview);
-    }
-    
-    return localInterviews;
   };
 
   const isValidUUID = (str: string) => {

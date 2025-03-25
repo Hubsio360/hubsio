@@ -363,22 +363,35 @@ export const useAuditPlanGenerator = ({
     setGenerating(true);
 
     try {
+      console.log("Starting audit plan generation with data:", {
+        auditId,
+        startDate,
+        endDate,
+        topicIds: selectedTopicIds,
+        selectedDays,
+        themeDurations
+      });
+      
       // Generate the audit plan with correct arguments
-      await generateAuditPlan(auditId, startDate, endDate, {
+      const success = await generateAuditPlan(auditId, startDate, endDate, {
         topicIds: selectedTopicIds,
         selectedDays: selectedDays,
         themeDurations: themeDurations,
         maxHoursPerDay: maxHoursPerDay
       });
 
-      toast({
-        title: "Plan d'audit généré",
-        description: "Le plan d'audit a été généré avec succès",
-      });
+      if (success) {
+        toast({
+          title: "Plan d'audit généré",
+          description: "Le plan d'audit a été généré avec succès et enregistré en base de données",
+        });
 
-      // Notify parent component about successful generation
-      if (onPlanGenerated) {
-        onPlanGenerated('calendar');
+        // Notify parent component about successful generation
+        if (onPlanGenerated) {
+          onPlanGenerated('calendar');
+        }
+      } else {
+        throw new Error("La génération du plan n'a pas abouti");
       }
     } catch (error) {
       console.error("Error generating audit plan:", error);
