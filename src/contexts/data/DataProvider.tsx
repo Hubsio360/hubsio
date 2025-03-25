@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -10,6 +9,7 @@ import { useAuditTopics } from './hooks/useAuditTopics';
 import { useAuditInterviews } from './hooks/useAuditInterviews';
 import { useThemes } from './hooks/useThemes';
 import { useStandardClauses } from './hooks/useStandardClauses';
+import { useUsers } from './hooks/useUsers';
 import { importStandardAuditPlan } from './utils/auditPlanUtils';
 import { DataContextProps } from './types/dataContextTypes';
 
@@ -26,6 +26,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const auditInterviewsHook = useAuditInterviews();
   const themesHook = useThemes();
   const standardClausesHook = useStandardClauses();
+  const usersHook = useUsers();
 
   const loading = {
     frameworks: frameworksHook.loading,
@@ -34,7 +35,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     interviews: auditInterviewsHook.loading,
     themes: themesHook.loading,
     standardClauses: standardClausesHook.loading,
-    audits: auditsHook.loading
+    audits: auditsHook.loading,
+    users: usersHook.loading
   };
 
   const refreshFrameworks = async () => {
@@ -51,7 +53,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     
     try {
-      // Utiliser les thèmes personnalisés s'ils sont fournis, sinon charger tous les thèmes
       let themes;
       if (customThemes && Array.isArray(customThemes) && customThemes.length > 0) {
         console.log(`DataProvider: Using ${customThemes.length} custom themes`);
@@ -84,7 +85,6 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Vérifier si un audit a un plan existant dans la base de données
   const hasPlanForAudit = async (auditId: string): Promise<boolean> => {
     try {
       const interviews = await auditInterviewsHook.fetchRealInterviewsFromDB(auditId);
@@ -108,6 +108,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         themes: themesHook.themes,
         interviews: auditInterviewsHook.interviews,
         standardClauses: standardClausesHook.standardClauses,
+        users: usersHook.users,
         loading,
         addCompany: companiesHook.addCompany,
         addAudit: auditsHook.addAudit,
@@ -155,7 +156,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         removeParticipant: auditInterviewsHook.removeParticipant,
         getParticipantsByInterviewId: auditInterviewsHook.getParticipantsByInterviewId,
         generateAuditPlan: auditInterviewsHook.generateAuditPlan,
-        importStandardAuditPlan: handleImportStandardAuditPlan
+        importStandardAuditPlan: handleImportStandardAuditPlan,
+        fetchUsers: usersHook.fetchUsers,
+        getUserById: usersHook.getUserById,
+        getUsersByRole: usersHook.getUsersByRole
       }}
     >
       {children}

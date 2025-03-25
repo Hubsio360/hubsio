@@ -7,13 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { User } from '@/types';
 
-export interface Auditor {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+export type Auditor = User;
 
 interface AuditorsSelectProps {
   auditors: Auditor[];

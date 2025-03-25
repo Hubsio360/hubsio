@@ -1,4 +1,3 @@
-
 import { 
   Company, 
   Audit, 
@@ -12,7 +11,8 @@ import {
   AuditTheme,
   AuditInterview,
   InterviewParticipant,
-  StandardClause
+  StandardClause,
+  User
 } from '@/types';
 
 export interface DataContextProps {
@@ -26,6 +26,7 @@ export interface DataContextProps {
   themes: AuditTheme[];
   interviews: AuditInterview[];
   standardClauses: StandardClause[];
+  users: User[];
   loading: {
     frameworks: boolean;
     controls: boolean;
@@ -34,6 +35,7 @@ export interface DataContextProps {
     themes: boolean;
     standardClauses: boolean;
     audits: boolean;
+    users: boolean;
   };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
@@ -87,4 +89,8 @@ export interface DataContextProps {
     maxHoursPerDay?: number;
   }) => Promise<boolean>;
   importStandardAuditPlan: (auditId: string, planData: any[], customThemes?: any[]) => Promise<boolean>;
+  
+  fetchUsers: () => Promise<User[]>;
+  getUserById: (id: string) => User | undefined;
+  getUsersByRole: (roles: ('admin' | 'auditor' | 'viewer')[]) => User[];
 }

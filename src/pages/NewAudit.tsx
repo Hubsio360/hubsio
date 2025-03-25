@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -15,11 +16,12 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AuditorsSelect, Auditor } from '@/components/AuditorsSelect';
+import { AuditorsSelect } from '@/components/AuditorsSelect';
+import { User } from '@/types';
 
 const NewAudit = () => {
   const { id: companyId } = useParams<{ id: string }>();
-  const { getCompanyById, frameworks, addAudit, assignAuditors } = useData();
+  const { getCompanyById, frameworks, addAudit, assignAuditors, fetchUsers, getUsersByRole } = useData();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,19 +33,27 @@ const NewAudit = () => {
     scope: '',
   });
   
-  // Notez que nous remplaçons les faux IDs par des UUIDs valides
-  const [auditors, setAuditors] = useState<Auditor[]>([
-    { id: user?.id || '', name: 'Utilisateur actuel', email: user?.email || '' }
-  ]);
-  
+  const [auditors, setAuditors] = useState<User[]>([]);
   const [selectedAuditors, setSelectedAuditors] = useState<{ userId: string; roleInAudit: 'lead' | 'participant' }[]>([]);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Effet pour mettre à jour les auditeurs si l'utilisateur change
+  // Charger les auditeurs lors du montage du composant
   useEffect(() => {
-    if (user) {
-      setAuditors([{ id: user.id, name: user.name || 'Utilisateur actuel', email: user.email }]);
+    const loadAuditors = async () => {
+      // Récupérer les utilisateurs avec le rôle admin ou auditor
+      await fetchUsers();
+      const eligibleAuditors = getUsersByRole(['admin', 'auditor']);
+      setAuditors(eligibleAuditors);
+    };
+    
+    loadAuditors();
+  }, [fetchUsers, getUsersByRole]);
+
+  // Ajouter automatiquement l'utilisateur actuel comme auditeur lead par défaut
+  useEffect(() => {
+    if (user && !selectedAuditors.some(a => a.userId === user.id)) {
+      setSelectedAuditors([{ userId: user.id, roleInAudit: 'lead' }]);
     }
   }, [user]);
 
