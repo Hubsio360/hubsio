@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,30 +30,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { logout: logoutHook } = useAuthHook();
+  const { logout: logoutHook, isAuthenticated } = useAuthHook();
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
+    // Check active session and set up auth state listener
+    const setupAuth = async () => {
+      // First set up the auth state listener to catch all changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        console.log('Auth state changed:', _event, !!session);
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        } else {
+          setUser(null);
+        }
+        setIsLoading(false);
+      });
+
+      // Then check for an existing session
+      const { data } = await supabase.auth.getSession();
+      if (data.session?.user) {
+        setUser(mapSupabaseUser(data.session.user));
       }
       setIsLoading(false);
-    });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
+      return () => {
+        subscription.unsubscribe();
+      };
     };
+
+    setupAuth();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -152,9 +158,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       // Use the force logout function from the hook
       await logoutHook();
-      
-      // We don't need to set user to null manually anymore since we're forcing a page reload
-      // and the auth state will be properly cleared
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error);
       toast({
@@ -190,7 +193,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       isLoading, 
       login, 
       logout,
-      isAuthenticated: !!user,
+      isAuthenticated,
       getUsers,
       signup
     }}>

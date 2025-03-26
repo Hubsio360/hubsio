@@ -1,26 +1,30 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './useAuth';
 
 export const useCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
 
+  // Récupération des entreprises uniquement lorsque l'authentification change
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        setLoading(true);
-        console.log('Fetching companies...');
-        
-        // Vérifier l'authentification avant de récupérer les données
-        const session = await checkAuth();
-        if (!session) {
-          console.warn('Session non authentifiée lors de la récupération des entreprises');
-          // Continuer quand même, car la lecture peut être autorisée pour les utilisateurs non authentifiés
+        // Ne pas essayer de récupérer les données si l'utilisateur n'est pas authentifié
+        if (!isAuthenticated) {
+          console.log('Utilisateur non authentifié, report de la récupération des entreprises');
+          setCompanies([]);
+          setLoading(false);
+          return;
         }
+        
+        setLoading(true);
+        console.log('Utilisateur authentifié, récupération des entreprises...');
         
         const { data, error } = await supabase
           .from('companies')
@@ -62,7 +66,7 @@ export const useCompanies = () => {
     };
 
     fetchCompanies();
-  }, [toast]);
+  }, [isAuthenticated, toast]);
 
   const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
     try {

@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
@@ -9,7 +10,8 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle,
-  MoveRight
+  MoveRight,
+  Loader2
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,37 +31,17 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
-  const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId } = useData();
-  const { user } = useAuth();
+  const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId, loading: companiesLoading } = useData();
+  const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [newCompany, setNewCompany] = useState({ name: '', activity: '' });
   const [isEnriching, setIsEnriching] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
-  // Vérifier l'authentification lors du chargement du composant
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      const { data } = await supabase.auth.getSession();
-      setIsAuthenticated(!!data.session);
-    };
-    
-    checkAuthentication();
-    
-    // Configurer l'écouteur des changements d'état d'authentification
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
-    });
-    
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -70,10 +52,12 @@ const Home = () => {
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const isLoading = authLoading || companiesLoading;
+
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isAuthenticated) {
+    if (!user) {
       toast({
         title: "Authentification requise",
         description: "Vous devez être connecté pour ajouter une entreprise",
@@ -155,7 +139,7 @@ const Home = () => {
 
   // Ajouter un message d'authentification si nécessaire
   const renderAuthMessage = () => {
-    if (!isAuthenticated) {
+    if (!user && !authLoading) {
       return (
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
           <div className="flex items-center">
@@ -168,6 +152,32 @@ const Home = () => {
       );
     }
     return null;
+  };
+
+  // Composant d'état de chargement
+  const renderLoadingState = () => {
+    return (
+      <div className="space-y-6">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="overflow-hidden animate-pulse">
+            <CardHeader>
+              <Skeleton className="h-6 w-3/4 mb-2" />
+              <Skeleton className="h-4 w-1/2" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Skeleton className="h-10 w-full" />
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -189,12 +199,13 @@ const Home = () => {
               className="pl-10"
               value={searchTerm}
               onChange={handleSearchChange}
+              disabled={isLoading}
             />
           </div>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="flex-shrink-0">
+              <Button className="flex-shrink-0" disabled={isLoading || !user}>
                 <Plus className="mr-2 h-4 w-4" />
                 Ajouter un client
               </Button>
@@ -253,7 +264,9 @@ const Home = () => {
         </div>
       </div>
 
-      {filteredCompanies.length === 0 ? (
+      {isLoading ? (
+        renderLoadingState()
+      ) : filteredCompanies.length === 0 ? (
         <div className="text-center py-12">
           <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">Aucun client trouvé</h3>
@@ -262,7 +275,7 @@ const Home = () => {
               ? `Aucun résultat pour "${searchTerm}"`
               : "Vous n'avez pas encore ajouté de clients"}
           </p>
-          {!searchTerm && (
+          {!searchTerm && user && (
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Ajouter votre premier client
