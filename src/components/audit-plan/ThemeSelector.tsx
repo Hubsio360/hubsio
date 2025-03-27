@@ -30,11 +30,11 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   const [attemptCount, setAttemptCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Cette fonction tente de charger les thématiques avec différentes méthodes selon le nombre de tentatives
-  const loadThemesWithBackoff = async () => {
+  // Cette fonction tente de charger les thématiques avec un meilleur logging
+  const loadThemes = async () => {
     if (!frameworkId) {
       console.log("Pas de frameworkId fourni, impossible de charger les thématiques");
-      setFrameworkThemes([]);
+      setError("Aucun référentiel sélectionné");
       setLoadingThemes(false);
       return;
     }
@@ -47,18 +47,15 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       const themes = await fetchThemesByFrameworkId(frameworkId);
       console.log("Themes chargés:", themes);
       
-      if (themes && Array.isArray(themes)) {
+      if (themes && Array.isArray(themes) && themes.length > 0) {
         setFrameworkThemes(themes);
-        
-        if (themes.length === 0) {
-          setError("Aucune thématique n'a été trouvée. Veuillez contacter l'administrateur ou réessayer.");
-        }
+        console.log("Thématiques définies dans l'état local:", themes);
       } else {
-        console.error("Format de données inattendu pour les thématiques", themes);
-        setError("Format de données incorrect pour les thématiques");
+        console.error("Aucune thématique n'a été trouvée ou retournée");
+        setError("Aucune thématique n'a été trouvée. Veuillez contacter l'administrateur ou réessayer.");
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des thématiques pour le framework:", error);
+      console.error("Erreur complète lors du chargement des thématiques:", error);
       setError("Impossible de charger les thématiques. Veuillez réessayer.");
     } finally {
       setLoadingThemes(false);
@@ -67,7 +64,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
   // Chargement initial des thématiques
   useEffect(() => {
-    loadThemesWithBackoff();
+    loadThemes();
   }, [frameworkId, fetchThemesByFrameworkId, attemptCount]);
 
   // Mécanisme de retry automatique en cas d'échec

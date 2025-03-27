@@ -40,7 +40,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
 
   useEffect(() => {
     console.log("TopicsList - frameworkThemes reçus:", frameworkThemes);
-    console.log("TopicsList - availableThemes reçus:", availableThemes);
+    console.log("TopicsList - availableThemes:", availableThemes);
     console.log("TopicsList - themesToUse:", themesToUse);
   }, [frameworkThemes, availableThemes, themesToUse]);
 

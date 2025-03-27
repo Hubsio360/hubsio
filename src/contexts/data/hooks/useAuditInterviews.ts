@@ -47,54 +47,36 @@ export const useAuditInterviews = () => {
   };
 
   const fetchThemesByFrameworkId = async (frameworkId: string): Promise<{id: string, name: string, description: string}[]> => {
+    console.log('Début de fetchThemesByFrameworkId pour le framework:', frameworkId);
     setLoadingThemes(true);
+    
     try {
-      console.log('Récupération des thématiques pour le framework:', frameworkId);
-      
       if (!frameworkId || frameworkId.length === 0) {
-        console.log('ID de framework invalide fourni, retour tableau vide');
+        console.error('ID de framework invalide fourni, retour tableau vide');
         setFrameworkThemes([]);
         return [];
       }
       
-      console.log('Requête pour récupérer les topics liés au framework:', frameworkId);
-      const { data: topicsData, error: topicsError } = await supabase
-        .from('audit_topics')
-        .select('*, framework_controls(*)')
-        .filter('framework_controls.framework_id', 'eq', frameworkId);
-        
-      if (topicsError) {
-        console.error('Erreur lors de la récupération des topics:', topicsError);
-        return await fetchAllThemesFallback();
-      }
-      
-      if (!topicsData || topicsData.length === 0) {
-        console.log('Aucun topic trouvé pour ce framework, utilisation du fallback');
-        return await fetchAllThemesFallback();
-      }
-      
-      console.log(`Récupéré ${topicsData.length} topics liés au framework`);
-      
-      const { data: allThemes, error: allThemesError } = await supabase
+      const { data: themes, error: themesError } = await supabase
         .from('audit_themes')
         .select('*')
         .order('name');
         
-      if (allThemesError) {
-        console.error('Erreur lors de la récupération des thématiques:', allThemesError);
+      if (themesError) {
+        console.error('Erreur lors de la récupération des thématiques:', themesError);
         setFrameworkThemes([]);
         return [];
       }
       
-      if (!allThemes || allThemes.length === 0) {
-        console.log('Aucune thématique disponible dans la base de données');
+      if (!themes || themes.length === 0) {
+        console.error('Aucune thématique disponible dans la base de données');
         setFrameworkThemes([]);
         return [];
       }
       
-      console.log(`Récupéré ${allThemes.length} thématiques depuis la base de données`);
+      console.log(`Récupéré ${themes.length} thématiques depuis la base de données:`, themes);
       
-      const formattedThemes = allThemes.map(theme => ({
+      const formattedThemes = themes.map(theme => ({
         id: theme.id,
         name: theme.name,
         description: theme.description || ''
@@ -104,8 +86,8 @@ export const useAuditInterviews = () => {
       setFrameworkThemes(formattedThemes);
       return formattedThemes;
     } catch (error) {
-      console.error('Erreur dans fetchThemesByFrameworkId:', error);
-      return await fetchAllThemesFallback();
+      console.error('Erreur complète dans fetchThemesByFrameworkId:', error);
+      return [];
     } finally {
       setLoadingThemes(false);
     }
