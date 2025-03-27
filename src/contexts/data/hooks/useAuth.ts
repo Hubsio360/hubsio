@@ -5,10 +5,45 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useAuth = () => {
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Vérifier l'état d'authentification au chargement
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setIsAuthenticated(!!data.session);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erreur lors de la vérification de l\'authentification:', error);
+        setIsAuthenticated(false);
+        setLoading(false);
+      }
+    };
+    
+    checkAuthStatus();
+    
+    // Configurer l'écouteur des changements d'état d'authentification
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Changement d\'état d\'authentification:', event, !!session);
+      setIsAuthenticated(!!session);
+      setLoading(false);
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
   
   // Get users function - must return objects with role property
   const getUsers = useCallback(async (): Promise<User[]> => {
     try {
+      // Vérifier d'abord l'authentification
+      if (!isAuthenticated) {
+        console.log('Tentative de récupération des utilisateurs sans authentification');
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('users')
         .select('*');
@@ -37,7 +72,7 @@ export const useAuth = () => {
       console.error('Error fetching users:', error);
       return [];
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Force logout function with aggressive session clearing
   const logout = useCallback(async (): Promise<void> => {
@@ -78,6 +113,7 @@ export const useAuth = () => {
 
   return {
     loading,
+    isAuthenticated,
     getUsers,
     logout,
   };

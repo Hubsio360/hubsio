@@ -164,14 +164,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const getUsers = async (): Promise<User[]> => {
     try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      
-      if (error) {
-        console.error("Error fetching users:", error);
-        throw error;
-      }
-      
-      return data.users.map(mapSupabaseUser);
+      return await getUsersHook();
     } catch (error) {
       console.error("Failed to get users:", error);
       return [];
