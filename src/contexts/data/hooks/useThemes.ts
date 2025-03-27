@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AuditTheme } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +10,7 @@ export const useThemes = () => {
   const fetchThemes = async (): Promise<AuditTheme[]> => {
     setLoading(true);
     try {
+      console.log("Fetching all audit themes...");
       const { data, error } = await supabase
         .from('audit_themes')
         .select('*')
@@ -17,6 +19,12 @@ export const useThemes = () => {
       if (error) {
         console.error('Error fetching audit themes:', error);
         return [];
+      }
+      
+      if (!data || data.length === 0) {
+        console.log("No audit themes found in database");
+      } else {
+        console.log(`Found ${data.length} audit themes`);
       }
       
       const fetchedThemes = (data || []).map(theme => ({
@@ -37,6 +45,14 @@ export const useThemes = () => {
 
   const addTheme = async (theme: Omit<AuditTheme, 'id'>): Promise<AuditTheme | null> => {
     try {
+      console.log("Adding new audit theme:", theme);
+      
+      // Vérifier que le thème a un nom
+      if (!theme.name || theme.name.trim() === '') {
+        console.error('Theme name is required');
+        return null;
+      }
+      
       const { data, error } = await supabase
         .from('audit_themes')
         .insert([{
@@ -55,6 +71,8 @@ export const useThemes = () => {
         return null;
       }
       
+      console.log("Theme added successfully:", data[0]);
+      
       const newTheme: AuditTheme = {
         id: data[0].id,
         name: data[0].name,
@@ -71,6 +89,8 @@ export const useThemes = () => {
 
   const updateTheme = async (id: string, updates: Partial<AuditTheme>): Promise<AuditTheme | null> => {
     try {
+      console.log(`Updating theme with id ${id}:`, updates);
+      
       const { data, error } = await supabase
         .from('audit_themes')
         .update(updates)
@@ -86,6 +106,8 @@ export const useThemes = () => {
         console.error('No data returned from update operation');
         return null;
       }
+      
+      console.log("Theme updated successfully:", data[0]);
       
       const updatedTheme: AuditTheme = {
         id: data[0].id,
@@ -106,6 +128,8 @@ export const useThemes = () => {
 
   const deleteTheme = async (id: string): Promise<boolean> => {
     try {
+      console.log(`Deleting theme with id ${id}`);
+      
       const { error } = await supabase
         .from('audit_themes')
         .delete()
@@ -115,6 +139,8 @@ export const useThemes = () => {
         console.error('Error deleting audit theme:', error);
         return false;
       }
+      
+      console.log("Theme deleted successfully");
       
       setThemes(prev => prev.filter(theme => theme.id !== id));
       return true;
