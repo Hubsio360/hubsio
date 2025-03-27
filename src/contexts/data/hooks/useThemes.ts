@@ -47,18 +47,21 @@ export const useThemes = () => {
     try {
       console.log("Adding new audit theme:", theme);
       
-      // Vérifier que le thème a un nom
+      // Verify the theme has a name
       if (!theme.name || theme.name.trim() === '') {
         console.error('Theme name is required');
         return null;
       }
       
+      // Create a properly formatted object for Supabase
+      const themeData = {
+        name: theme.name,
+        description: theme.description || ''
+      };
+      
       const { data, error } = await supabase
         .from('audit_themes')
-        .insert([{
-          name: theme.name,
-          description: theme.description || ''
-        }])
+        .insert(themeData)
         .select();
       
       if (error) {

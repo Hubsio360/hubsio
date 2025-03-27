@@ -1,5 +1,6 @@
+
 import { useState } from 'react';
-import { AuditInterview } from '@/types';
+import { AuditInterview, InterviewParticipant } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuditInterviews = () => {
@@ -12,7 +13,7 @@ export const useAuditInterviews = () => {
       const { data, error } = await supabase
         .from('audit_interviews')
         .select('*')
-        .order('startTime');
+        .order('start_time');
       
       if (error) {
         console.error('Error fetching audit interviews:', error);
@@ -21,16 +22,16 @@ export const useAuditInterviews = () => {
       
       const fetchedInterviews = (data || []).map(interview => ({
         id: interview.id,
-        auditId: interview.auditId,
-        topicId: interview.topicId || '',
-        themeId: interview.themeId || '',
+        auditId: interview.audit_id || '',
+        topicId: interview.topic_id || '',
+        themeId: interview.theme_id || '',
         title: interview.title,
         description: interview.description || '',
-        startTime: interview.startTime,
-        durationMinutes: interview.durationMinutes,
+        startTime: interview.start_time,
+        durationMinutes: interview.duration_minutes,
         location: interview.location || '',
-        meetingLink: interview.meetingLink || '',
-        controlRefs: interview.controlRefs || ''
+        meetingLink: interview.meeting_link || '',
+        controlRefs: interview.control_refs || ''
       }));
       
       setInterviews(fetchedInterviews);
@@ -48,8 +49,8 @@ export const useAuditInterviews = () => {
       const { data, error } = await supabase
         .from('audit_interviews')
         .select('*')
-        .eq('auditId', auditId)
-        .order('startTime');
+        .eq('audit_id', auditId)
+        .order('start_time');
       
       if (error) {
         console.error('Error fetching audit interviews:', error);
@@ -58,16 +59,16 @@ export const useAuditInterviews = () => {
       
       const fetchedInterviews = (data || []).map(interview => ({
         id: interview.id,
-        auditId: interview.auditId,
-        topicId: interview.topicId || '',
-        themeId: interview.themeId || '',
+        auditId: interview.audit_id || '',
+        topicId: interview.topic_id || '',
+        themeId: interview.theme_id || '',
         title: interview.title,
         description: interview.description || '',
-        startTime: interview.startTime,
-        durationMinutes: interview.durationMinutes,
+        startTime: interview.start_time,
+        durationMinutes: interview.duration_minutes,
         location: interview.location || '',
-        meetingLink: interview.meetingLink || '',
-        controlRefs: interview.controlRefs || ''
+        meetingLink: interview.meeting_link || '',
+        controlRefs: interview.control_refs || ''
       }));
       
       return fetchedInterviews;
@@ -84,8 +85,8 @@ export const useAuditInterviews = () => {
       const { data, error } = await supabase
         .from('audit_interviews')
         .select('*')
-        .eq('auditId', auditId)
-        .order('startTime');
+        .eq('audit_id', auditId)
+        .order('start_time');
       
       if (error) {
         console.error('Error fetching audit interviews:', error);
@@ -101,16 +102,16 @@ export const useAuditInterviews = () => {
       
       const fetchedInterviews = data.map(interview => ({
         id: interview.id,
-        auditId: interview.auditId,
-        topicId: interview.topicId || '',
-        themeId: interview.themeId || '',
+        auditId: interview.audit_id || '',
+        topicId: interview.topic_id || '',
+        themeId: interview.theme_id || '',
         title: interview.title,
         description: interview.description || '',
-        startTime: interview.startTime,
-        durationMinutes: interview.durationMinutes,
+        startTime: interview.start_time,
+        durationMinutes: interview.duration_minutes,
         location: interview.location || '',
-        meetingLink: interview.meetingLink || '',
-        controlRefs: interview.controlRefs || ''
+        meetingLink: interview.meeting_link || '',
+        controlRefs: interview.control_refs || ''
       }));
       
       setInterviews(fetchedInterviews);
@@ -127,9 +128,23 @@ export const useAuditInterviews = () => {
     try {
       console.log("Adding new audit interview:", interview);
       
+      // Convert from our app's camelCase to database snake_case
+      const dbInterview = {
+        audit_id: interview.auditId,
+        topic_id: interview.topicId,
+        theme_id: interview.themeId,
+        title: interview.title,
+        description: interview.description,
+        start_time: interview.startTime,
+        duration_minutes: interview.durationMinutes,
+        location: interview.location,
+        meeting_link: interview.meetingLink,
+        control_refs: interview.controlRefs
+      };
+      
       const { data, error } = await supabase
         .from('audit_interviews')
-        .insert([interview])
+        .insert([dbInterview])
         .select();
       
       if (error) {
@@ -146,16 +161,16 @@ export const useAuditInterviews = () => {
       
       const newInterview: AuditInterview = {
         id: data[0].id,
-        auditId: data[0].auditId,
-        topicId: data[0].topicId || '',
-        themeId: data[0].themeId || '',
+        auditId: data[0].audit_id || '',
+        topicId: data[0].topic_id || '',
+        themeId: data[0].theme_id || '',
         title: data[0].title,
         description: data[0].description || '',
-        startTime: data[0].startTime,
-        durationMinutes: data[0].durationMinutes,
+        startTime: data[0].start_time,
+        durationMinutes: data[0].duration_minutes,
         location: data[0].location || '',
-        meetingLink: data[0].meetingLink || '',
-        controlRefs: data[0].controlRefs || ''
+        meetingLink: data[0].meeting_link || '',
+        controlRefs: data[0].control_refs || ''
       };
       
       setInterviews(prev => [...prev, newInterview]);
@@ -170,9 +185,22 @@ export const useAuditInterviews = () => {
     try {
       console.log(`Updating interview with id ${id}:`, updates);
       
+      // Convert camelCase properties to snake_case for database
+      const dbUpdates: any = {};
+      if (updates.auditId !== undefined) dbUpdates.audit_id = updates.auditId;
+      if (updates.topicId !== undefined) dbUpdates.topic_id = updates.topicId;
+      if (updates.themeId !== undefined) dbUpdates.theme_id = updates.themeId;
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
+      if (updates.durationMinutes !== undefined) dbUpdates.duration_minutes = updates.durationMinutes;
+      if (updates.location !== undefined) dbUpdates.location = updates.location;
+      if (updates.meetingLink !== undefined) dbUpdates.meeting_link = updates.meetingLink;
+      if (updates.controlRefs !== undefined) dbUpdates.control_refs = updates.controlRefs;
+      
       const { data, error } = await supabase
         .from('audit_interviews')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', id)
         .select();
       
@@ -190,16 +218,16 @@ export const useAuditInterviews = () => {
       
       const updatedInterview: AuditInterview = {
         id: data[0].id,
-        auditId: data[0].auditId,
-        topicId: data[0].topicId || '',
-        themeId: data[0].themeId || '',
+        auditId: data[0].audit_id || '',
+        topicId: data[0].topic_id || '',
+        themeId: data[0].theme_id || '',
         title: data[0].title,
         description: data[0].description || '',
-        startTime: data[0].startTime,
-        durationMinutes: data[0].durationMinutes,
+        startTime: data[0].start_time,
+        durationMinutes: data[0].duration_minutes,
         location: data[0].location || '',
-        meetingLink: data[0].meetingLink || '',
-        controlRefs: data[0].controlRefs || ''
+        meetingLink: data[0].meeting_link || '',
+        controlRefs: data[0].control_refs || ''
       };
       
       setInterviews(prev =>
@@ -237,13 +265,21 @@ export const useAuditInterviews = () => {
     }
   };
 
-  const addParticipant = async (interviewId: string, userId: string, role: string): Promise<boolean> => {
+  const addParticipant = async (participant: Omit<InterviewParticipant, 'notificationSent'>): Promise<boolean> => {
     try {
-      console.log(`Adding participant ${userId} with role ${role} to interview ${interviewId}`);
+      console.log(`Adding participant to interview ${participant.interviewId}`);
+      
+      // Convert camelCase to snake_case for database
+      const dbParticipant = {
+        interview_id: participant.interviewId,
+        user_id: participant.userId,
+        role: participant.role,
+        notification_sent: false
+      };
       
       const { error } = await supabase
         .from('interview_participants')
-        .insert([{ interviewId, userId, role, notificationSent: false }]);
+        .insert([dbParticipant]);
       
       if (error) {
         console.error('Error adding participant:', error);
@@ -265,8 +301,8 @@ export const useAuditInterviews = () => {
       const { error } = await supabase
         .from('interview_participants')
         .delete()
-        .eq('interviewId', interviewId)
-        .eq('userId', userId);
+        .eq('interview_id', interviewId)
+        .eq('user_id', userId);
       
       if (error) {
         console.error('Error removing participant:', error);
@@ -281,26 +317,27 @@ export const useAuditInterviews = () => {
     }
   };
 
-  const getParticipantsByInterviewId = async (interviewId: string): Promise<{ interviewId: string; userId: string; role: string; notificationSent: boolean; }[]> => {
+  const getParticipantsByInterviewId = async (interviewId: string): Promise<InterviewParticipant[]> => {
     try {
       console.log(`Fetching participants for interview ${interviewId}`);
       
       const { data, error } = await supabase
         .from('interview_participants')
         .select('*')
-        .eq('interviewId', interviewId);
+        .eq('interview_id', interviewId);
       
       if (error) {
         console.error('Error fetching participants:', error);
         return [];
       }
       
-      console.log(`Found ${data.length} participants`);
-      return data.map(participant => ({
-        interviewId: participant.interviewId,
-        userId: participant.userId,
+      console.log(`Found ${data?.length || 0} participants`);
+      
+      return (data || []).map(participant => ({
+        interviewId: participant.interview_id,
+        userId: participant.user_id,
         role: participant.role,
-        notificationSent: participant.notificationSent
+        notificationSent: participant.notification_sent
       }));
     } catch (error) {
       console.error('Error fetching participants:', error);
@@ -319,80 +356,84 @@ export const useAuditInterviews = () => {
     return true;
   };
 
-  // Cette fonction sera ajoutée ou mise à jour dans le hook useAuditInterviews
-const fetchThemesByFrameworkId = async (frameworkId: string): Promise<{ id: string, name: string, description: string }[]> => {
-  console.log(`Début de fetchThemesByFrameworkId pour le framework: ${frameworkId}`);
-  
-  try {
-    // D'abord, essayons de récupérer toutes les thématiques disponibles
-    const { data: themes, error: themesError } = await supabase
-      .from('audit_themes')
-      .select('*')
-      .order('name');
+  // Function to fetch themes by framework ID
+  const fetchThemesByFrameworkId = async (frameworkId: string): Promise<{ id: string, name: string, description: string }[]> => {
+    console.log(`Beginning fetchThemesByFrameworkId for framework: ${frameworkId}`);
     
-    if (themesError) {
-      console.error('Erreur lors de la récupération des thématiques:', themesError);
-      throw new Error('Erreur lors de la récupération des thématiques');
-    }
-    
-    if (!themes || themes.length === 0) {
-      console.error('Aucune thématique disponible dans la base de données');
+    try {
+      // First, try to retrieve all available themes
+      const { data: themes, error: themesError } = await supabase
+        .from('audit_themes')
+        .select('*')
+        .order('name');
       
-      // Si aucune thématique n'existe, créons-en quelques-unes par défaut
-      const defaultThemes = [
-        { name: 'Gouvernance', description: 'Thématiques liées à la gouvernance de la sécurité' },
-        { name: 'Technique', description: 'Aspects techniques de la sécurité de l\'information' },
-        { name: 'Organisationnel', description: 'Organisation de la sécurité' },
-        { name: 'Gestion des risques', description: 'Processus de gestion des risques' },
-        { name: 'Conformité', description: 'Aspects relatifs à la conformité' }
-      ];
-      
-      console.log('Création de thématiques par défaut...');
-      
-      const createdThemes = [];
-      for (const theme of defaultThemes) {
-        const { data, error } = await supabase
-          .from('audit_themes')
-          .insert([theme])
-          .select();
-        
-        if (!error && data && data.length > 0) {
-          createdThemes.push(data[0]);
-        }
+      if (themesError) {
+        console.error('Error fetching themes:', themesError);
+        throw new Error('Error fetching themes');
       }
       
-      console.log(`${createdThemes.length} thématiques par défaut créées`);
-      return createdThemes;
+      if (!themes || themes.length === 0) {
+        console.error('No themes available in the database');
+        
+        // If no themes exist, create some default ones
+        const defaultThemes = [
+          { name: 'Governance', description: 'Themes related to security governance' },
+          { name: 'Technical', description: 'Technical aspects of information security' },
+          { name: 'Organizational', description: 'Security organization' },
+          { name: 'Risk Management', description: 'Risk management processes' },
+          { name: 'Compliance', description: 'Compliance-related aspects' }
+        ];
+        
+        console.log('Creating default themes...');
+        
+        const createdThemes = [];
+        for (const theme of defaultThemes) {
+          const { data, error } = await supabase
+            .from('audit_themes')
+            .insert([theme])
+            .select();
+          
+          if (!error && data && data.length > 0) {
+            createdThemes.push(data[0]);
+          }
+        }
+        
+        console.log(`${createdThemes.length} default themes created`);
+        return createdThemes.map(theme => ({
+          id: theme.id,
+          name: theme.name,
+          description: theme.description || ''
+        }));
+      }
+      
+      console.log(`${themes.length} themes retrieved`);
+      
+      // For now, we return all themes without filtering by framework
+      // as the framework-theme association is not yet implemented
+      return themes.map(theme => ({
+        id: theme.id,
+        name: theme.name,
+        description: theme.description || ''
+      }));
+    } catch (error) {
+      console.error('Complete error fetching themes:', error);
+      return [];
     }
-    
-    console.log(`${themes.length} thématiques récupérées`);
-    
-    // Pour l'instant, nous retournons toutes les thématiques sans filtrer par framework
-    // car l'association framework-thématique n'est pas encore implémentée
-    return themes.map(theme => ({
-      id: theme.id,
-      name: theme.name,
-      description: theme.description || ''
-    }));
-  } catch (error) {
-    console.error('Erreur complète lors de la récupération des thématiques:', error);
-    return [];
-  }
-};
+  };
 
-// Assurez-vous d'ajouter fetchThemesByFrameworkId dans les fonctions retournées par le hook
-return {
-  interviews,
-  loading,
-  fetchInterviews,
-  fetchInterviewsByAuditId,
-  addInterview,
-  updateInterview,
-  deleteInterview,
-  addParticipant,
-  removeParticipant,
-  getParticipantsByInterviewId,
-  generateAuditPlan,
-  fetchThemesByFrameworkId,
-};
+  return {
+    interviews,
+    loading,
+    fetchInterviews,
+    fetchInterviewsByAuditId,
+    fetchRealInterviewsFromDB,
+    addInterview,
+    updateInterview,
+    deleteInterview,
+    addParticipant,
+    removeParticipant,
+    getParticipantsByInterviewId,
+    generateAuditPlan,
+    fetchThemesByFrameworkId,
+  };
 };

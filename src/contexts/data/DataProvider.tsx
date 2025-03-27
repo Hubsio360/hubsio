@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -105,6 +106,11 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return auditInterviewsHook.fetchThemesByFrameworkId(frameworkId);
   };
 
+  // Fix for addParticipant adapter
+  const addParticipantAdapter = async (participant: Parameters<typeof auditInterviewsHook.addParticipant>[0]) => {
+    return auditInterviewsHook.addParticipant(participant);
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -165,7 +171,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         addInterview: auditInterviewsHook.addInterview,
         updateInterview: auditInterviewsHook.updateInterview,
         deleteInterview: auditInterviewsHook.deleteInterview,
-        addParticipant: auditInterviewsHook.addParticipant,
+        addParticipant: addParticipantAdapter,
         removeParticipant: auditInterviewsHook.removeParticipant,
         getParticipantsByInterviewId: auditInterviewsHook.getParticipantsByInterviewId,
         generateAuditPlan: auditInterviewsHook.generateAuditPlan,
