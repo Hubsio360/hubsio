@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AuditTheme } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -40,7 +39,10 @@ export const useThemes = () => {
     try {
       const { data, error } = await supabase
         .from('audit_themes')
-        .insert([theme])
+        .insert([{
+          name: theme.name,
+          description: theme.description || ''
+        }])
         .select();
       
       if (error) {

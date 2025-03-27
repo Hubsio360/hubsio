@@ -1,3 +1,4 @@
+
 import {
   Company,
   Audit,
@@ -40,6 +41,7 @@ export interface DataContextProps {
     standardClauses: boolean;
     audits: boolean;
     users: boolean;
+    services: boolean; // Ajout de la propriété services
   };
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
