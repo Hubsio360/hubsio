@@ -9,7 +9,7 @@ import AuditDaysSelector from './AuditDaysSelector';
 
 interface PlanOptionsProps {
   auditId: string;
-  frameworkId?: string; // Add frameworkId
+  frameworkId?: string;
   startDate: string;
   endDate: string;
   selectedTopicIds: string[];

@@ -6,10 +6,10 @@ import { useData } from '@/contexts/DataContext';
 
 interface ThemeSelectorProps {
   auditId: string;
-  frameworkId?: string; // Add optional frameworkId prop
+  frameworkId?: string;
   selectedTopicIds: string[];
   onSelectionChange: (topicIds: string[]) => void;
-  excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
+  excludedThemeNames?: string[];
 }
 
 const ThemeSelector: React.FC<ThemeSelectorProps> = ({
@@ -29,6 +29,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         setLoadingThemes(true);
         try {
           const themes = await fetchThemesByFrameworkId(frameworkId);
+          console.log("Loaded themes:", themes);
           setFrameworkThemes(themes);
         } catch (error) {
           console.error("Erreur lors du chargement des thématiques pour le framework:", error);
@@ -44,7 +45,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">Thématiques à auditer</CardTitle>
+        <CardTitle className="text-lg">Thématiques d'interview</CardTitle>
         <CardDescription>
           Sélectionnez les thématiques à inclure dans votre plan d'audit
         </CardDescription>
