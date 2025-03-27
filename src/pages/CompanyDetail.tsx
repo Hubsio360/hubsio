@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -9,6 +10,10 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ServiceType } from '@/types';
+import ServiceCard from '@/components/services/ServiceCard';
+import ConsultingProjectCard from '@/components/services/ConsultingProjectCard';
+import RssiServiceInfo from '@/components/services/RssiServiceInfo';
 import {
   BarChart3,
   Building2,
@@ -25,6 +30,9 @@ import {
   Calendar as CalendarIcon,
   Users,
   Trash2,
+  Briefcase,
+  Shield,
+  Wrench,
 } from 'lucide-react';
 
 const CompanyDetail = () => {
@@ -38,15 +46,24 @@ const CompanyDetail = () => {
     getAuditById, 
     deleteAudit,
     fetchAudits,
+    getServicesByCompanyId,
+    getConsultingProjectsByServiceId,
+    getRssiServicesByServiceId,
+    fetchServices,
+    fetchConsultingProjects,
+    fetchRssiServices,
     loading
   } = useData();
-  const [activeTab, setActiveTab] = useState('audits');
+  const [activeTab, setActiveTab] = useState('services');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [auditToDelete, setAuditToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAudits();
-  }, [fetchAudits]);
+    fetchServices();
+    fetchConsultingProjects();
+    fetchRssiServices();
+  }, [fetchAudits, fetchServices, fetchConsultingProjects, fetchRssiServices]);
 
   if (!id) {
     return (
@@ -62,6 +79,12 @@ const CompanyDetail = () => {
 
   const company = getCompanyById(id);
   const audits = getAuditsByCompanyId(id);
+  const services = getServicesByCompanyId(id);
+
+  // Organiser les services par type
+  const consultingServices = services.filter(service => service.type === 'conseil');
+  const auditServices = services.filter(service => service.type === 'audit');
+  const rssiServices = services.filter(service => service.type === 'rssi_as_service');
 
   if (!company) {
     return (
@@ -144,6 +167,63 @@ const CompanyDetail = () => {
     return framework ? `${framework.name} (${framework.version})` : 'Inconnu';
   };
 
+  const getServiceIcon = (type: ServiceType) => {
+    switch (type) {
+      case 'conseil':
+        return <Briefcase className="h-5 w-5 text-blue-600" />;
+      case 'audit':
+        return <FileCheck className="h-5 w-5 text-green-600" />;
+      case 'rssi_as_service':
+        return <Shield className="h-5 w-5 text-purple-600" />;
+      default:
+        return <Wrench className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  const getServiceTitle = (type: ServiceType) => {
+    switch (type) {
+      case 'conseil':
+        return 'Service de conseil';
+      case 'audit':
+        return 'Service d\'audit';
+      case 'rssi_as_service':
+        return 'RSSI as a Service (Kollègue)';
+      default:
+        return 'Service';
+    }
+  };
+
+  const renderConsultingProjects = (serviceId: string) => {
+    const projects = getConsultingProjectsByServiceId(serviceId);
+    if (projects.length === 0) return null;
+
+    return (
+      <div className="mt-3">
+        <h4 className="text-sm font-medium mb-2">Projets associés:</h4>
+        <div className="space-y-2">
+          {projects.map(project => (
+            <ConsultingProjectCard 
+              key={project.id} 
+              project={project} 
+              framework={project.frameworkId ? getFrameworkById(project.frameworkId) : undefined} 
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderRssiServiceInfo = (serviceId: string) => {
+    const rssiService = getRssiServicesByServiceId(serviceId);
+    if (!rssiService) return null;
+
+    return (
+      <div className="mt-3">
+        <RssiServiceInfo rssiService={rssiService} />
+      </div>
+    );
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
@@ -161,12 +241,20 @@ const CompanyDetail = () => {
           <p className="text-muted-foreground">{company.activity}</p>
         </div>
 
-        <Button asChild>
-          <Link to={`/new-audit/${company.id}`}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvel audit
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to={`/new-service/${company.id}`}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau service
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to={`/new-audit/${company.id}`}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvel audit
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -202,15 +290,15 @@ const CompanyDetail = () => {
               
               <div className="space-y-2">
                 <div className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-muted-foreground mr-2">Total audits:</span>
-                  <span>{audits.length}</span>
+                  <Briefcase className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground mr-2">Services actifs:</span>
+                  <span>{services.filter(s => s.status.toLowerCase() === 'actif').length}</span>
                 </div>
                 
                 <div className="flex items-center">
-                  <FileCheck className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-muted-foreground mr-2">Audits terminés:</span>
-                  <span>{completedAudits.length}</span>
+                  <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <span className="text-muted-foreground mr-2">Total audits:</span>
+                  <span>{audits.length}</span>
                 </div>
                 
                 {company.lastAuditDate && (
@@ -288,8 +376,12 @@ const CompanyDetail = () => {
         </Card>
       </div>
 
-      <Tabs defaultValue="audits" value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue="services" value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
+          <TabsTrigger value="services" className="inline-flex items-center">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Services
+          </TabsTrigger>
           <TabsTrigger value="audits" className="inline-flex items-center">
             <FileText className="h-4 w-4 mr-2" />
             Historique des audits
@@ -300,6 +392,125 @@ const CompanyDetail = () => {
           </TabsTrigger>
         </TabsList>
         
+        <TabsContent value="services" className="animate-fade-in">
+          {loading.services ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between">
+                      <Skeleton className="h-6 w-1/3" />
+                      <Skeleton className="h-6 w-20" />
+                    </div>
+                    <Skeleton className="h-4 w-1/4 mt-2" />
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-between">
+                    <Skeleton className="h-9 w-full" />
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : services.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6 text-center py-8">
+                <Briefcase className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucun service trouvé</h3>
+                <p className="text-muted-foreground mb-6">
+                  Cette entreprise n'a pas encore de services enregistrés
+                </p>
+                <Button asChild>
+                  <Link to={`/new-service/${company.id}`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter un service
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-8">
+              {/* Services de conseil */}
+              {consultingServices.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 flex items-center">
+                    <Briefcase className="h-5 w-5 mr-2 text-blue-600" />
+                    Services de conseil
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {consultingServices.map(service => (
+                      <ServiceCard 
+                        key={service.id} 
+                        service={service} 
+                        title={getServiceTitle(service.type)}
+                        icon={getServiceIcon(service.type)}
+                        detailsPath={`/service/${service.id}`}
+                        additionalInfo={renderConsultingProjects(service.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Services d'audit */}
+              {auditServices.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 flex items-center">
+                    <FileCheck className="h-5 w-5 mr-2 text-green-600" />
+                    Services d'audit
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {auditServices.map(service => (
+                      <ServiceCard 
+                        key={service.id} 
+                        service={service} 
+                        title={getServiceTitle(service.type)}
+                        icon={getServiceIcon(service.type)}
+                        detailsPath={`/service/${service.id}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Services RSSI */}
+              {rssiServices.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-semibold mb-4 flex items-center">
+                    <Shield className="h-5 w-5 mr-2 text-purple-600" />
+                    RSSI as a Service (Kollègue)
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {rssiServices.map(service => (
+                      <ServiceCard 
+                        key={service.id} 
+                        service={service} 
+                        title={getServiceTitle(service.type)}
+                        icon={getServiceIcon(service.type)}
+                        detailsPath={`/service/${service.id}`}
+                        additionalInfo={renderRssiServiceInfo(service.id)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div className="flex justify-center">
+                <Button asChild>
+                  <Link to={`/new-service/${company.id}`}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter un nouveau service
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="audits" className="animate-fade-in">
           {loading.audits ? (
             <div className="space-y-4">

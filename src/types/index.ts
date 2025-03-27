@@ -1,4 +1,3 @@
-
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -6,12 +5,6 @@ export interface StandardClause {
   title: string;
   standardId: string;
   description?: string;
-}
-
-export interface AuditTheme {
-  id: string;
-  name: string;
-  description: string;
 }
 
 // Types pour les audits et interviews
@@ -156,4 +149,42 @@ export interface Invoice {
   webhookUrl?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// Nouveaux types pour les services et métiers d'Akant
+
+export type ServiceType = 'conseil' | 'audit' | 'rssi_as_service';
+
+export interface Service {
+  id: string;
+  companyId: string;
+  type: ServiceType;
+  startDate: string;
+  endDate?: string;
+  status: string;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ConsultingProject {
+  id: string;
+  serviceId: string;
+  name: string;
+  scope?: string;
+  status: string;
+  frameworkId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface RssiService {
+  id: string;
+  serviceId: string;
+  allocationTime: number;
+  mainContactName?: string;
+  status: string;
+  slaDetails?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }

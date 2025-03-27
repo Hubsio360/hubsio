@@ -12,6 +12,8 @@ import Home from "@/pages/Home";
 import CompanyDetail from "@/pages/CompanyDetail";
 import NewAudit from "@/pages/NewAudit";
 import AuditDetail from "@/pages/AuditDetail";
+import NewService from "@/pages/NewService";
+import ServiceDetail from "@/pages/ServiceDetail";
 import Frameworks from "@/pages/frameworks";
 import Profile from "@/pages/Profile";
 import NotFound from "@/pages/NotFound";
@@ -80,6 +82,18 @@ const AppRoutes = () => {
       <Route path="/audit/:id" element={
         <ProtectedRoute>
           <AuditDetail />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/new-service/:id" element={
+        <ProtectedRoute>
+          <NewService />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/service/:id" element={
+        <ProtectedRoute>
+          <ServiceDetail />
         </ProtectedRoute>
       } />
       

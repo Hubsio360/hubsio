@@ -1,19 +1,22 @@
-
-import { 
-  Company, 
-  Audit, 
-  Framework, 
-  FrameworkControl, 
+import {
+  Company,
+  Audit,
+  Framework,
+  FrameworkControl,
   AuditStep,
   Finding,
-  FrameworkImport,
-  FrameworkImportResult,
   AuditTopic,
   AuditTheme,
   AuditInterview,
   InterviewParticipant,
   StandardClause,
-  User
+  User,
+  FrameworkImport,
+  FrameworkImportResult,
+  UserRole,
+  Service,
+  ConsultingProject,
+  RssiService
 } from '@/types';
 
 export interface DataContextProps {
@@ -95,6 +98,18 @@ export interface DataContextProps {
   getUserById: (id: string) => User | undefined;
   getUsersByRole: (roles: ('admin' | 'auditor' | 'viewer')[]) => User[];
   
-  // Add the new function to fetch themes by framework ID
   fetchThemesByFrameworkId: (frameworkId: string) => Promise<{id: string, name: string, description: string}[]>;
+  
+  services: Service[];
+  consultingProjects: ConsultingProject[];
+  rssiServices: RssiService[];
+  addService: (service: Omit<Service, 'id'>) => Promise<Service>;
+  addConsultingProject: (project: Omit<ConsultingProject, 'id'>) => Promise<ConsultingProject>;
+  addRssiService: (rssiService: Omit<RssiService, 'id'>) => Promise<RssiService>;
+  getServicesByCompanyId: (companyId: string) => Service[];
+  getConsultingProjectsByServiceId: (serviceId: string) => ConsultingProject[];
+  getRssiServicesByServiceId: (serviceId: string) => RssiService | undefined;
+  fetchServices: () => Promise<void>;
+  fetchConsultingProjects: () => Promise<void>;
+  fetchRssiServices: () => Promise<void>;
 }

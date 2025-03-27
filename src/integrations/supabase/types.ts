@@ -360,6 +360,54 @@ export type Database = {
         }
         Relationships: []
       }
+      consulting_projects: {
+        Row: {
+          created_at: string
+          framework_id: string | null
+          id: string
+          name: string
+          scope: string | null
+          service_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          framework_id?: string | null
+          id?: string
+          name: string
+          scope?: string | null
+          service_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          framework_id?: string | null
+          id?: string
+          name?: string
+          scope?: string | null
+          service_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "consulting_projects_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "consulting_projects_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       findings: {
         Row: {
           audit_step_id: string
@@ -560,6 +608,91 @@ export type Database = {
           },
         ]
       }
+      rssi_services: {
+        Row: {
+          allocation_time: number
+          created_at: string
+          id: string
+          main_contact_name: string | null
+          service_id: string
+          sla_details: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allocation_time: number
+          created_at?: string
+          id?: string
+          main_contact_name?: string | null
+          service_id: string
+          sla_details?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allocation_time?: number
+          created_at?: string
+          id?: string
+          main_contact_name?: string | null
+          service_id?: string
+          sla_details?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rssi_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      services: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          end_date: string | null
+          id: string
+          start_date: string
+          status: string
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date: string
+          status?: string
+          type: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          start_date?: string
+          status?: string
+          type?: Database["public"]["Enums"]["service_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "services_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       standard_clauses: {
         Row: {
           created_at: string
@@ -730,6 +863,7 @@ export type Database = {
         | "improvement_opportunity"
         | "strength"
       finding_status: "draft" | "pending_review" | "validated"
+      service_type: "conseil" | "audit" | "rssi_as_service"
       user_role: "admin" | "auditor" | "reviewer"
     }
     CompositeTypes: {

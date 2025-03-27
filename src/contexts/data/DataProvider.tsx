@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -11,6 +10,7 @@ import { useAuditInterviews } from './hooks/useAuditInterviews';
 import { useThemes } from './hooks/useThemes';
 import { useStandardClauses } from './hooks/useStandardClauses';
 import { useUsers } from './hooks/useUsers';
+import { useServices } from './hooks/useServices';
 import { importStandardAuditPlan } from './utils/auditPlanUtils';
 import { DataContextProps } from './types/dataContextTypes';
 
@@ -28,6 +28,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const themesHook = useThemes();
   const standardClausesHook = useStandardClauses();
   const usersHook = useUsers();
+  const servicesHook = useServices();
 
   const loading = {
     frameworks: frameworksHook.loading,
@@ -37,7 +38,10 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     themes: themesHook.loading,
     standardClauses: standardClausesHook.loading,
     audits: auditsHook.loading,
-    users: usersHook.loading
+    users: usersHook.loading,
+    services: servicesHook.loading.services,
+    consultingProjects: servicesHook.loading.consultingProjects,
+    rssiServices: servicesHook.loading.rssiServices
   };
 
   const refreshFrameworks = async () => {
@@ -115,6 +119,9 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         interviews: auditInterviewsHook.interviews,
         standardClauses: standardClausesHook.standardClauses,
         users: usersHook.users,
+        services: servicesHook.services,
+        consultingProjects: servicesHook.consultingProjects,
+        rssiServices: servicesHook.rssiServices,
         loading,
         addCompany: companiesHook.addCompany,
         addAudit: auditsHook.addAudit,
@@ -166,7 +173,16 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         fetchUsers: usersHook.fetchUsers,
         getUserById: usersHook.getUserById,
         getUsersByRole: usersHook.getUsersByRole,
-        fetchThemesByFrameworkId
+        fetchThemesByFrameworkId,
+        addService: servicesHook.addService,
+        addConsultingProject: servicesHook.addConsultingProject,
+        addRssiService: servicesHook.addRssiService,
+        getServicesByCompanyId: servicesHook.getServicesByCompanyId,
+        getConsultingProjectsByServiceId: servicesHook.getConsultingProjectsByServiceId,
+        getRssiServicesByServiceId: servicesHook.getRssiServicesByServiceId,
+        fetchServices: servicesHook.fetchServices,
+        fetchConsultingProjects: servicesHook.fetchConsultingProjects,
+        fetchRssiServices: servicesHook.fetchRssiServices
       }}
     >
       {children}
