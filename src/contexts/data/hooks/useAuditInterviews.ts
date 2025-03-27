@@ -119,15 +119,15 @@ export const useAuditInterviews = () => {
         return formattedThemes;
       }
       
-      // Récupérer les thématiques liées aux topics
+      // Récupérer les IDs des thématiques liées aux topics
       console.log(`Récupéré ${topicsData.length} topics liés au framework, recherche des thématiques associées`);
       
-      // Récupérer les IDs des thématiques uniquement (pour éviter doublons)
+      // Correction ici: nous utilisons l'ID du topic directement puisque c'est ce que nous avons
+      // Les topics n'ont pas de theme_id dans la réponse de l'API
       const themeIds = new Set<string>();
       for (const topic of topicsData) {
-        if (topic.theme_id) {
-          themeIds.add(topic.theme_id);
-        }
+        // Utiliser l'ID du topic lui-même au lieu d'un theme_id qui n'existe pas
+        themeIds.add(topic.id);
       }
       
       if (themeIds.size === 0) {
