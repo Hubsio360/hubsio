@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,12 +29,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const { logout: logoutHook, isAuthenticated } = useAuthHook();
+  const { logout: logoutHook, isAuthenticated, getUsers: getUsersHook } = useAuthHook();
 
   useEffect(() => {
-    // Check active session and set up auth state listener
     const setupAuth = async () => {
-      // First set up the auth state listener to catch all changes
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         console.log('Auth state changed:', _event, !!session);
         if (session?.user) {
@@ -46,7 +43,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setIsLoading(false);
       });
 
-      // Then check for an existing session
       const { data } = await supabase.auth.getSession();
       if (data.session?.user) {
         setUser(mapSupabaseUser(data.session.user));
@@ -95,12 +91,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       setIsLoading(true);
       
-      // S'assurer que le nom n'est pas vide
       if (!userData.name) {
         throw new Error("Le nom est requis");
       }
 
-      // Vérifier d'abord si l'email existe déjà
       const { data: existingUsers } = await supabase
         .from('users')
         .select('email')
@@ -132,7 +126,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         description: "Vous pouvez maintenant vous connecter",
       });
       
-      // Redirection automatique si aucune confirmation par email n'est requise
       if (data.session) {
         setUser(mapSupabaseUser(data.user));
       }
@@ -156,7 +149,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         description: "Veuillez patienter...",
       });
       
-      // Use the force logout function from the hook
       await logoutHook();
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error);
@@ -166,7 +158,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         description: error.message || "Une erreur est survenue lors de la déconnexion",
       });
       
-      // Force redirect to login anyway
       window.location.href = '/login';
     }
   };

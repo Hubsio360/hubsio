@@ -52,7 +52,8 @@ const Home = () => {
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const isLoading = authLoading || companiesLoading;
+  // Fix the type issue by ensuring isLoading is always a boolean
+  const isLoading = authLoading || (typeof companiesLoading === 'boolean' ? companiesLoading : false);
 
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
