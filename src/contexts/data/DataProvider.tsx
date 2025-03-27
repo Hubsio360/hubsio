@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -96,6 +97,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const fetchThemesByFrameworkId = async (frameworkId: string) => {
+    console.log('DataProvider: Delegating fetchThemesByFrameworkId to auditInterviewsHook');
     return auditInterviewsHook.fetchThemesByFrameworkId(frameworkId);
   };
 

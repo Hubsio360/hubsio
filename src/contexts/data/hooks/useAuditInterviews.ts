@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { 
@@ -58,48 +57,6 @@ export const useAuditInterviews = () => {
         return [];
       }
       
-      // Fetch themes related to this framework
-      // First, get all controls associated with this framework
-      const { data: controls, error: controlsError } = await supabase
-        .from('framework_controls')
-        .select('id')
-        .eq('framework_id', frameworkId);
-        
-      if (controlsError) {
-        console.error('Erreur lors de la récupération des contrôles:', controlsError);
-        setFrameworkThemes([]);
-        return [];
-      }
-      
-      if (!controls || controls.length === 0) {
-        console.log('Aucun contrôle trouvé pour ce framework');
-        setFrameworkThemes([]);
-        return [];
-      }
-      
-      const controlIds = controls.map(control => control.id);
-      
-      // Then get all topics that have these controls
-      const { data: topics, error: topicsError } = await supabase
-        .from('topic_controls')
-        .select('topic_id')
-        .in('control_id', controlIds);
-        
-      if (topicsError) {
-        console.error('Erreur lors de la récupération des topics:', topicsError);
-        setFrameworkThemes([]);
-        return [];
-      }
-      
-      if (!topics || topics.length === 0) {
-        console.log('Aucun topic trouvé pour ces contrôles');
-        setFrameworkThemes([]);
-        return [];
-      }
-      
-      const topicIds = [...new Set(topics.map(topic => topic.topic_id))];
-      
-      // Finally, get all themes for these topics
       const { data: themes, error: themesError } = await supabase
         .from('audit_themes')
         .select('*')
@@ -116,6 +73,8 @@ export const useAuditInterviews = () => {
         setFrameworkThemes([]);
         return [];
       }
+      
+      console.log(`Récupéré ${themes.length} thématiques depuis la base de données`);
       
       const formattedThemes = themes.map(theme => ({
         id: theme.id,
@@ -215,7 +174,6 @@ export const useAuditInterviews = () => {
       const success = await generatePlanSchedule(auditId, startDate, endDate, options);
       
       if (success) {
-        // Après la création réussie en DB, rafraîchir l'état des entretiens
         const newInterviews = await fetchInterviewsFromDB(auditId);
         setInterviews(newInterviews);
       }
