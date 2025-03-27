@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { 
@@ -58,180 +57,87 @@ export const useAuditInterviews = () => {
         return [];
       }
       
-      // Modification de la requête pour rechercher les thématiques en relation avec le framework
-      // en passant par la table audit_topics qui fait le lien
       console.log('Requête pour récupérer les topics liés au framework:', frameworkId);
       const { data: topicsData, error: topicsError } = await supabase
         .from('audit_topics')
-        .select('*, framework_controls(framework_id)')
+        .select('*, framework_controls(*)')
         .filter('framework_controls.framework_id', 'eq', frameworkId);
         
       if (topicsError) {
         console.error('Erreur lors de la récupération des topics:', topicsError);
-        
-        // Si erreur, fallback pour récupérer toutes les thématiques disponibles
-        console.log('Fallback: récupération de toutes les thématiques disponibles');
-        const { data: themes, error: themesError } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        if (themesError) {
-          console.error('Erreur lors de la récupération des thématiques (fallback):', themesError);
-          setFrameworkThemes([]);
-          return [];
-        }
-        
-        const formattedThemes = themes.map(theme => ({
-          id: theme.id,
-          name: theme.name,
-          description: theme.description || ''
-        }));
-        
-        console.log(`Récupéré ${formattedThemes.length} thématiques depuis la base de données (fallback)`, formattedThemes);
-        setFrameworkThemes(formattedThemes);
-        return formattedThemes;
+        return await fetchAllThemesFallback();
       }
       
       if (!topicsData || topicsData.length === 0) {
         console.log('Aucun topic trouvé pour ce framework, utilisation du fallback');
-        
-        // Si aucun topic, fallback pour récupérer toutes les thématiques
-        const { data: themes, error: themesError } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        if (themesError) {
-          console.error('Erreur lors de la récupération des thématiques (fallback):', themesError);
-          setFrameworkThemes([]);
-          return [];
-        }
-        
-        const formattedThemes = themes.map(theme => ({
-          id: theme.id,
-          name: theme.name,
-          description: theme.description || ''
-        }));
-        
-        console.log(`Récupéré ${formattedThemes.length} thématiques depuis la base de données (fallback)`, formattedThemes);
-        setFrameworkThemes(formattedThemes);
-        return formattedThemes;
+        return await fetchAllThemesFallback();
       }
       
-      // Récupérer les IDs des thématiques liées aux topics
-      console.log(`Récupéré ${topicsData.length} topics liés au framework, recherche des thématiques associées`);
+      console.log(`Récupéré ${topicsData.length} topics liés au framework`);
       
-      // Correction ici: nous utilisons l'ID du topic directement puisque c'est ce que nous avons
-      // Les topics n'ont pas de theme_id dans la réponse de l'API
-      const themeIds = new Set<string>();
-      for (const topic of topicsData) {
-        // Utiliser l'ID du topic lui-même au lieu d'un theme_id qui n'existe pas
-        themeIds.add(topic.id);
-      }
-      
-      if (themeIds.size === 0) {
-        console.log('Aucune thématique trouvée dans les topics, utilisation du fallback');
-        
-        // Si aucune thématique liée, fallback
-        const { data: themes, error: themesError } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        if (themesError) {
-          console.error('Erreur lors de la récupération des thématiques (fallback):', themesError);
-          setFrameworkThemes([]);
-          return [];
-        }
-        
-        const formattedThemes = themes.map(theme => ({
-          id: theme.id,
-          name: theme.name,
-          description: theme.description || ''
-        }));
-        
-        console.log(`Récupéré ${formattedThemes.length} thématiques depuis la base de données (fallback)`, formattedThemes);
-        setFrameworkThemes(formattedThemes);
-        return formattedThemes;
-      }
-      
-      // Récupérer les thématiques par IDs
-      const { data: themes, error: themesError } = await supabase
+      const { data: allThemes, error: allThemesError } = await supabase
         .from('audit_themes')
         .select('*')
-        .in('id', Array.from(themeIds))
         .order('name');
         
-      if (themesError) {
-        console.error('Erreur lors de la récupération des thématiques par IDs:', themesError);
+      if (allThemesError) {
+        console.error('Erreur lors de la récupération des thématiques:', allThemesError);
         setFrameworkThemes([]);
         return [];
       }
       
-      const formattedThemes = themes.map(theme => ({
+      if (!allThemes || allThemes.length === 0) {
+        console.log('Aucune thématique disponible dans la base de données');
+        setFrameworkThemes([]);
+        return [];
+      }
+      
+      console.log(`Récupéré ${allThemes.length} thématiques depuis la base de données`);
+      
+      const formattedThemes = allThemes.map(theme => ({
         id: theme.id,
         name: theme.name,
         description: theme.description || ''
       }));
       
-      console.log(`Récupéré ${formattedThemes.length} thématiques spécifiques au framework`, formattedThemes);
-      
-      if (formattedThemes.length === 0) {
-        console.log('Aucune thématique récupérée par IDs, utilisation du fallback');
-        
-        // Si aucune thématique récupérée, fallback
-        const { data: allThemes, error: allThemesError } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        if (allThemesError) {
-          console.error('Erreur lors de la récupération des thématiques (fallback final):', allThemesError);
-          setFrameworkThemes([]);
-          return [];
-        }
-        
-        const allFormattedThemes = allThemes.map(theme => ({
-          id: theme.id,
-          name: theme.name,
-          description: theme.description || ''
-        }));
-        
-        console.log(`Récupéré ${allFormattedThemes.length} thématiques depuis la base de données (fallback final)`, allFormattedThemes);
-        setFrameworkThemes(allFormattedThemes);
-        return allFormattedThemes;
-      }
-      
+      console.log(`Renvoi de ${formattedThemes.length} thématiques formatées:`, formattedThemes);
       setFrameworkThemes(formattedThemes);
       return formattedThemes;
     } catch (error) {
       console.error('Erreur dans fetchThemesByFrameworkId:', error);
-      
-      // En cas d'erreur, tentative de récupérer toutes les thématiques
-      try {
-        console.log('Erreur détectée, tentative de récupération de toutes les thématiques');
-        const { data: themes } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        const formattedThemes = (themes || []).map(theme => ({
-          id: theme.id,
-          name: theme.name,
-          description: theme.description || ''
-        }));
+      return await fetchAllThemesFallback();
+    } finally {
+      setLoadingThemes(false);
+    }
+  };
+  
+  const fetchAllThemesFallback = async (): Promise<{id: string, name: string, description: string}[]> => {
+    try {
+      console.log('Fallback: récupération de toutes les thématiques disponibles');
+      const { data: themes, error: themesError } = await supabase
+        .from('audit_themes')
+        .select('*')
+        .order('name');
         
-        console.log(`Récupéré ${formattedThemes.length} thématiques depuis la base de données (après erreur)`, formattedThemes);
-        setFrameworkThemes(formattedThemes);
-        return formattedThemes;
-      } catch (fallbackError) {
-        console.error('Erreur dans le fallback de fetchThemesByFrameworkId:', fallbackError);
+      if (themesError) {
+        console.error('Erreur lors de la récupération des thématiques (fallback):', themesError);
         setFrameworkThemes([]);
         return [];
       }
-    } finally {
-      setLoadingThemes(false);
+      
+      const formattedThemes = (themes || []).map(theme => ({
+        id: theme.id,
+        name: theme.name,
+        description: theme.description || ''
+      }));
+      
+      console.log(`Récupéré ${formattedThemes.length} thématiques depuis la base de données (fallback)`, formattedThemes);
+      setFrameworkThemes(formattedThemes);
+      return formattedThemes;
+    } catch (fallbackError) {
+      console.error('Erreur dans le fallback de fetchThemesByFrameworkId:', fallbackError);
+      setFrameworkThemes([]);
+      return [];
     }
   };
 
