@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AuditTheme, AuditTopic } from '@/types';
 import { useData } from '@/contexts/DataContext';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface TopicsListProps {
   auditId?: string;
@@ -29,6 +31,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
   const [availableThemes, setAvailableThemes] = useState<AuditTheme[]>([]);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [existingThemes, setExistingThemes] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   // Determine which themes to use - framework specific or all themes
   const themesToUse = frameworkThemes && frameworkThemes.length > 0 
@@ -36,12 +39,22 @@ const TopicsList: React.FC<TopicsListProps> = ({
     : availableThemes;
 
   useEffect(() => {
+    console.log("TopicsList - frameworkThemes reçus:", frameworkThemes);
+    console.log("TopicsList - availableThemes reçus:", availableThemes);
+    console.log("TopicsList - themesToUse:", themesToUse);
+  }, [frameworkThemes, availableThemes, themesToUse]);
+
+  useEffect(() => {
     const loadThemes = async () => {
       if (loading || initialLoadComplete) return; // Éviter les appels multiples
       
       setLoading(true);
+      setError(null);
+      
       try {
+        console.log("TopicsList - Chargement des thématiques...");
         const themeData = await fetchThemes();
+        console.log("TopicsList - Thématiques chargées:", themeData);
         
         // Filtrer les thèmes exclus (ADMIN, Cloture)
         const filteredThemes = themeData.filter(theme => 
@@ -49,6 +62,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
         );
         
         setAvailableThemes(filteredThemes);
+        console.log("TopicsList - Thématiques disponibles après filtrage:", filteredThemes);
         
         // Par défaut, toutes les thématiques non-exclues sont sélectionnées
         const themeIds = filteredThemes.map(theme => theme.id);
@@ -65,6 +79,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
               }
             });
             setExistingThemes(usedThemes);
+            console.log("TopicsList - Thématiques existantes pour cet audit:", usedThemes);
           } catch (error) {
             console.error("Erreur lors du chargement des interviews:", error);
           }
@@ -78,17 +93,19 @@ const TopicsList: React.FC<TopicsListProps> = ({
         setInitialLoadComplete(true);
       } catch (error) {
         console.error("Erreur lors du chargement des thématiques:", error);
+        setError("Impossible de charger les thématiques");
       } finally {
         setLoading(false);
       }
     };
 
     loadThemes();
-  }, [fetchThemes, fetchInterviewsByAuditId, auditId, excludedThemeNames]);
+  }, [fetchThemes, fetchInterviewsByAuditId, auditId, excludedThemeNames, loading, initialLoadComplete, onSelectionChange]);
 
   // Update selections when frameworkThemes changes
   useEffect(() => {
     if (frameworkThemes && frameworkThemes.length > 0 && initialLoadComplete) {
+      console.log("TopicsList - Mise à jour des sélections basées sur frameworkThemes:", frameworkThemes);
       const themeIds = frameworkThemes.map(theme => theme.id);
       setSelectedThemes(themeIds);
       
@@ -105,6 +122,8 @@ const TopicsList: React.FC<TopicsListProps> = ({
         ? prev.filter(id => id !== themeId)
         : [...prev, themeId];
       
+      console.log("TopicsList - Thématiques sélectionnées après toggle:", newSelection);
+      
       // Notifier le parent du changement si nécessaire
       if (onSelectionChange) {
         onSelectionChange(newSelection);
@@ -120,6 +139,15 @@ const TopicsList: React.FC<TopicsListProps> = ({
         <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
         <p>Chargement des thématiques...</p>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="my-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 

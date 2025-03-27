@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { 
@@ -57,6 +58,9 @@ export const useAuditInterviews = () => {
         return [];
       }
       
+      // Modification de la requête pour récupérer toutes les thématiques
+      // sans filtrer par framework_id, car l'association n'existe pas directement
+      console.log('Requête pour récupérer toutes les thématiques disponibles');
       const { data: themes, error: themesError } = await supabase
         .from('audit_themes')
         .select('*')
@@ -69,12 +73,12 @@ export const useAuditInterviews = () => {
       }
       
       if (!themes || themes.length === 0) {
-        console.log('Aucune thématique trouvée');
+        console.log('Aucune thématique trouvée dans la base de données');
         setFrameworkThemes([]);
         return [];
       }
       
-      console.log(`Récupéré ${themes.length} thématiques depuis la base de données`);
+      console.log(`Récupéré ${themes.length} thématiques depuis la base de données`, themes);
       
       const formattedThemes = themes.map(theme => ({
         id: theme.id,
