@@ -100,13 +100,13 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
     <Card className="w-full mb-4">
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          <span>{scaleType.name}</span>
+          <span>{scaleType.description || scaleType.name}</span>
           <Switch 
             checked={getIsActive(companyScale)} 
             onCheckedChange={() => onToggleActive(companyScale.id, getIsActive(companyScale))}
           />
         </CardTitle>
-        <CardDescription>{scaleType.description}</CardDescription>
+        <CardDescription>{scaleType.description || scaleType.name}</CardDescription>
       </CardHeader>
       <CardContent>
         {levels.sort((a, b) => getLevelValue(a) - getLevelValue(b)).map((level) => (
