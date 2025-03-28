@@ -6,7 +6,7 @@ import { ErrorState, LoadingState } from '@/components/risk-analysis/new-scenari
 import { RiskScenarioForm } from '@/components/risk-analysis/new-scenario/RiskScenarioForm';
 import PageHeader from '@/components/risk-analysis/new-scenario/PageHeader';
 import { useNewRiskScenario } from '@/hooks/useNewRiskScenario';
-import { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
+import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 
 const NewRiskScenario = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,7 +20,7 @@ const NewRiskScenario = () => {
   const { company, isLoading, handleSubmit } = useNewRiskScenario(id);
 
   // Fonction pour gérer la sélection d'un modèle
-  const handleTemplateSelect = (template: RiskScenarioTemplate) => {
+  const handleTemplateSelect = (template: EnhancedTemplate) => {
     if (formRef.current && formRef.current.handleTemplateSelect) {
       formRef.current.handleTemplateSelect(template);
     }

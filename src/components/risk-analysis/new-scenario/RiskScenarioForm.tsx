@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RiskLevel, RiskStatus, RiskScope } from '@/types';
 import { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
+import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 
 // Schéma de validation du formulaire
 const formSchema = z.object({
@@ -49,7 +50,7 @@ interface RiskScenarioFormProps {
 
 // Utilisation de forwardRef pour pouvoir exposer des méthodes au parent
 const RiskScenarioForm = forwardRef<
-  { handleTemplateSelect: (template: RiskScenarioTemplate) => void },
+  { handleTemplateSelect: (template: EnhancedTemplate | RiskScenarioTemplate) => void },
   RiskScenarioFormProps
 >(({ onSubmit, companyId, defaultValues = {
   name: '',
@@ -68,24 +69,38 @@ const RiskScenarioForm = forwardRef<
   });
 
   // Méthode pour mettre à jour le formulaire à partir d'un modèle sélectionné
-  const handleTemplateSelect = (template: RiskScenarioTemplate) => {
+  const handleTemplateSelect = (template: EnhancedTemplate | RiskScenarioTemplate) => {
     if (!template) return;
     
-    // Extract scenario name - typically the first sentence or part before ":"
-    let name = template.scenario_description;
-    if (name.includes(':')) {
-      name = name.split(':')[0].trim();
-    } else if (name.includes('.')) {
-      name = name.split('.')[0].trim();
-    } else if (name.length > 50) {
-      name = name.substring(0, 50) + '...';
+    // Détecter si c'est un template amélioré ou standard
+    const isEnhanced = 'name' in template && 'shortDescription' in template;
+    
+    // Extraire le nom du scénario
+    let name = isEnhanced 
+      ? (template as EnhancedTemplate).name 
+      : template.scenario_description;
+      
+    // Si ce n'est pas un template amélioré, essayer d'extraire un nom
+    if (!isEnhanced) {
+      if (name.includes(':')) {
+        name = name.split(':')[0].trim();
+      } else if (name.includes('.')) {
+        name = name.split('.')[0].trim();
+      } else if (name.length > 50) {
+        name = name.substring(0, 50) + '...';
+      }
     }
     
-    // Set form values based on template
-    form.setValue('name', name);
-    form.setValue('description', template.scenario_description);
+    // Définir la description
+    const description = isEnhanced 
+      ? (template as EnhancedTemplate).shortDescription || template.scenario_description
+      : template.scenario_description;
     
-    // Set a default scope based on domain
+    // Mettre à jour le formulaire
+    form.setValue('name', name);
+    form.setValue('description', description);
+    
+    // Définir une portée par défaut basée sur le domaine
     const domain = template.domain.toLowerCase();
     if (domain.includes('rgpd') || domain.includes('confidentialité')) {
       form.setValue('scope', 'organizational');
@@ -95,7 +110,7 @@ const RiskScenarioForm = forwardRef<
       form.setValue('scope', 'human');
     }
     
-    // Set default impact description
+    // Définir une description d'impact par défaut
     form.setValue('impactDescription', `Impact potentiel lié à "${template.domain}"`);
   };
 
@@ -342,4 +357,3 @@ RiskScenarioForm.displayName = "RiskScenarioForm";
 // Export with a cleaner approach - fixing the conflict
 export { RiskScenarioForm, formSchema };
 export type { RiskScenarioFormValues };
-
