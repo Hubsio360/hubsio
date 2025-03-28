@@ -91,14 +91,24 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
       }));
 
       // Extraire et créer automatiquement les processus métier à partir des activités
-      const processLines = (data.activities || '').split('\n')
-        .filter(line => line.trim().startsWith('-'))
-        .map(line => line.trim().substring(1).trim());
+      // Maintenant nous vérifions si data.activities est un array ou une string
+      let processLines: string[] = [];
+      
+      if (Array.isArray(data.activities)) {
+        // Si c'est un array, l'utiliser directement
+        processLines = data.activities;
+      } else if (typeof data.activities === 'string') {
+        // Si c'est une string, la diviser en lignes
+        processLines = data.activities.split('\n')
+          .filter(line => line.trim().startsWith('-'));
+      }
       
       if (processLines.length > 0) {
         const newProcesses = processLines.map((process, index) => ({
           id: `process-${Date.now()}-${index}`,
-          name: process
+          name: typeof process === 'string' && process.startsWith('-') 
+            ? process.substring(1).trim() 
+            : process
         }));
         
         setBusinessProcesses(newProcesses);
