@@ -29,6 +29,7 @@ export const fetchInterviewsFromDB = async (auditId: string): Promise<AuditInter
   }
   
   try {
+    console.log(`Fetching interviews from DB for audit ID: ${auditId}`);
     const { data, error } = await selectAuditInterviews()
       .eq('audit_id', auditId)
       .order('start_time');
@@ -38,7 +39,10 @@ export const fetchInterviewsFromDB = async (auditId: string): Promise<AuditInter
       return [];
     }
     
+    console.log(`Found ${data?.length || 0} interviews in database:`, data);
+    
     if (!data || data.length === 0) {
+      console.log('No interviews found in database for this audit');
       return [];
     }
     
@@ -295,6 +299,7 @@ export const deleteExistingInterviews = async (auditId: string): Promise<boolean
 export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[]): Promise<boolean> => {
   try {
     console.log(`Attempting to insert ${interviews.length} interviews into database`);
+    console.log('Interview data:', JSON.stringify(interviews, null, 2));
     
     // Ensure each interview has the required fields
     const validInterviews = interviews.filter(interview => 
@@ -315,6 +320,8 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
       return false;
     }
     
+    console.log(`${validInterviews.length} valid interviews will be inserted`);
+    
     // Cast to InterviewInsert[] after validation
     const typedInterviews = validInterviews as InterviewInsert[];
     
@@ -328,7 +335,7 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
       console.error('Error creating audit interviews in DB:', error);
       return false;
     } else {
-      console.log(`Successfully inserted ${data?.length || 0} interviews into DB`);
+      console.log(`Successfully inserted ${data?.length || 0} interviews into DB:`, data);
       return true;
     }
   } catch (error) {

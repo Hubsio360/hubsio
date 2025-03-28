@@ -12,6 +12,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as "system" | "light" | "dark"}
       className="toaster group"
       richColors
+      position="top-right"
+      expand={false}
+      closeButton
+      duration={4000}
       toastOptions={{
         classNames: {
           toast:

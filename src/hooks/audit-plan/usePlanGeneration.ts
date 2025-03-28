@@ -116,7 +116,7 @@ export const usePlanGeneration = (
       if (success) {
         // Récupérer les interviews générées pour vérifier qu'elles existent
         const interviews = await fetchInterviewsByAuditId(auditId);
-        console.log(`Plan généré avec succès, ${interviews.length} interviews créées`);
+        console.log(`Plan généré avec succès, ${interviews.length} interviews créées:`, interviews);
         
         toast({
           title: "Plan d'audit généré",
@@ -124,7 +124,8 @@ export const usePlanGeneration = (
         });
 
         if (onPlanGenerated) {
-          // Rediriger vers l'onglet steps (étapes) au lieu de calendar
+          // Explicitement rediriger vers l'onglet steps (étapes) après génération
+          console.log("Redirection vers l'onglet steps (étapes)");
           onPlanGenerated('steps');
         }
       } else {

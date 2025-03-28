@@ -36,6 +36,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
   const [planExists, setPlanExists] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!auditId) {
@@ -46,7 +47,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       return;
     }
     
-    if (loading || dataLoaded) {
+    if (loading || (dataLoaded && !forceRefresh)) {
       console.log('Data already loading or loaded, skipping duplicate load');
       return;
     }
@@ -63,6 +64,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       }
       
       try {
+        console.log('Fetching interviews with audit ID:', auditId);
         const interviewsData = await fetchInterviewsByAuditId(auditId);
         console.log('Loaded interviews:', interviewsData);
         
@@ -78,16 +80,24 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           
           const themeMap: Record<string, AuditInterview[]> = {};
           realInterviews.forEach(interview => {
-            const theme = interview.themeId || 'Sans thème';
+            let theme = 'Sans thème';
+            if (interview.themeId) {
+              theme = interview.themeId;
+            } else if (interview.topicId) {
+              theme = interview.topicId;
+            }
+            
             if (!themeMap[theme]) {
               themeMap[theme] = [];
             }
             themeMap[theme].push(interview);
           });
+          console.log('Interviews organized by theme:', themeMap);
           setInterviewsByTheme(themeMap);
           
           // If interviews exist, update the active tab if it's on generate
           if (realInterviews.length > 0 && activeTab === 'generate') {
+            console.log('Setting active tab to "steps" as interviews exist');
             setActiveTab('steps');
           }
         } else {
@@ -110,14 +120,15 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       setLoading(false);
       setInitialLoading(false);
       setDataLoaded(true);
+      setForceRefresh(false);
     }
-  }, [auditId, fetchInterviewsByAuditId, fetchTopics, loading, dataLoaded, activeTab]);
+  }, [auditId, fetchInterviewsByAuditId, fetchTopics, loading, dataLoaded, forceRefresh]);
 
   useEffect(() => {
-    if (auditId && !dataLoaded) {
+    if (auditId && (!dataLoaded || forceRefresh)) {
       loadData();
     }
-  }, [auditId, loadData, dataLoaded]);
+  }, [auditId, loadData, dataLoaded, forceRefresh]);
 
   const refreshInterviews = async (targetTab?: string) => {
     if (!auditId) {
@@ -125,12 +136,14 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       return;
     }
     
+    console.log('Force refreshing interviews for audit:', auditId);
     setLoading(true);
     setLoadError(null);
     setDataLoaded(false);
+    setForceRefresh(true);
     
     try {
-      console.log('Refreshing interviews for audit:', auditId);
+      console.log('Explicitly refreshing interviews for audit:', auditId);
       const interviewsData = await fetchInterviewsByAuditId(auditId);
       console.log('Refreshed interviews:', interviewsData);
       
@@ -146,12 +159,19 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         
         const themeMap: Record<string, AuditInterview[]> = {};
         realInterviews.forEach(interview => {
-          const theme = interview.themeId || 'Sans thème';
+          let theme = 'Sans thème';
+          if (interview.themeId) {
+            theme = interview.themeId;
+          } else if (interview.topicId) {
+            theme = interview.topicId;
+          }
+          
           if (!themeMap[theme]) {
             themeMap[theme] = [];
           }
           themeMap[theme].push(interview);
         });
+        console.log('Updated interviews by theme:', themeMap);
         setInterviewsByTheme(themeMap);
         
         toast({
@@ -161,8 +181,10 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         
         if (realInterviews.length > 0) {
           if (targetTab) {
+            console.log(`Setting active tab to "${targetTab}" as requested`);
             setActiveTab(targetTab);
           } else if (activeTab === 'generate') {
+            console.log('Setting active tab to "steps" as interviews exist');
             setActiveTab('steps');
           }
         }
@@ -180,6 +202,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     } finally {
       setLoading(false);
       setDataLoaded(true);
+      setForceRefresh(false);
     }
   };
 
@@ -213,7 +236,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   }, [dataLoaded, planExists, activeTab]);
 
-  // Renommer 'themes' en 'steps' pour plus de cohérence avec la demande
   return (
     <Card>
       <CardContent className="p-6">
@@ -276,7 +298,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   className="mt-4" 
                   onClick={() => {
                     setDataLoaded(false);
-                    loadData();
+                    setForceRefresh(true);
                   }}
                 >
                   Réessayer
@@ -317,7 +339,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   className="mt-4" 
                   onClick={() => {
                     setDataLoaded(false);
-                    loadData();
+                    setForceRefresh(true);
                   }}
                 >
                   Réessayer
@@ -329,7 +351,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                   <Card key={theme} className="overflow-hidden">
                     <div className="bg-primary h-1"></div>
                     <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold mb-3">{theme}</h3>
+                      <h3 className="text-lg font-semibold mb-3">Thématique {theme.substring(0, 8)}...</h3>
                       <div className="space-y-3">
                         {themeInterviews.map(interview => (
                           <div 
@@ -343,9 +365,19 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                                 {new Date(interview.startTime).toLocaleDateString()} - {interview.durationMinutes} min
                               </div>
                             </div>
+                            {interview.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {interview.description.substring(0, 100)}{interview.description.length > 100 ? '...' : ''}
+                              </div>
+                            )}
                             {interview.controlRefs && (
                               <div className="text-xs text-muted-foreground mt-1">
                                 Clause/Contrôle: {interview.controlRefs}
+                              </div>
+                            )}
+                            {interview.meetingLink && (
+                              <div className="text-xs text-primary mt-1">
+                                Lien de réunion disponible
                               </div>
                             )}
                           </div>

@@ -1,7 +1,7 @@
-
 import { useState } from 'react';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchInterviewsFromDB, createInterviewsInDB, deleteExistingInterviews } from '../utils/interviewDbOps';
 
 export const useAuditInterviews = () => {
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
@@ -81,43 +81,26 @@ export const useAuditInterviews = () => {
   const fetchInterviewsByAuditId = async (auditId: string): Promise<AuditInterview[]> => {
     setLoading(true);
     try {
-      console.log(`Fetching audit interviews for audit ID: ${auditId}`);
-      const { data, error } = await supabase
-        .from('audit_interviews')
-        .select('*')
-        .eq('audit_id', auditId)
-        .order('start_time');
-      
-      if (error) {
-        console.error('Error fetching audit interviews:', error);
+      console.log(`[useAuditInterviews] Fetching audit interviews for audit ID: ${auditId}`);
+      if (!auditId) {
+        console.error('[useAuditInterviews] No audit ID provided');
         return [];
       }
       
-      if (!data || data.length === 0) {
-        console.log('No audit interviews found for this audit.');
-        return [];
+      // Utiliser la fonction dédiée pour récupérer les interviews depuis la base de données
+      const interviews = await fetchInterviewsFromDB(auditId);
+      
+      if (interviews.length === 0) {
+        console.log('[useAuditInterviews] No interviews found for this audit');
+      } else {
+        console.log(`[useAuditInterviews] Found ${interviews.length} interviews`);
       }
       
-      console.log(`Found ${data.length} audit interviews`);
-      
-      const fetchedInterviews = data.map(interview => ({
-        id: interview.id,
-        auditId: interview.audit_id || '',
-        topicId: interview.topic_id || '',
-        themeId: interview.theme_id || '',
-        title: interview.title,
-        description: interview.description || '',
-        startTime: interview.start_time,
-        durationMinutes: interview.duration_minutes,
-        location: interview.location || '',
-        meetingLink: interview.meeting_link || '',
-        controlRefs: interview.control_refs || ''
-      }));
-      
-      setInterviews(fetchedInterviews);
-      return fetchedInterviews;
+      // Mise à jour de l'état local
+      setInterviews(interviews);
+      return interviews;
     } catch (error) {
-      console.error('Error fetching audit interviews:', error);
+      console.error('[useAuditInterviews] Error fetching audit interviews:', error);
       return [];
     } finally {
       setLoading(false);
@@ -351,12 +334,67 @@ export const useAuditInterviews = () => {
     themeDurations?: Record<string, number>;
     maxHoursPerDay?: number;
   }): Promise<boolean> => {
-    // Placeholder function - implement your audit plan generation logic here
-    console.log('Generating audit plan with options:', auditId, startDate, endDate, options);
-    return true;
+    console.log("[useAuditInterviews] Generating audit plan with options:", { auditId, startDate, endDate, options });
+    
+    if (!auditId) {
+      console.error("[useAuditInterviews] No audit ID provided for plan generation");
+      return false;
+    }
+    
+    try {
+      // 1. Supprimer les interviews existantes pour cet audit
+      console.log("[useAuditInterviews] Deleting existing interviews");
+      await deleteExistingInterviews(auditId);
+      
+      // 2. Générer de nouvelles interviews (simulation pour l'instant)
+      // Ici, nous créerions normalement les interviews basées sur les thématiques...
+      console.log("[useAuditInterviews] Creating new interviews");
+      
+      // Générer des interviews de test pour montrer la fonctionnalité
+      const interviews = [];
+      
+      if (options?.topicIds && options.selectedDays) {
+        const dayStart = new Date(options.selectedDays[0]);
+        dayStart.setHours(9, 0, 0, 0);
+        
+        for (const topicId of options.topicIds) {
+          const duration = options.themeDurations?.[topicId] || 60;
+          
+          interviews.push({
+            audit_id: auditId,
+            topic_id: topicId,
+            theme_id: topicId, // Utiliser le même ID que la thématique pour simplifier
+            title: `Interview sur thématique ${topicId.substring(0, 6)}`,
+            description: "Interview générée automatiquement",
+            start_time: new Date(dayStart).toISOString(),
+            duration_minutes: duration,
+            location: "Bureau principal",
+            meeting_link: "https://meet.google.com/auto-generated-link",
+            control_refs: ""
+          });
+          
+          // Avancer l'heure pour la prochaine interview
+          dayStart.setMinutes(dayStart.getMinutes() + duration + 15);
+        }
+      }
+      
+      // 3. Insérer les nouvelles interviews dans la base de données
+      console.log(`[useAuditInterviews] Inserting ${interviews.length} interviews into database`);
+      const insertSuccess = await createInterviewsInDB(interviews);
+      
+      if (!insertSuccess) {
+        console.error("[useAuditInterviews] Failed to insert interviews");
+        return false;
+      }
+      
+      console.log("[useAuditInterviews] Successfully generated audit plan");
+      return true;
+    } catch (error) {
+      console.error("[useAuditInterviews] Error generating audit plan:", error);
+      return false;
+    }
   };
 
-  // Function to fetch themes by framework ID
   const fetchThemesByFrameworkId = async (frameworkId: string): Promise<{ id: string, name: string, description: string }[]> => {
     console.log(`Beginning fetchThemesByFrameworkId for framework: ${frameworkId}`);
     
@@ -426,7 +464,7 @@ export const useAuditInterviews = () => {
     loading,
     fetchInterviews,
     fetchInterviewsByAuditId,
-    fetchRealInterviewsFromDB,
+    fetchRealInterviewsFromDB: fetchInterviewsFromDB,
     addInterview,
     updateInterview,
     deleteInterview,
