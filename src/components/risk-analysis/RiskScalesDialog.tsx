@@ -31,6 +31,7 @@ import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -57,6 +58,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
   
   const {
     riskScaleTypes,
@@ -148,12 +150,29 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     
     setIsDeleting(true);
     try {
-      await deleteScale(scaleToDelete);
-      // Seulement après le succès de la suppression, nous fermons le dialogue
-      setScaleToDelete(null);
-      setDeleteDialogOpen(false);
+      const success = await deleteScale(scaleToDelete);
+      if (success) {
+        toast({
+          title: "Échelle supprimée",
+          description: "L'échelle de risque a été supprimée avec succès",
+        });
+        // Only close the dialog after successful deletion
+        setScaleToDelete(null);
+        setDeleteDialogOpen(false);
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Échec de la suppression de l'échelle",
+        });
+      }
     } catch (error) {
       console.error("Erreur lors de la suppression de l'échelle:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression",
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -169,6 +188,11 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const getLevelsForScale = (scaleId: string) => {
     const scale = companyRiskScales.find(s => s.id === scaleId);
     return scale?.levels || [];
+  };
+
+  // Stop event propagation to prevent dialog from closing
+  const stopPropagation = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -375,19 +399,11 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </SheetContent>
       </Sheet>
 
-      {/* Dialogue de confirmation de suppression */}
+      {/* Dialogue de confirmation de suppression - avec correction pour éviter la fermeture automatique */}
       <AlertDialog 
-        open={deleteDialogOpen} 
-        onOpenChange={(open) => {
-          // Ne pas fermer si on est en train de supprimer
-          if (!open && isDeleting) return;
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setScaleToDelete(null);
-          }
-        }}
+        open={deleteDialogOpen}
       >
-        <AlertDialogContent>
+        <AlertDialogContent onClick={stopPropagation}>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
@@ -397,7 +413,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel 
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setScaleToDelete(null);
                 setDeleteDialogOpen(false);
               }}
@@ -406,7 +423,10 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               Annuler
             </AlertDialogCancel>
             <AlertDialogAction 
-              onClick={confirmDelete}
+              onClick={(e) => {
+                e.stopPropagation();
+                confirmDelete();
+              }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={isDeleting}
             >
