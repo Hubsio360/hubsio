@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -33,7 +32,8 @@ export const useRiskScalesManager = (companyId: string) => {
     const scaleType = riskScaleTypes.find(type => type.id === scaleTypeId) || {
       id: '',
       name: 'Type inconnu',
-      description: ''
+      description: '',
+      category: 'impact'
     };
     
     return {
@@ -100,11 +100,16 @@ export const useRiskScalesManager = (companyId: string) => {
   };
 
   // Handle updating a risk scale type
-  const handleUpdateScaleType = useCallback(async (scaleTypeId: string, name: string, description: string) => {
+  const handleUpdateScaleType = useCallback(async (
+    scaleTypeId: string, 
+    name: string, 
+    description: string,
+    category?: 'impact' | 'likelihood'
+  ) => {
     if (!companyId) return null;
     
     try {
-      const updatedType = await updateRiskScaleType(scaleTypeId, name, description);
+      const updatedType = await updateRiskScaleType(scaleTypeId, name, description, category);
       
       if (updatedType) {
         await refreshData();
@@ -128,8 +133,8 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, updateRiskScaleType, refreshData, toast]);
 
-  // Handle adding a custom scale
-  const handleAddCustomScale = useCallback(async () => {
+  // Handle adding a custom scale with category
+  const handleAddCustomScale = useCallback(async (category: 'impact' | 'likelihood' = 'impact') => {
     if (!companyId) return;
     
     try {
@@ -137,7 +142,7 @@ export const useRiskScalesManager = (companyId: string) => {
       const customScaleName = `custom-scale-${uuidv4().slice(0, 8)}`;
       const customScaleDescription = `Échelle personnalisée`;
       
-      const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription);
+      const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription, category);
       
       if (!newScaleType) {
         throw new Error('Erreur lors de la création du type d\'échelle');

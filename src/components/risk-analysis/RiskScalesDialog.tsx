@@ -29,6 +29,7 @@ import { AlertCircle, Plus } from 'lucide-react';
 import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ interface RiskScalesDialogProps {
 interface ScaleFormValues {
   name: string;
   description: string;
+  category: 'impact' | 'likelihood';
 }
 
 const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
@@ -66,7 +68,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const form = useForm<ScaleFormValues>({
     defaultValues: {
       name: '',
-      description: ''
+      description: '',
+      category: 'impact'
     }
   });
 
@@ -75,7 +78,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return riskScaleTypes.find(type => type.id === scaleTypeId) || {
       id: '',
       name: 'Type inconnu',
-      description: ''
+      description: '',
+      category: 'impact'
     };
   };
 
@@ -84,28 +88,30 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
 
-  // Group company risk scales by type
+  // Group company risk scales by category
   const impactScales = companyRiskScales.filter(
     (scale) => {
       const scaleType = getScaleType(getScaleTypeId(scale));
-      return scaleType && !scaleType.name.includes('likelihood');
+      return scaleType.category === 'impact';
     }
   );
   
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
       const scaleType = getScaleType(getScaleTypeId(scale));
-      return scaleType && scaleType.name.includes('likelihood');
+      return scaleType.category === 'likelihood';
     }
   );
 
   // Handle adding a new custom scale
   const handleAddCustomScale = async () => {
-    const newType = await addCustomScale();
+    const category = activeTab as 'impact' | 'likelihood';
+    const newType = await addCustomScale(category);
     if (newType) {
       setNewScaleType(newType);
       form.setValue('name', newType.name);
       form.setValue('description', newType.description || '');
+      form.setValue('category', newType.category || category);
       setNewScaleDialogOpen(true);
     }
   };
@@ -113,7 +119,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   // Handle saving the scale type details
   const onSubmitScaleForm = async (values: ScaleFormValues) => {
     if (newScaleType) {
-      await updateScaleType(newScaleType.id, values.name, values.description);
+      await updateScaleType(newScaleType.id, values.name, values.description, values.category);
       setNewScaleDialogOpen(false);
       setNewScaleType(null);
     }
@@ -143,18 +149,18 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
             </Alert>
           )}
 
-          <div className="flex items-center gap-2 mb-4">
-            <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
-              <Plus className="h-4 w-4 mr-1" />
-              Ajouter une nouvelle échelle
-            </Button>
-          </div>
-
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
             <TabsList>
               <TabsTrigger value="impact">Échelles d'impact</TabsTrigger>
               <TabsTrigger value="likelihood">Échelles de probabilité</TabsTrigger>
             </TabsList>
+
+            <div className="flex items-center gap-2 my-4">
+              <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
+                <Plus className="h-4 w-4 mr-1" />
+                Ajouter une nouvelle échelle {activeTab === 'impact' ? "d'impact" : "de probabilité"}
+              </Button>
+            </div>
 
             <TabsContent value="impact" className="flex-1 mt-4">
               <ScrollArea className="h-[calc(80vh-220px)]">
@@ -251,6 +257,31 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                         className="min-h-[100px]"
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Catégorie</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionnez une catégorie" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="impact">Impact</SelectItem>
+                        <SelectItem value="likelihood">Probabilité</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
