@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useCompanies } from './hooks/useCompanies';
 import { useAudits } from './hooks/useAudits';
@@ -14,6 +13,8 @@ import { useUsers } from './hooks/useUsers';
 import { useServices } from './hooks/useServices';
 import { importStandardAuditPlan } from './utils/auditPlanUtils';
 import { DataContextProps } from './types/dataContextTypes';
+import { supabase } from '@/integrations/supabase/client';
+import { fetchThemesByFrameworkId as fetchThemesByFrameworkIdHelper } from './utils/integrated-helpers';
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
@@ -93,8 +94,24 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const hasPlanForAudit = async (auditId: string): Promise<boolean> => {
     try {
-      const interviews = await auditInterviewsHook.fetchRealInterviewsFromDB(auditId);
-      return interviews.length > 0;
+      if (!auditId) {
+        console.error('DataProvider: No audit ID provided for plan check');
+        return false;
+      }
+
+      // For safety, we'll look directly at the DB to avoid any mapping issues
+      const { data, error } = await supabase
+        .from('audit_interviews')
+        .select('id')
+        .eq('audit_id', auditId)
+        .limit(1);
+      
+      if (error) {
+        console.error('Error checking if audit has a plan:', error);
+        return false;
+      }
+
+      return data && data.length > 0;
     } catch (error) {
       console.error('Error checking if audit has a plan:', error);
       return false;
@@ -102,8 +119,8 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const fetchThemesByFrameworkId = async (frameworkId: string) => {
-    console.log('DataProvider: Delegating fetchThemesByFrameworkId to auditInterviewsHook');
-    return auditInterviewsHook.fetchThemesByFrameworkId(frameworkId);
+    console.log('DataProvider: Delegating fetchThemesByFrameworkId to helper function');
+    return fetchThemesByFrameworkIdHelper(frameworkId);
   };
 
   // Fix for addParticipant adapter

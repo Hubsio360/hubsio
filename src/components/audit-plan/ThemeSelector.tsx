@@ -24,73 +24,81 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onSelectionChange,
   excludedThemeNames = ['ADMIN', 'Cloture']
 }) => {
-  const { fetchThemesByFrameworkId, addTheme } = useData();
+  const { fetchThemes, themes: allThemes, loading: globalLoading, addTheme } = useData();
   const [frameworkThemes, setFrameworkThemes] = useState<{id: string, name: string, description: string}[]>([]);
   const [loadingThemes, setLoadingThemes] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Cette fonction tente de charger les thématiques avec un meilleur logging
+  // Load themes directly from the data context
   const loadThemes = async () => {
-    if (!frameworkId) {
-      console.log("Pas de frameworkId fourni, utilisation des thématiques générales");
+    if (!auditId) {
+      console.log("No audit ID provided for theme loading");
+      return;
     }
     
     setLoadingThemes(true);
     setError(null);
     
     try {
-      console.log(`Tentative ${attemptCount + 1}: Chargement des thématiques pour le framework:`, frameworkId || 'tous');
-      const themes = await fetchThemesByFrameworkId(frameworkId || '');
-      console.log("Themes chargés:", themes);
+      console.log(`Attempt ${attemptCount + 1}: Loading themes...`);
+      
+      // Simply use fetchThemes from context which will update the themes state
+      const themes = await fetchThemes();
+      console.log("Themes loaded:", themes);
       
       if (themes && Array.isArray(themes) && themes.length > 0) {
-        setFrameworkThemes(themes);
-        console.log("Thématiques définies dans l'état local:", themes);
+        // Filter out excluded theme names
+        const filteredThemes = themes.filter(theme => 
+          !excludedThemeNames.includes(theme.name)
+        );
+        
+        setFrameworkThemes(filteredThemes);
+        console.log("Themes set in local state:", filteredThemes);
       } else {
-        console.error("Aucune thématique n'a été trouvée ou retournée");
-        setError("Aucune thématique n'a été trouvée. Veuillez ajouter des thématiques ou réessayer.");
+        console.error("No themes found or returned");
+        setError("No themes were found. Please add themes or try again.");
       }
     } catch (error) {
-      console.error("Erreur complète lors du chargement des thématiques:", error);
-      setError("Impossible de charger les thématiques. Veuillez réessayer.");
+      console.error("Complete error while loading themes:", error);
+      setError("Could not load themes. Please try again.");
     } finally {
       setLoadingThemes(false);
     }
   };
 
-  // Chargement initial des thématiques
+  // Initial theme loading
   useEffect(() => {
     loadThemes();
-  }, [frameworkId, fetchThemesByFrameworkId, attemptCount]);
+  }, [auditId, fetchThemes, attemptCount]);
 
-  // Mécanisme de retry automatique en cas d'échec
+  // Automatic retry mechanism on failure
   useEffect(() => {
-    // Si erreur et moins de 3 tentatives automatiques
+    // If error and less than 3 automatic attempts
     if (error && retryCount < 3) {
       const timer = setTimeout(() => {
-        console.log(`Retry automatique ${retryCount + 1}/3...`);
+        console.log(`Automatic retry ${retryCount + 1}/3...`);
         setRetryCount(prev => prev + 1);
         setAttemptCount(prev => prev + 1);
-      }, 1500); // Augmenter le délai entre les tentatives
+      }, 1500); // Increase delay between attempts
       
       return () => clearTimeout(timer);
     }
   }, [error, retryCount]);
 
-  // Fonction de retry manuelle
+  // Manual retry function
   const handleRetry = () => {
     setAttemptCount(prev => prev + 1);
-    setRetryCount(0); // Réinitialiser le compteur de retry automatiques
+    setRetryCount(0); // Reset automatic retry counter
   };
 
-  // Fonction pour ajouter une nouvelle thématique
+  // Function to add a new theme
   const handleAddTheme = async () => {
-    const themeName = prompt("Nom de la nouvelle thématique:");
+    const themeName = prompt("New theme name:");
     if (!themeName || themeName.trim() === '') return;
     
-    const description = prompt("Description (optionnelle):");
+    const description = prompt("Description (optional):");
     
     try {
       const newTheme = await addTheme({
@@ -100,36 +108,47 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       
       if (newTheme) {
         toast({
-          title: "Thématique ajoutée",
-          description: `La thématique "${newTheme.name}" a été ajoutée avec succès.`,
+          title: "Theme added",
+          description: `The theme "${newTheme.name}" has been successfully added.`,
         });
         
-        // Recharger les thématiques
+        // Reload themes
         handleRetry();
       } else {
         toast({
           variant: "destructive",
-          title: "Erreur",
-          description: "Impossible d'ajouter la thématique.",
+          title: "Error",
+          description: "Could not add the theme.",
         });
       }
     } catch (error) {
-      console.error("Erreur lors de l'ajout de la thématique:", error);
+      console.error("Error adding theme:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout de la thématique.",
+        title: "Error",
+        description: "An error occurred while adding the theme.",
       });
     }
   };
+
+  // Debug theme loading state
+  useEffect(() => {
+    console.log("Theme loading state:", {
+      loadingThemes,
+      globalLoading,
+      frameworkThemes: frameworkThemes.length,
+      allThemes: allThemes.length,
+      error
+    });
+  }, [loadingThemes, globalLoading, frameworkThemes, allThemes, error]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-lg">Thématiques d'interview</CardTitle>
+          <CardTitle className="text-lg">Interview Themes</CardTitle>
           <CardDescription>
-            Sélectionnez les thématiques à inclure dans votre plan d'audit
+            Select the themes to include in your audit plan
           </CardDescription>
         </div>
         <Button 
@@ -139,11 +158,11 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           className="ml-auto"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
-          Nouvelle thématique
+          New theme
         </Button>
       </CardHeader>
       <CardContent>
-        {loadingThemes ? (
+        {loadingThemes || globalLoading ? (
           <div className="space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
@@ -161,7 +180,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Réessayer
+                Retry
               </Button>
               <Button 
                 onClick={handleAddTheme}
@@ -169,7 +188,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 size="sm"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
-                Ajouter une thématique
+                Add a theme
               </Button>
             </div>
           </div>

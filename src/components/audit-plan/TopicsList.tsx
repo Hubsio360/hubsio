@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AuditTheme, AuditTopic } from '@/types';
+import { AuditTheme } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TopicsListProps {
   auditId?: string;
   frameworkId?: string;
   onSelectionChange?: (selectedThemes: string[]) => void;
-  excludedThemeNames?: string[]; // Thèmes à exclure (ADMIN, Cloture)
-  frameworkThemes?: {id: string, name: string, description: string}[];
+  excludedThemeNames?: string[]; // Themes to exclude (ADMIN, Cloture)
+  frameworkThemes?: AuditTheme[];
   loadingThemes?: boolean;
 }
 
@@ -22,7 +22,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
   auditId,
   frameworkId,
   excludedThemeNames = ['ADMIN', 'Cloture'],
-  frameworkThemes,
+  frameworkThemes = [],
   loadingThemes = false
 }) => {
   const { themes, fetchThemes, fetchInterviewsByAuditId } = useData();
@@ -36,76 +36,91 @@ const TopicsList: React.FC<TopicsListProps> = ({
   // Determine which themes to use - framework specific or all themes
   const themesToUse = frameworkThemes && frameworkThemes.length > 0 
     ? frameworkThemes 
-    : availableThemes;
+    : availableThemes.length > 0 ? availableThemes : themes;
 
+  // Log themes data for debugging
   useEffect(() => {
-    console.log("TopicsList - frameworkThemes reçus:", frameworkThemes);
-    console.log("TopicsList - availableThemes:", availableThemes);
-    console.log("TopicsList - themesToUse:", themesToUse);
-  }, [frameworkThemes, availableThemes, themesToUse]);
+    console.log("TopicsList - diagnostics:", {
+      frameworkThemes: frameworkThemes?.length || 0,
+      availableThemes: availableThemes.length,
+      allThemes: themes.length,
+      loading,
+      loadingThemes,
+      themesToUse: themesToUse.length,
+      initialLoadComplete
+    });
+  }, [frameworkThemes, availableThemes, themes, loading, loadingThemes, themesToUse, initialLoadComplete]);
 
   useEffect(() => {
     const loadThemes = async () => {
-      if (loading || initialLoadComplete) return; // Éviter les appels multiples
+      if (loading || initialLoadComplete) return; // Avoid multiple calls
       
       setLoading(true);
       setError(null);
       
       try {
-        console.log("TopicsList - Chargement des thématiques...");
+        console.log("TopicsList - Loading themes...");
         const themeData = await fetchThemes();
-        console.log("TopicsList - Thématiques chargées:", themeData);
+        console.log("TopicsList - Themes loaded:", themeData);
         
-        // Filtrer les thèmes exclus (ADMIN, Cloture)
+        // Filter excluded themes (ADMIN, Cloture)
         const filteredThemes = themeData.filter(theme => 
           !excludedThemeNames.includes(theme.name)
         );
         
         setAvailableThemes(filteredThemes);
-        console.log("TopicsList - Thématiques disponibles après filtrage:", filteredThemes);
+        console.log("TopicsList - Available themes after filtering:", filteredThemes);
         
-        // Par défaut, toutes les thématiques non-exclues sont sélectionnées
+        // By default, all non-excluded themes are selected
         const themeIds = filteredThemes.map(theme => theme.id);
         setSelectedThemes(themeIds);
         
-        // Si un auditId est fourni, vérifier quelles thématiques sont déjà utilisées
+        // If an auditId is provided, check which themes are already in use
         if (auditId) {
           try {
-            const interviews = await fetchInterviewsByAuditId(auditId);
-            const usedThemes = new Set<string>();
-            interviews.forEach(interview => {
-              if (interview.themeId) {
-                usedThemes.add(interview.themeId);
-              }
-            });
-            setExistingThemes(usedThemes);
-            console.log("TopicsList - Thématiques existantes pour cet audit:", usedThemes);
+            const { data, error } = await supabase
+              .from('audit_interviews')
+              .select('theme_id')
+              .eq('audit_id', auditId);
+              
+            if (error) {
+              console.error("Error loading interviews:", error);
+            } else {
+              const usedThemes = new Set<string>();
+              data.forEach(interview => {
+                if (interview.theme_id) {
+                  usedThemes.add(interview.theme_id);
+                }
+              });
+              setExistingThemes(usedThemes);
+              console.log("TopicsList - Existing themes for this audit:", usedThemes);
+            }
           } catch (error) {
-            console.error("Erreur lors du chargement des interviews:", error);
+            console.error("Error when loading interviews:", error);
           }
         }
         
-        // Notifier le parent du changement initial
+        // Notify parent of initial change
         if (onSelectionChange) {
           onSelectionChange(themeIds);
         }
         
         setInitialLoadComplete(true);
       } catch (error) {
-        console.error("Erreur lors du chargement des thématiques:", error);
-        setError("Impossible de charger les thématiques");
+        console.error("Error loading themes:", error);
+        setError("Could not load themes");
       } finally {
         setLoading(false);
       }
     };
 
     loadThemes();
-  }, [fetchThemes, fetchInterviewsByAuditId, auditId, excludedThemeNames, loading, initialLoadComplete, onSelectionChange]);
+  }, [fetchThemes, auditId, excludedThemeNames, loading, initialLoadComplete, onSelectionChange]);
 
   // Update selections when frameworkThemes changes
   useEffect(() => {
     if (frameworkThemes && frameworkThemes.length > 0 && initialLoadComplete) {
-      console.log("TopicsList - Mise à jour des sélections basées sur frameworkThemes:", frameworkThemes);
+      console.log("TopicsList - Updating selections based on frameworkThemes:", frameworkThemes);
       const themeIds = frameworkThemes.map(theme => theme.id);
       setSelectedThemes(themeIds);
       
@@ -122,9 +137,9 @@ const TopicsList: React.FC<TopicsListProps> = ({
         ? prev.filter(id => id !== themeId)
         : [...prev, themeId];
       
-      console.log("TopicsList - Thématiques sélectionnées après toggle:", newSelection);
+      console.log("TopicsList - Selected themes after toggle:", newSelection);
       
-      // Notifier le parent du changement si nécessaire
+      // Notify parent of the change if needed
       if (onSelectionChange) {
         onSelectionChange(newSelection);
       }
@@ -137,7 +152,7 @@ const TopicsList: React.FC<TopicsListProps> = ({
     return (
       <div className="flex justify-center items-center py-6 border rounded-md">
         <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full mr-2"></div>
-        <p>Chargement des thématiques...</p>
+        <p>Loading themes...</p>
       </div>
     );
   }
@@ -154,11 +169,11 @@ const TopicsList: React.FC<TopicsListProps> = ({
   if (themesToUse.length === 0) {
     return (
       <div className="text-center py-6 border rounded-md">
-        <h3 className="text-lg font-medium mb-2">Aucune thématique disponible</h3>
+        <h3 className="text-lg font-medium mb-2">No themes available</h3>
         <p className="text-sm text-muted-foreground">
           {frameworkId 
-            ? "Aucune thématique n'est associée à ce référentiel. Contactez l'administrateur pour en ajouter."
-            : "Aucune thématique d'audit n'est disponible. Contactez l'administrateur pour en ajouter."}
+            ? "No themes are associated with this framework. Contact the administrator to add some."
+            : "No audit themes are available. Contact the administrator to add some."}
         </p>
       </div>
     );
@@ -166,10 +181,10 @@ const TopicsList: React.FC<TopicsListProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label>Sélectionnez les thématiques d'audit à inclure</Label>
+      <Label>Select audit themes to include</Label>
       <p className="text-sm text-muted-foreground mb-4">
-        Les topics et contrôles associés seront automatiquement créés selon la norme ISO 27001.
-        Les réunions d'ouverture et de clôture sont automatiquement incluses.
+        Associated topics and controls will be automatically created according to ISO 27001 standard.
+        Opening and closing meetings are automatically included.
       </p>
       <div className="space-y-2">
         <div className="grid grid-cols-1 gap-2">
@@ -199,11 +214,11 @@ const TopicsList: React.FC<TopicsListProps> = ({
                   variant={selectedThemes.includes(theme.id) ? "default" : "outline"} 
                   className="ml-2"
                 >
-                  {selectedThemes.includes(theme.id) ? "Inclus" : "Exclu"}
+                  {selectedThemes.includes(theme.id) ? "Included" : "Excluded"}
                 </Badge>
                 {isExisting && (
                   <Badge variant="secondary" className="ml-2">
-                    Existant
+                    Existing
                   </Badge>
                 )}
               </div>
@@ -212,8 +227,8 @@ const TopicsList: React.FC<TopicsListProps> = ({
         </div>
         <p className="text-sm text-muted-foreground mt-2">
           {selectedThemes.length > 0 
-            ? `${selectedThemes.length} thématique(s) incluse(s) sur ${themesToUse.length}`
-            : "Attention : aucune thématique sélectionnée. Le plan d'audit sera vide."}
+            ? `${selectedThemes.length} theme(s) included out of ${themesToUse.length}`
+            : "Warning: no themes selected. The audit plan will be empty."}
         </p>
       </div>
     </div>
