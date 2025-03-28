@@ -81,9 +81,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
             }
           }}
         >
-          {selectedTemplate
-            ? `${selectedTemplate.domain}: ${selectedTemplate.name}`
-            : "Sélectionner un modèle de scénario..."}
+          Sélectionner un modèle de scénario
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
 
