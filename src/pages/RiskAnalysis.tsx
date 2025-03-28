@@ -22,7 +22,7 @@ import VulnerabilitiesTab from '@/components/risk-analysis/VulnerabilitiesTab';
 const RiskAnalysis = () => {
   const { id } = useParams<{ id: string }>();
   const { 
-    getCompanyById, 
+    companies,
     riskAssets,
     riskThreats,
     riskVulnerabilities,
@@ -59,7 +59,8 @@ const RiskAnalysis = () => {
     );
   }
 
-  const company = getCompanyById(id);
+  // Find the company by ID from the companies array instead of using getCompanyById
+  const company = companies.find(company => company.id === id);
 
   if (!company) {
     return (

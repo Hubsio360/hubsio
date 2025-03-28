@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -45,7 +46,7 @@ const NewRiskScenario = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { 
-    getCompanyById, 
+    companies,
     createRiskScenario
   } = useData();
 
@@ -109,7 +110,8 @@ const NewRiskScenario = () => {
     );
   }
 
-  const company = getCompanyById(id || '');
+  // Find the company by ID using the companies array
+  const company = companies.find(company => company.id === id);
 
   if (!company) {
     return (
@@ -131,7 +133,7 @@ const NewRiskScenario = () => {
             to={`/company/${id}`}
             className="text-muted-foreground hover:text-foreground text-sm flex items-center mr-2"
           >
-            {getCompanyById(id || '')?.name || 'Company'}
+            {company.name}
           </Link>
           <span className="text-muted-foreground text-sm mr-2">/</span>
           <Link
