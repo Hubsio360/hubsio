@@ -419,7 +419,8 @@ export const useRiskScales = () => {
       const scaleType = riskScaleTypes.find(type => type.id === scaleTypeId) || {
         id: scaleTypeId,
         name: 'Type inconnu',
-        description: ''
+        description: '',
+        category: 'impact'
       };
       
       const newScaleWithLevels: RiskScaleWithLevels = {

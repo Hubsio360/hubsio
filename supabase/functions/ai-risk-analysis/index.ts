@@ -69,7 +69,7 @@ async function getCompanyInfo(companyName: string) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un assistant spécialisé dans l'analyse de risques et la cybersécurité.' },
+          { role: 'system', content: 'Tu es un assistant spécialisé dans l\'analyse de risques et la cybersécurité.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
