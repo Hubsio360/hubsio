@@ -9,6 +9,7 @@ export function useWizardState() {
   const handleClose = (currentStep: number, setDialogOpen: (open: boolean) => void) => {
     if (currentStep > 1 && !confirmDialogOpen) {
       setDialogOpen(true);
+      setConfirmDialogOpen(true);
     } else {
       resetAndClose(setDialogOpen);
     }

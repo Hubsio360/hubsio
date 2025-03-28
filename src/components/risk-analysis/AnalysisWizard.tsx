@@ -47,15 +47,27 @@ export function AnalysisWizard({
     saveScenarios
   } = useAnalysisWizard(companyId, companyName, onComplete);
 
+  // If any modal closes, close all modals
+  const handleModalClose = () => {
+    handleClose(false);
+  };
+
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleModalClose}>
         <DialogContent 
           className="sm:max-w-[700px] max-h-[90vh] flex flex-col overflow-hidden"
           onInteractOutside={(e) => {
             if (step > 1) {
               e.preventDefault();
               setConfirmDialogOpen(true);
+            }
+          }}
+          onEscapeKeyDown={() => {
+            if (step > 1) {
+              setConfirmDialogOpen(true);
+            } else {
+              handleModalClose();
             }
           }}
         >

@@ -18,6 +18,12 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ open, onOpenChange, onConfirm }: ConfirmDialogProps) {
+  // Ensure both the confirmation dialog and main dialog close when confirmed
+  const handleConfirm = () => {
+    onConfirm();
+    onOpenChange(false);
+  };
+  
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -29,7 +35,7 @@ export function ConfirmDialog({ open, onOpenChange, onConfirm }: ConfirmDialogPr
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Annuler</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Quitter</AlertDialogAction>
+          <AlertDialogAction onClick={handleConfirm}>Quitter</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
