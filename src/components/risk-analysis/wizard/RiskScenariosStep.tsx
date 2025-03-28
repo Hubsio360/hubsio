@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Plus, Save, Filter, Search, Database } from 'lucide-react';
+import { Loader2, CheckCircle, Plus, Save, Filter, Search, Database, Check } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { useToast } from '@/hooks/use-toast';
@@ -123,9 +124,10 @@ export function RiskScenariosStep({
         </DialogDescription>
       </DialogHeader>
       
-      <div className="flex flex-col space-y-4 py-6">
+      <div className="flex flex-col gap-5 py-6">
+        {/* Header with search and actions */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="relative flex-1 min-w-[250px]">
+          <div className="relative w-full md:w-auto md:flex-1 min-w-[250px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
@@ -136,13 +138,13 @@ export function RiskScenariosStep({
             />
           </div>
           
-          <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-2 w-full md:w-auto">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleGenerateMore}
               disabled={loading || generatingMore}
-              className="whitespace-nowrap"
+              className="flex-1 md:flex-initial"
             >
               {generatingMore ? (
                 <>
@@ -160,23 +162,23 @@ export function RiskScenariosStep({
           </div>
         </div>
         
-        <div className="bg-card rounded-lg border shadow-sm">
-          <div className="flex items-center justify-between p-4 border-b">
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium">Scénarios suggérés</h3>
-              {filteredScenarios.length > 0 && (
-                <Badge variant="outline" className="ml-2">
-                  {filteredScenarios.length}
-                </Badge>
-              )}
-            </div>
-            {selectedCount > 0 && (
-              <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
-              </Badge>
-            )}
+        {/* Selection counter */}
+        <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="font-medium">Scénarios disponibles:</span>
+            <Badge variant="outline" className="ml-2">
+              {filteredScenarios.length}
+            </Badge>
           </div>
-          
+          {selectedCount > 0 && (
+            <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+              {selectedCount} sélectionné{selectedCount > 1 ? 's' : ''}
+            </Badge>
+          )}
+        </div>
+        
+        {/* Scenarios list */}
+        <div className="bg-card rounded-lg border shadow-sm flex-1">
           {loading ? (
             <div className="flex flex-col items-center justify-center p-8">
               <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
@@ -203,8 +205,8 @@ export function RiskScenariosStep({
               )}
             </div>
           ) : (
-            <ScrollArea className="h-[320px]">
-              <div className="grid gap-2 p-3">
+            <ScrollArea className="h-[330px]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
                 {filteredScenarios.map((scenario) => (
                   <div 
                     key={scenario.id} 
@@ -215,16 +217,15 @@ export function RiskScenariosStep({
                     }`}
                     onClick={() => onToggleScenario(scenario.id)}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium line-clamp-1">{scenario.name}</h4>
-                      <Badge 
-                        variant={scenario.selected ? "default" : "outline"} 
-                        className={`transition-all ${
-                          scenario.selected ? "opacity-100" : "opacity-60 group-hover:opacity-100"
-                        }`}
-                      >
-                        {scenario.selected ? "Sélectionné" : "Non sélectionné"}
-                      </Badge>
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium line-clamp-1 pr-2">{scenario.name}</h4>
+                      <div className={`flex-shrink-0 h-5 w-5 rounded-full border ${
+                        scenario.selected 
+                          ? "border-primary bg-primary text-primary-foreground" 
+                          : "border-muted-foreground/30"
+                      } flex items-center justify-center transition-all`}>
+                        {scenario.selected && <Check className="h-3 w-3" />}
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {scenario.description}
@@ -238,7 +239,7 @@ export function RiskScenariosStep({
       </div>
 
       <DialogFooter className="pt-4 border-t flex flex-col sm:flex-row sm:justify-between gap-3">
-        <Button variant="outline" onClick={onPrevious}>
+        <Button variant="outline" onClick={onPrevious} className="w-full sm:w-auto">
           Retour
         </Button>
         <div className="flex gap-2 w-full sm:w-auto justify-end">
