@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -150,12 +151,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeRiskScenarioAssetAssociation: riskAnalysisHook.removeRiskScenarioAssetAssociation,
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
-    riskScaleTypes,
-    companyRiskScales,
-    fetchRiskScaleTypes,
-    fetchCompanyRiskScales,
-    updateRiskScaleLevel,
-    toggleRiskScaleActive,
+    // Add the risk scales hooks properties correctly
+    riskScaleTypes: riskScalesHook.riskScaleTypes,
+    companyRiskScales: riskScalesHook.companyRiskScales,
+    fetchRiskScaleTypes: riskScalesHook.fetchRiskScaleTypes,
+    fetchCompanyRiskScales: riskScalesHook.fetchCompanyRiskScales,
+    updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
+    toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
     
     loading: {
       companies: companiesHook.loading,
@@ -175,8 +177,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,
       riskScenarios: riskAnalysisHook.loading.riskScenarios,
       riskTreatments: riskAnalysisHook.loading.riskTreatments,
-      riskScaleTypes: riskScalesLoading.scaleTypes,
-      companyRiskScales: riskScalesLoading.companyScales
+      riskScaleTypes: riskScalesHook.loading.scaleTypes,
+      companyRiskScales: riskScalesHook.loading.companyScales
     }
   };
 

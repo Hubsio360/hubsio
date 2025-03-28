@@ -1,3 +1,4 @@
+
 import {
   Company,
   Audit,
@@ -25,7 +26,11 @@ import {
   RiskLevel,
   RiskStatus,
   RiskScope,
-  RiskTreatmentStrategy
+  RiskTreatmentStrategy,
+  RiskScaleType,
+  CompanyRiskScale,
+  RiskScaleLevel,
+  RiskScaleWithLevels
 } from '@/types';
 
 export interface DataContextProps {
@@ -48,6 +53,8 @@ export interface DataContextProps {
   riskVulnerabilities: RiskVulnerability[];
   riskScenarios: RiskScenario[];
   riskTreatments: RiskTreatment[];
+  riskScaleTypes: RiskScaleType[];
+  companyRiskScales: RiskScaleWithLevels[];
   
   loading: {
     companies: boolean;
@@ -67,6 +74,8 @@ export interface DataContextProps {
     riskVulnerabilities: boolean;
     riskScenarios: boolean;
     riskTreatments: boolean;
+    riskScaleTypes: boolean;
+    companyRiskScales: boolean;
   };
   
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
@@ -167,9 +176,7 @@ export interface DataContextProps {
   removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
   getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
   
-  // Risk Scales
-  riskScaleTypes: RiskScaleType[];
-  companyRiskScales: RiskScaleWithLevels[];
+  // Risk Scales methods with correct types
   fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
   fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
   updateRiskScaleLevel: (levelId: string, updates: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
