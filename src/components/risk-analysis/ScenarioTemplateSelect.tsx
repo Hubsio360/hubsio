@@ -27,7 +27,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     templates
   } = useScenarioTemplates();
 
-  // Force fetch templates on mount
+  // Force fetch templates on mount and when dropdown opens
   useEffect(() => {
     if (!templates || templates.length === 0) {
       handleRetry();
@@ -42,7 +42,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   };
 
   // Show loading state
-  if (loading) {
+  if (loading && !templates.length) {
     return (
       <Card>
         <CardHeader>
@@ -57,7 +57,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   }
 
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <CardTitle className="flex items-center text-lg">
           <Sparkles className="h-5 w-5 mr-2 text-amber-500" />
@@ -87,7 +87,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
         </Button>
         
         {open && (
-          <div className="absolute z-50 w-[calc(100%-2rem)] mt-1 bg-background border rounded-md shadow-md max-h-[300px] overflow-auto">
+          <div className="absolute z-50 w-full left-0 mt-1 bg-background border rounded-md shadow-md max-h-[300px] overflow-auto">
             <div className="p-2">
               {error ? (
                 <div className="py-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">

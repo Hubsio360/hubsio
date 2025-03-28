@@ -14,7 +14,7 @@ export const useScenarioTemplates = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [groupedTemplates, setGroupedTemplates] = useState<GroupedTemplate[]>([]);
   
-  // Get templates from the hook - ensure we always have arrays
+  // Get templates from the context hook
   const { 
     templates: rawTemplates = [], 
     loading, 
@@ -25,7 +25,7 @@ export const useScenarioTemplates = () => {
   // Ensure templates is always an array
   const templates = Array.isArray(rawTemplates) ? rawTemplates : [];
 
-  // Callback for fetching templates
+  // Callback for fetching templates - prevent infinite useEffect loops
   const handleRetry = useCallback(async () => {
     console.log("Manually fetching templates...");
     try {
