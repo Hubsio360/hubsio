@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,9 +16,10 @@ interface ScenarioTemplateSelectProps {
 const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelect }) => {
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const { fetchRiskScenarioTemplates } = useData();
   const [templates, setTemplates] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { fetchRiskScenarioTemplates } = useData();
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -36,8 +37,27 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     loadTemplates();
   }, [fetchRiskScenarioTemplates]);
 
-  // Get unique domains
-  const domains = Array.from(new Set(templates.map(template => template.domain)));
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(template => 
+      template.scenario_description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.domain.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [templates, searchTerm]);
+
+  // Group templates by domain, sorted alphabetically
+  const groupedTemplates = useMemo(() => {
+    const groups = filteredTemplates.reduce((acc, template) => {
+      if (!acc[template.domain]) {
+        acc[template.domain] = [];
+      }
+      acc[template.domain].push(template);
+      return acc;
+    }, {} as Record<string, any[]>);
+
+    return Object.entries(groups)
+      .sort(([domainA], [domainB]) => domainA.localeCompare(domainB))
+      .map(([domain, domainTemplates]) => ({ domain, templates: domainTemplates }));
+  }, [filteredTemplates]);
 
   const handleSelectTemplate = (template: any) => {
     setSelectedTemplate(template);
@@ -77,27 +97,29 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
           </PopoverTrigger>
           <PopoverContent className="w-[400px] p-0">
             <Command>
-              <CommandInput placeholder="Rechercher un modèle..." />
+              <CommandInput 
+                placeholder="Rechercher un modèle..." 
+                value={searchTerm}
+                onValueChange={setSearchTerm}
+              />
               <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
-              {domains.map(domain => (
+              {groupedTemplates.map(({ domain, templates }) => (
                 <CommandGroup key={domain} heading={domain}>
-                  {templates
-                    .filter(template => template.domain === domain)
-                    .map(template => (
-                      <CommandItem
-                        key={template.id}
-                        value={template.id}
-                        onSelect={() => handleSelectTemplate(template)}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <div className="truncate">{template.scenario_description}</div>
-                      </CommandItem>
-                    ))}
+                  {templates.map(template => (
+                    <CommandItem
+                      key={template.id}
+                      value={template.id}
+                      onSelect={() => handleSelectTemplate(template)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      <div className="truncate">{template.scenario_description}</div>
+                    </CommandItem>
+                  ))}
                 </CommandGroup>
               ))}
             </Command>
