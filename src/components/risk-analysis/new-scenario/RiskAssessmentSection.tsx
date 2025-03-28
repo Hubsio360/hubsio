@@ -10,12 +10,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { UseFormReturn } from 'react-hook-form';
-import { RiskLevel } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Loader2 } from "lucide-react";
 import RiskScaleSlider from './RiskScaleSlider';
 import { RiskScaleWithLevels } from '@/types/risk-scales';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 interface RiskAssessmentSectionProps {
   form: UseFormReturn<any>;
@@ -25,15 +26,85 @@ interface RiskAssessmentSectionProps {
 const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, companyId }) => {
   const { companyRiskScales, fetchCompanyRiskScales, ensureDefaultScalesExist } = useData();
   const [isLoading, setIsLoading] = useState(true);
+  const [initializing, setInitializing] = useState(false);
   const [impactScale, setImpactScale] = useState<RiskScaleWithLevels | null>(null);
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   
   console.log("Scales in component:", companyRiskScales);
+  
+  // Find active impact and likelihood scales
+  const findActiveScales = (scales: RiskScaleWithLevels[]) => {
+    if (!scales || !Array.isArray(scales)) {
+      console.error("No scales or invalid scales format:", scales);
+      return { activeImpactScale: null, activeLikelihoodScale: null };
+    }
+    
+    console.log("Finding active scales among:", scales.length, "scales");
+    
+    const activeImpactScale = scales.find(
+      s => s.isActive && s.scaleType?.category === 'impact'
+    ) || null;
+    
+    const activeLikelihoodScale = scales.find(
+      s => s.isActive && s.scaleType?.category === 'likelihood'
+    ) || null;
+    
+    console.log("Impact scale:", activeImpactScale);
+    console.log("Likelihood scale:", activeLikelihoodScale);
+    
+    return { activeImpactScale, activeLikelihoodScale };
+  };
+  
+  // Force initialize risk scales
+  const initializeScales = async () => {
+    if (!companyId) return;
+    
+    setInitializing(true);
+    setError(null);
+    
+    try {
+      // Create default scales
+      await ensureDefaultScalesExist(companyId);
+      // Fetch updated scales
+      const scales = await fetchCompanyRiskScales(companyId);
+      
+      if (!scales || !Array.isArray(scales) || scales.length === 0) {
+        setError("Aucune échelle de risque trouvée pour cette entreprise");
+        return;
+      }
+      
+      // Update UI with new scales
+      const { activeImpactScale, activeLikelihoodScale } = findActiveScales(scales);
+      setImpactScale(activeImpactScale);
+      setLikelihoodScale(activeLikelihoodScale);
+      
+      toast({
+        title: "Échelles initialisées",
+        description: "Les échelles de risque ont été correctement initialisées",
+      });
+    } catch (error) {
+      console.error('Error initializing risk scales:', error);
+      setError("Erreur lors de l'initialisation des échelles de risque");
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'initialiser les échelles de risque",
+      });
+    } finally {
+      setInitializing(false);
+    }
+  };
   
   // Load risk scales for this company
   useEffect(() => {
     const loadRiskScales = async () => {
+      if (!companyId) return;
+      
       setIsLoading(true);
+      setError(null);
+      
       try {
         console.log("Loading risk scales for company:", companyId);
         // Ensure default scales exist for this company
@@ -41,22 +112,18 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
         const scales = await fetchCompanyRiskScales(companyId);
         console.log("Fetched scales:", scales);
         
-        // Find active impact and likelihood scales
-        const activeImpactScale = scales.find(
-          s => s.isActive && s.scaleType?.category === 'impact'
-        ) || null;
+        if (!scales || scales.length === 0) {
+          setError("Aucune échelle de risque n'a pu être chargée");
+          return;
+        }
         
-        const activeLikelihoodScale = scales.find(
-          s => s.isActive && s.scaleType?.category === 'likelihood'
-        ) || null;
-        
-        console.log("Impact scale:", activeImpactScale);
-        console.log("Likelihood scale:", activeLikelihoodScale);
-        
+        // Find active scales
+        const { activeImpactScale, activeLikelihoodScale } = findActiveScales(scales);
         setImpactScale(activeImpactScale);
         setLikelihoodScale(activeLikelihoodScale);
       } catch (error) {
         console.error('Error loading risk scales:', error);
+        setError("Erreur lors du chargement des échelles de risque");
       } finally {
         setIsLoading(false);
       }
@@ -80,13 +147,54 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
             <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
             <p>Chargement des échelles de risque...</p>
           </div>
+        ) : error ? (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Erreur</AlertTitle>
+            <AlertDescription>
+              {error}
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={initializeScales}
+                  disabled={initializing}
+                >
+                  {initializing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Initialisation...
+                    </>
+                  ) : (
+                    "Réinitialiser les échelles"
+                  )}
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
         ) : (!impactScale || !likelihoodScale) ? (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Échelles de risque manquantes</AlertTitle>
             <AlertDescription>
               Les échelles de risque ne sont pas correctement configurées pour cette entreprise.
-              Veuillez configurer les échelles d'impact et de probabilité.
+              <div className="mt-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={initializeScales}
+                  disabled={initializing}
+                >
+                  {initializing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Initialisation...
+                    </>
+                  ) : (
+                    "Initialiser les échelles"
+                  )}
+                </Button>
+              </div>
             </AlertDescription>
           </Alert>
         ) : (
@@ -168,7 +276,7 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
           )}
         />
         
-        {!isLoading && (impactScale && likelihoodScale) && (
+        {!isLoading && !error && (impactScale && likelihoodScale) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
