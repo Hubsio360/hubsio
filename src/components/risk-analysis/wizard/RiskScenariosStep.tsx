@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Plus, Save, Filter, Search } from 'lucide-react';
+import { Loader2, CheckCircle, Plus, Save, Filter, Search, Database } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,7 @@ interface RiskScenariosStepProps {
   onComplete: () => void;
   onPrevious: () => void;
   onGenerateMoreScenarios: () => Promise<void>;
+  onSaveAndClose: () => Promise<void>;
 }
 
 export function RiskScenariosStep({
@@ -39,11 +40,13 @@ export function RiskScenariosStep({
   onToggleScenario,
   onComplete,
   onPrevious,
-  onGenerateMoreScenarios
+  onGenerateMoreScenarios,
+  onSaveAndClose
 }: RiskScenariosStepProps) {
   const { toast } = useToast();
   const selectedCount = suggestedScenarios.filter(s => s.selected).length;
   const [generatingMore, setGeneratingMore] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   const handleComplete = () => {
@@ -59,7 +62,7 @@ export function RiskScenariosStep({
     onComplete();
   };
 
-  const handleValidate = () => {
+  const handleSaveAndClose = async () => {
     if (selectedCount === 0) {
       toast({
         title: "Attention",
@@ -69,12 +72,22 @@ export function RiskScenariosStep({
       return;
     }
     
-    toast({
-      title: "Succès",
-      description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
-    });
-    
-    onComplete();
+    setSaving(true);
+    try {
+      await onSaveAndClose();
+      toast({
+        title: "Succès",
+        description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer les scénarios",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleGenerateMore = async () => {
@@ -232,20 +245,29 @@ export function RiskScenariosStep({
         <div className="flex gap-2 w-full sm:w-auto justify-end">
           <Button 
             variant="secondary"
-            onClick={handleValidate}
-            disabled={loading || selectedCount === 0}
-            className="flex-1 sm:flex-auto"
-          >
-            <Save className="mr-2 h-4 w-4" />
-            Valider
-          </Button>
-          <Button 
             onClick={handleComplete}
             disabled={loading || selectedCount === 0}
             className="flex-1 sm:flex-auto"
           >
-            Terminer
-            <CheckCircle className="ml-2 h-4 w-4" />
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Continuer
+          </Button>
+          <Button 
+            onClick={handleSaveAndClose}
+            disabled={loading || saving || selectedCount === 0}
+            className="flex-1 sm:flex-auto"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Database className="mr-2 h-4 w-4" />
+                Valider
+              </>
+            )}
           </Button>
         </div>
       </DialogFooter>

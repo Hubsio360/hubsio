@@ -45,6 +45,7 @@ export function AnalysisWizard({
     goToPreviousStep,
     setConfirmDialogOpen,
     saveScenarios,
+    saveAndClose,
     generateAdditionalScenarios
   } = useAnalysisWizard(companyId, companyName, onComplete);
 
@@ -106,9 +107,10 @@ export function AnalysisWizard({
               loading={loading}
               onSelectTemplate={handleTemplateSelect}
               onToggleScenario={toggleScenarioSelection}
-              onComplete={saveScenarios}
+              onComplete={goToNextStep}
               onPrevious={goToPreviousStep}
               onGenerateMoreScenarios={generateAdditionalScenarios}
+              onSaveAndClose={saveAndClose}
             />
           )}
         </DialogContent>

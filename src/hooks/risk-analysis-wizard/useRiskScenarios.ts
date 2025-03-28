@@ -8,11 +8,17 @@ import { useData } from '@/contexts/DataContext';
 
 export function useRiskScenarios(companyId: string) {
   const { toast } = useToast();
-  const { createRiskScenario } = useData();
+  const { createRiskScenario, addRiskAsset } = useData();
   const [loading, setLoading] = useState(false);
   const [suggestedScenarios, setSuggestedScenarios] = useState<SuggestedScenario[]>([]);
   const [generatingScenarios, setGeneratingScenarios] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
+  const [businessProcesses, setBusinessProcesses] = useState<BusinessProcess[]>([]);
+
+  // Store business processes for later use
+  const storeBusinessProcesses = (processes: BusinessProcess[]) => {
+    setBusinessProcesses(processes);
+  };
 
   // Simuler la progression de génération
   const simulateProgress = () => {
@@ -45,6 +51,9 @@ export function useRiskScenarios(companyId: string) {
       });
       return false;
     }
+
+    // Store business processes for later use when saving
+    storeBusinessProcesses(businessProcesses);
 
     setLoading(true);
     // Lancer l'animation de progression
@@ -197,6 +206,68 @@ export function useRiskScenarios(companyId: string) {
     );
   };
 
+  // Save scenarios and business processes as assets
+  const saveAndClose = async () => {
+    const selectedScenarios = suggestedScenarios.filter(scenario => scenario.selected);
+    
+    if (selectedScenarios.length === 0) {
+      toast({
+        title: "Attention",
+        description: "Veuillez sélectionner au moins un scénario de risque",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Enregistrer chaque scénario sélectionné
+      for (const scenario of selectedScenarios) {
+        await createRiskScenario({
+          companyId,
+          name: scenario.name,
+          description: scenario.description,
+          status: 'identified',
+          scope: 'technical',
+          riskLevel: 'medium',
+          impactLevel: 'medium',
+          likelihood: 'medium',
+          // Valeurs par défaut pour les autres champs
+          rawImpact: 'medium',
+          rawLikelihood: 'medium',
+          rawRiskLevel: 'medium',
+          residualImpact: 'low',
+          residualLikelihood: 'low',
+          residualRiskLevel: 'low'
+        });
+      }
+      
+      // 2. Enregistrer les processus métier comme actifs
+      for (const process of businessProcesses) {
+        await addRiskAsset({
+          companyId,
+          name: process.name,
+          description: process.description || `Processus métier: ${process.name}`,
+          category: 'processus',
+          value: 'high',
+          owner: ''
+        });
+      }
+      
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement des données:", error);
+      setLoading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer les données",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   // Save scenarios
   const saveScenarios = async () => {
     const selectedScenarios = suggestedScenarios.filter(scenario => scenario.selected);
@@ -257,6 +328,8 @@ export function useRiskScenarios(companyId: string) {
     handleTemplateSelect,
     toggleScenarioSelection,
     saveScenarios,
-    setSuggestedScenarios
+    saveAndClose,
+    setSuggestedScenarios,
+    storeBusinessProcesses
   };
 }

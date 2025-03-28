@@ -28,7 +28,9 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     generateAdditionalScenarios,
     handleTemplateSelect,
     toggleScenarioSelection,
-    saveScenarios
+    saveScenarios,
+    saveAndClose: baseSaveAndClose,
+    storeBusinessProcesses
   } = useRiskScenarios(companyId);
   
   const {
@@ -73,7 +75,10 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
   // Customized goToNextStep function
   const goToNextStep = async () => {
     if (step === 2) {
-      // Before moving to step 3, generate scenarios
+      // Avant de passer à l'étape 3, stocker les processus métier pour une utilisation ultérieure
+      storeBusinessProcesses(businessProcesses);
+      
+      // Générer les scénarios
       const success = await generateRiskScenarios(companyInfo.name, businessProcesses);
       if (success) {
         baseGoToNextStep();
@@ -82,7 +87,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     }
     
     if (step === 3) {
-      // At the last step, save scenarios and close the wizard
+      // À la dernière étape, enregistrer les scénarios et fermer l'assistant
       const success = await saveScenarios();
       if (success) {
         if (onComplete) {
@@ -94,6 +99,18 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     }
     
     baseGoToNextStep();
+  };
+
+  // Fonction pour enregistrer et fermer
+  const saveAndClose = async () => {
+    const success = await baseSaveAndClose();
+    if (success) {
+      if (onComplete) {
+        onComplete();
+      }
+      resetAndClose();
+    }
+    return success;
   };
 
   return {
@@ -119,6 +136,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     goToPreviousStep,
     setConfirmDialogOpen,
     saveScenarios,
+    saveAndClose,
     generateAdditionalScenarios
   };
 }
