@@ -30,6 +30,7 @@ import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -54,6 +55,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scaleToDelete, setScaleToDelete] = useState<string | null>(null);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   
   const {
     riskScaleTypes,
@@ -116,7 +118,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       form.setValue('name', newType.name);
       form.setValue('description', newType.description || '');
       form.setValue('category', newType.category || category);
-      setNewScaleDialogOpen(true);
+      setEditSheetOpen(true);
     }
   };
 
@@ -126,10 +128,13 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       setIsFormSubmitting(true);
       try {
         await updateScaleType(newScaleType.id, values.name, values.description);
-        setNewScaleDialogOpen(false);
+        setEditSheetOpen(false);
         setNewScaleType(null);
+        form.reset();
         // Refresh the data to reflect the changes
         await refreshData();
+      } catch (error) {
+        console.error("Error updating scale type:", error);
       } finally {
         setIsFormSubmitting(false);
       }
@@ -155,22 +160,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const getLevelsForScale = (scaleId: string) => {
     const scale = companyRiskScales.find(s => s.id === scaleId);
     return scale?.levels || [];
-  };
-
-  // Empêcher la fermeture du dialogue pendant la soumission du formulaire
-  const handleDialogOpenChange = (open: boolean) => {
-    if (!open && isFormSubmitting) {
-      // Ne pas fermer le dialogue si le formulaire est en cours de soumission
-      return;
-    }
-    
-    if (!open && !isFormSubmitting) {
-      // Si l'utilisateur essaie de fermer le dialogue sans soumettre
-      setNewScaleDialogOpen(false);
-      setNewScaleType(null);
-    } else {
-      setNewScaleDialogOpen(open);
-    }
   };
 
   return (
@@ -225,7 +214,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                         <Button 
                           variant="destructive"
                           size="sm"
-                          className="absolute top-3 right-3"
+                          className="absolute top-3 right-3 z-10"
                           onClick={() => handleDeleteScale(scale.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -258,7 +247,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                         <Button 
                           variant="destructive"
                           size="sm"
-                          className="absolute top-3 right-3"
+                          className="absolute top-3 right-3 z-10"
                           onClick={() => handleDeleteScale(scale.id)}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -279,20 +268,26 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog 
-        open={newScaleDialogOpen} 
-        onOpenChange={handleDialogOpenChange}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Configurer votre nouvelle échelle</AlertDialogTitle>
-            <AlertDialogDescription>
+      {/* Remplacé le dialog par un Sheet pour une meilleure expérience */}
+      <Sheet open={editSheetOpen} onOpenChange={(open) => {
+        // Ne pas fermer si le formulaire est en cours de soumission
+        if (!open && isFormSubmitting) return;
+        setEditSheetOpen(open);
+        if (!open) {
+          setNewScaleType(null);
+          form.reset();
+        }
+      }}>
+        <SheetContent className="sm:max-w-md">
+          <SheetHeader>
+            <SheetTitle>Configurer votre nouvelle échelle</SheetTitle>
+            <SheetDescription>
               Personnalisez le nom et la description de votre nouvelle échelle de risque.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmitScaleForm)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmitScaleForm)} className="space-y-4 py-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -350,24 +345,26 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                 )}
               />
               
-              <AlertDialogFooter>
-                <AlertDialogCancel 
-                  type="button"
+              <SheetFooter className="pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
                   onClick={() => {
-                    setNewScaleDialogOpen(false);
+                    setEditSheetOpen(false);
                     setNewScaleType(null);
                   }}
+                  disabled={isFormSubmitting}
                 >
                   Annuler
-                </AlertDialogCancel>
+                </Button>
                 <Button type="submit" disabled={isFormSubmitting}>
                   {isFormSubmitting ? 'Enregistrement...' : 'Enregistrer'}
                 </Button>
-              </AlertDialogFooter>
+              </SheetFooter>
             </form>
           </Form>
-        </AlertDialogContent>
-      </AlertDialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Dialogue de confirmation de suppression */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
