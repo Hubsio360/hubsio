@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -32,6 +31,7 @@ const RiskAnalysis = () => {
     fetchRiskThreatsByCompanyId,
     fetchRiskVulnerabilitiesByCompanyId,
     fetchRiskScenariosByCompanyId,
+    fetchCompanyRiskScales
   } = useData();
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
@@ -46,12 +46,13 @@ const RiskAnalysis = () => {
         fetchRiskAssetsByCompanyId(id),
         fetchRiskThreatsByCompanyId(id),
         fetchRiskVulnerabilitiesByCompanyId(id),
-        fetchRiskScenariosByCompanyId(id)
+        fetchRiskScenariosByCompanyId(id),
+        fetchCompanyRiskScales(id)
       ]).finally(() => {
         setIsLoading(false);
       });
     }
-  }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId]);
+  }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId, fetchCompanyRiskScales]);
 
   if (!id) {
     return (
@@ -65,7 +66,6 @@ const RiskAnalysis = () => {
     );
   }
 
-  // Find the company by ID from the companies array instead of using getCompanyById
   const company = companies.find(company => company.id === id);
 
   if (!company) {
@@ -80,7 +80,6 @@ const RiskAnalysis = () => {
     );
   }
 
-  // Calculate risk statistics
   const totalScenarios = riskScenarios.length;
   const criticalScenarios = riskScenarios.filter(scenario => scenario.riskLevel === 'critical').length;
   const highScenarios = riskScenarios.filter(scenario => scenario.riskLevel === 'high').length;
@@ -212,7 +211,6 @@ const RiskAnalysis = () => {
         }}
       />
 
-      {/* Seulement monter le composant s'il est ouvert pour éviter les requêtes inutiles */}
       {openScalesDialog && (
         <RiskScalesDialog
           open={openScalesDialog}

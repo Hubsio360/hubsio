@@ -1,37 +1,4 @@
-
-import {
-  Company,
-  Audit,
-  Framework,
-  FrameworkControl,
-  AuditStep,
-  Finding,
-  AuditTopic,
-  AuditTheme,
-  AuditInterview,
-  InterviewParticipant,
-  StandardClause,
-  User,
-  FrameworkImport,
-  FrameworkImportResult,
-  UserRole,
-  Service,
-  ConsultingProject,
-  RssiService,
-  RiskAsset,
-  RiskThreat,
-  RiskVulnerability,
-  RiskScenario,
-  RiskTreatment,
-  RiskLevel,
-  RiskStatus,
-  RiskScope,
-  RiskTreatmentStrategy,
-  RiskScaleType,
-  CompanyRiskScale,
-  RiskScaleLevel,
-  RiskScaleWithLevels
-} from '@/types';
+import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService, RiskAsset, RiskThreat, RiskVulnerability, RiskScenario, RiskTreatment, RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from '@/types';
 
 export interface DataContextProps {
   companies: Company[];
@@ -176,13 +143,38 @@ export interface DataContextProps {
   removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
   getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
   
+  riskScaleTypes: RiskScaleType[];
+  companyRiskScales: RiskScaleWithLevels[];
   fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
   fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
+  ensureDefaultScalesExist: (companyId: string) => Promise<boolean>;
   addRiskScaleType: (name: string, description: string) => Promise<RiskScaleType | null>;
+  updateRiskScaleType: (scaleTypeId: string, name: string, description: string) => Promise<RiskScaleType | null>;
   addCompanyRiskScale: (companyId: string, scaleTypeId: string, levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[]) => Promise<RiskScaleWithLevels | null>;
   updateRiskScaleLevel: (levelId: string, updatedData: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
-  updateRiskScaleType: (scaleTypeId: string, name: string, description: string) => Promise<RiskScaleType | null>;
   toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
   deleteRiskScale: (scaleId: string) => Promise<boolean>;
   setupLikelihoodScale: (companyId: string) => Promise<boolean>;
+
+  loading: {
+    companies: boolean;
+    frameworks: boolean;
+    controls: boolean;
+    topics: boolean;
+    interviews: boolean;
+    themes: boolean;
+    standardClauses: boolean;
+    audits: boolean;
+    users: boolean;
+    services: boolean; 
+    consultingProjects: boolean;
+    rssiServices: boolean;
+    riskAssets: boolean;
+    riskThreats: boolean;
+    riskVulnerabilities: boolean;
+    riskScenarios: boolean;
+    riskTreatments: boolean;
+    riskScaleTypes: boolean;
+    companyRiskScales: boolean;
+  };
 }

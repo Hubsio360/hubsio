@@ -42,6 +42,9 @@ export const useRiskScales = () => {
   const fetchCompanyRiskScales = useCallback(async (companyId: string): Promise<RiskScaleWithLevels[]> => {
     setLoading(prev => ({ ...prev, companyRiskScales: true }));
     try {
+      // First, ensure default scales exist for this company
+      await ensureDefaultScalesExist(companyId);
+      
       // Fetch company risk scales with their scale types
       const { data, error } = await supabase
         .from('company_risk_scales')
@@ -96,6 +99,41 @@ export const useRiskScales = () => {
       return [];
     } finally {
       setLoading(prev => ({ ...prev, companyRiskScales: false }));
+    }
+  }, []);
+
+  // Ensure default risk scales exist for a company
+  const ensureDefaultScalesExist = useCallback(async (companyId: string): Promise<boolean> => {
+    try {
+      // Check if company already has risk scales
+      const { data: existingScales, error: checkError } = await supabase
+        .from('company_risk_scales')
+        .select('id')
+        .eq('company_id', companyId);
+      
+      if (checkError) {
+        console.error('Error checking existing risk scales:', checkError);
+        return false;
+      }
+      
+      // If company already has scales, no need to create defaults
+      if (existingScales.length > 0) {
+        return true;
+      }
+      
+      // Call the Supabase function to create default risk scales
+      const { error: createError } = await supabase
+        .rpc('create_default_company_risk_scales', { company_id: companyId });
+      
+      if (createError) {
+        console.error('Error creating default risk scales:', createError);
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error ensuring default risk scales exist:', error);
+      return false;
     }
   }, []);
 
@@ -447,6 +485,7 @@ export const useRiskScales = () => {
     loading,
     fetchRiskScaleTypes,
     fetchCompanyRiskScales,
+    ensureDefaultScalesExist,
     addRiskScaleType,
     updateRiskScaleType,
     addCompanyRiskScale,

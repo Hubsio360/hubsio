@@ -11,6 +11,7 @@ export const useRiskScalesManager = (companyId: string) => {
     companyRiskScales,
     fetchRiskScaleTypes, 
     fetchCompanyRiskScales,
+    ensureDefaultScalesExist,
     addRiskScaleType,
     addCompanyRiskScale,
     updateRiskScaleLevel,
@@ -51,6 +52,10 @@ export const useRiskScalesManager = (companyId: string) => {
     setError(null);
     
     try {
+      // Ensure default scales exist for this company first
+      await ensureDefaultScalesExist(companyId);
+      
+      // Then load all risk scales data
       await Promise.all([
         fetchRiskScaleTypes(),
         fetchCompanyRiskScales(companyId)
@@ -66,7 +71,7 @@ export const useRiskScalesManager = (companyId: string) => {
     } finally {
       setIsInitialLoading(false);
     }
-  }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
+  }, [companyId, ensureDefaultScalesExist, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
 
   const refreshData = useCallback(async () => {
     if (!companyId) return;
