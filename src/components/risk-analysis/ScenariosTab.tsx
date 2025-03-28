@@ -4,8 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Shield, Plus } from 'lucide-react';
-import { RiskScenario } from '@/types';
+import { Shield, Plus, ArrowDown, ArrowUp } from 'lucide-react';
+import { RiskScenario, RiskLevel } from '@/types';
 import { getRiskLevelBadge, getRiskScopeBadge, getRiskStatusBadge } from '@/components/risk-analysis/utils/riskBadges';
 
 interface ScenariosTabProps {
@@ -15,6 +15,39 @@ interface ScenariosTabProps {
 }
 
 const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps) => {
+  // Helper function to show risk evolution (from raw to residual)
+  const getRiskEvolution = (scenario: RiskScenario) => {
+    if (!scenario.rawRiskLevel || !scenario.residualRiskLevel) {
+      return null;
+    }
+    
+    const riskLevels = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
+    const rawLevel = riskLevels[scenario.rawRiskLevel] || 0;
+    const residualLevel = riskLevels[scenario.residualRiskLevel] || 0;
+    
+    if (rawLevel > residualLevel) {
+      return (
+        <div className="flex items-center text-green-500">
+          <ArrowDown className="h-4 w-4 mr-1" />
+          {scenario.residualRiskLevel && getRiskLevelBadge(scenario.residualRiskLevel)}
+        </div>
+      );
+    } else if (rawLevel < residualLevel) {
+      return (
+        <div className="flex items-center text-red-500">
+          <ArrowUp className="h-4 w-4 mr-1" />
+          {scenario.residualRiskLevel && getRiskLevelBadge(scenario.residualRiskLevel)}
+        </div>
+      );
+    } else {
+      return (
+        <div className="flex items-center text-gray-500">
+          {scenario.residualRiskLevel && getRiskLevelBadge(scenario.residualRiskLevel)}
+        </div>
+      );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -58,7 +91,8 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
             <TableHeader>
               <TableRow>
                 <TableHead>Scénario</TableHead>
-                <TableHead>Niveau</TableHead>
+                <TableHead>Niveau brut</TableHead>
+                <TableHead>Niveau résiduel</TableHead>
                 <TableHead>Portée</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -68,7 +102,17 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
               {riskScenarios.map(scenario => (
                 <TableRow key={scenario.id}>
                   <TableCell className="font-medium">{scenario.name}</TableCell>
-                  <TableCell>{getRiskLevelBadge(scenario.riskLevel)}</TableCell>
+                  <TableCell>
+                    {scenario.rawRiskLevel 
+                      ? getRiskLevelBadge(scenario.rawRiskLevel) 
+                      : getRiskLevelBadge(scenario.riskLevel)}
+                  </TableCell>
+                  <TableCell>
+                    {getRiskEvolution(scenario) || 
+                     (scenario.residualRiskLevel 
+                      ? getRiskLevelBadge(scenario.residualRiskLevel) 
+                      : 'Non évalué')}
+                  </TableCell>
                   <TableCell>{getRiskScopeBadge(scenario.scope)}</TableCell>
                   <TableCell>{getRiskStatusBadge(scenario.status)}</TableCell>
                   <TableCell className="text-right">

@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -255,6 +256,16 @@ export interface RiskScenario {
   createdAt: string;
   updatedAt: string;
   assets?: RiskAsset[];
+  
+  // Risk assessment fields
+  rawImpact?: RiskLevel;
+  rawLikelihood?: RiskLevel;
+  rawRiskLevel?: RiskLevel;
+  residualImpact?: RiskLevel;
+  residualLikelihood?: RiskLevel;
+  residualRiskLevel?: RiskLevel;
+  securityMeasures?: string;
+  measureEffectiveness?: string;
 }
 
 export interface RiskTreatment {
@@ -276,4 +287,4 @@ export interface RiskScenarioAsset {
 }
 
 // Exported from risk-scales.ts
-export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from './risk-scales';
+export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';

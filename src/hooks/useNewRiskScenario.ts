@@ -44,6 +44,14 @@ export const useNewRiskScenario = (companyId: string) => {
         status: values.status as RiskStatus,
         scope: values.scope as RiskScope,
         impactDescription: values.impactDescription,
+        rawImpact: values.rawImpact,
+        rawLikelihood: values.rawLikelihood,
+        rawRiskLevel: values.rawRiskLevel,
+        residualImpact: values.residualImpact,
+        residualLikelihood: values.residualLikelihood,
+        residualRiskLevel: values.residualRiskLevel,
+        securityMeasures: values.securityMeasures,
+        measureEffectiveness: values.measureEffectiveness
       };
 
       await createRiskScenario(newScenario);
