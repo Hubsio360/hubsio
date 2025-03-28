@@ -1,140 +1,75 @@
-import { useState, useCallback } from 'react';
-import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-// Mapping functions
-const mapDbScaleTypeToRiskScaleType = (dbScaleType: any): RiskScaleType => ({
-  id: dbScaleType.id,
-  name: dbScaleType.name,
-  description: dbScaleType.description,
-  createdAt: dbScaleType.created_at,
-  updatedAt: dbScaleType.updated_at
-});
-
-const mapDbCompanyScaleToCompanyRiskScale = (dbCompanyScale: any): CompanyRiskScale => ({
-  id: dbCompanyScale.id,
-  companyId: dbCompanyScale.company_id,
-  scaleTypeId: dbCompanyScale.scale_type_id,
-  isActive: dbCompanyScale.is_active,
-  createdAt: dbCompanyScale.created_at,
-  updatedAt: dbCompanyScale.updated_at,
-  scaleType: dbCompanyScale.risk_scale_types ? mapDbScaleTypeToRiskScaleType(dbCompanyScale.risk_scale_types) : undefined
-});
-
-const mapDbScaleLevelToRiskScaleLevel = (dbScaleLevel: any): RiskScaleLevel => ({
-  id: dbScaleLevel.id,
-  companyRiskScaleId: dbScaleLevel.company_risk_scale_id,
-  levelValue: dbScaleLevel.level_value,
-  name: dbScaleLevel.name,
-  description: dbScaleLevel.description,
-  color: dbScaleLevel.color,
-  createdAt: dbScaleLevel.created_at,
-  updatedAt: dbScaleLevel.updated_at
-});
-
-const mapRiskScaleLevelToDbScaleLevel = (level: Partial<RiskScaleLevel>): Record<string, any> => {
-  const dbLevel: Record<string, any> = {};
-  
-  if (level.companyRiskScaleId !== undefined) dbLevel.company_risk_scale_id = level.companyRiskScaleId;
-  if (level.levelValue !== undefined) dbLevel.level_value = level.levelValue;
-  if (level.name !== undefined) dbLevel.name = level.name;
-  if (level.description !== undefined) dbLevel.description = level.description;
-  if (level.color !== undefined) dbLevel.color = level.color;
-  
-  return dbLevel;
-};
-
-const mapCompanyRiskScaleToDbCompanyScale = (scale: Partial<CompanyRiskScale>): Record<string, any> => {
-  const dbScale: Record<string, any> = {};
-  
-  if (scale.companyId !== undefined) dbScale.company_id = scale.companyId;
-  if (scale.scaleTypeId !== undefined) dbScale.scale_type_id = scale.scaleTypeId;
-  if (scale.isActive !== undefined) dbScale.is_active = scale.isActive;
-  
-  return dbScale;
-};
+import { supabase } from '@/integrations/supabase/client';
+import { RiskScaleType, CompanyRiskScale, RiskScaleLevel } from '@/types/risk-scales';
 
 export const useRiskScales = () => {
   const [riskScaleTypes, setRiskScaleTypes] = useState<RiskScaleType[]>([]);
-  const [companyRiskScales, setCompanyRiskScales] = useState<RiskScaleWithLevels[]>([]);
-  const [loading, setLoading] = useState({
+  const [companyRiskScales, setCompanyRiskScales] = useState<CompanyRiskScale[]>([]);
+  const [loading, setLoading] = useState<{
+    scaleTypes: boolean;
+    companyScales: boolean;
+  }>({
     scaleTypes: false,
-    companyScales: false
+    companyScales: false,
   });
   const { toast } = useToast();
 
   // Fetch all risk scale types
-  const fetchRiskScaleTypes = useCallback(async (): Promise<RiskScaleType[]> => {
-    setLoading(prev => ({ ...prev, scaleTypes: true }));
+  const fetchRiskScaleTypes = useCallback(async () => {
     try {
+      setLoading(prev => ({ ...prev, scaleTypes: true }));
+      
       const { data, error } = await supabase
         .from('risk_scale_types')
         .select('*')
         .order('name');
       
       if (error) {
-        console.error('Error fetching risk scale types:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de récupérer les types d'échelles de risque",
-          variant: "destructive",
-        });
-        return [];
+        throw error;
       }
       
-      const fetchedTypes = (data || []).map(mapDbScaleTypeToRiskScaleType);
-      setRiskScaleTypes(fetchedTypes);
-      return fetchedTypes;
+      setRiskScaleTypes(data || []);
+      return data;
     } catch (error) {
       console.error('Error fetching risk scale types:', error);
-      return [];
+      throw error;
     } finally {
       setLoading(prev => ({ ...prev, scaleTypes: false }));
     }
-  }, [toast]);
+  }, []);
 
   // Fetch company risk scales with their levels
-  const fetchCompanyRiskScales = useCallback(async (companyId: string): Promise<RiskScaleWithLevels[]> => {
-    setLoading(prev => ({ ...prev, companyScales: true }));
+  const fetchCompanyRiskScales = useCallback(async (companyId: string) => {
     try {
-      // Fetch company scales with their types
+      setLoading(prev => ({ ...prev, companyScales: true }));
+      
+      // First, fetch the company risk scales
       const { data: scalesData, error: scalesError } = await supabase
         .from('company_risk_scales')
-        .select(`
-          *,
-          risk_scale_types(*)
-        `)
+        .select('*, risk_scale_types(*)')
         .eq('company_id', companyId);
       
       if (scalesError) {
-        console.error('Error fetching company risk scales:', scalesError);
-        toast({
-          title: "Erreur",
-          description: "Impossible de récupérer les échelles de risque de l'entreprise",
-          variant: "destructive",
-        });
-        return [];
+        throw scalesError;
       }
-
-      const companyScales = (scalesData || []).map(mapDbCompanyScaleToCompanyRiskScale);
       
-      // Fetch levels for each scale
-      const scalesWithLevels: RiskScaleWithLevels[] = await Promise.all(
-        companyScales.map(async (scale) => {
+      // For each scale, fetch its levels
+      const scalesWithLevels = await Promise.all(
+        (scalesData || []).map(async (scale) => {
           const { data: levelsData, error: levelsError } = await supabase
             .from('risk_scale_levels')
             .select('*')
             .eq('company_risk_scale_id', scale.id)
-            .order('level_value');
+            .order('level_value', { ascending: true });
           
           if (levelsError) {
-            console.error(`Error fetching levels for scale ${scale.id}:`, levelsError);
-            return { ...scale, levels: [], scaleType: scale.scaleType! };
+            console.error('Error fetching levels for scale:', scale.id, levelsError);
+            return { ...scale, levels: [] };
           }
           
-          const levels = (levelsData || []).map(mapDbScaleLevelToRiskScaleLevel);
-          return { ...scale, levels, scaleType: scale.scaleType! };
+          return { ...scale, levels: levelsData || [] };
         })
       );
       
@@ -142,298 +77,241 @@ export const useRiskScales = () => {
       return scalesWithLevels;
     } catch (error) {
       console.error('Error fetching company risk scales:', error);
-      return [];
+      throw error;
     } finally {
       setLoading(prev => ({ ...prev, companyScales: false }));
     }
-  }, [toast]);
+  }, []);
+
+  // Add a new risk scale type
+  const addRiskScaleType = useCallback(async (scaleType: Omit<RiskScaleType, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('risk_scale_types')
+        .insert(scaleType)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      setRiskScaleTypes(prev => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Error adding risk scale type:', error);
+      throw error;
+    }
+  }, []);
+
+  // Add a company risk scale
+  const addCompanyRiskScale = useCallback(async ({ 
+    companyId, 
+    scaleTypeId, 
+    isActive = true 
+  }: { 
+    companyId: string; 
+    scaleTypeId: string; 
+    isActive?: boolean; 
+  }) => {
+    try {
+      // Check first if this combination already exists
+      const { data: existingData, error: checkError } = await supabase
+        .from('company_risk_scales')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('scale_type_id', scaleTypeId)
+        .maybeSingle();
+        
+      if (checkError) {
+        throw checkError;
+      }
+      
+      // If scale already exists, return it and don't create a duplicate
+      if (existingData) {
+        console.log('Company risk scale already exists:', existingData);
+        return existingData;
+      }
+      
+      // Create the company risk scale
+      const { data, error } = await supabase
+        .from('company_risk_scales')
+        .insert({
+          company_id: companyId,
+          scale_type_id: scaleTypeId,
+          is_active: isActive,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Create default levels for this scale (4 levels from low to critical)
+      const defaultLevels = [
+        {
+          company_risk_scale_id: data.id,
+          level_value: 1,
+          name: 'Négligeable',
+          description: 'Niveau de risque négligeable',
+          color: '#4CAF50', // Green
+        },
+        {
+          company_risk_scale_id: data.id,
+          level_value: 2,
+          name: 'Faible',
+          description: 'Niveau de risque faible',
+          color: '#FFA726', // Orange
+        },
+        {
+          company_risk_scale_id: data.id,
+          level_value: 3,
+          name: 'Significatif',
+          description: 'Niveau de risque significatif',
+          color: '#9C27B0', // Purple
+        },
+        {
+          company_risk_scale_id: data.id,
+          level_value: 4,
+          name: 'Majeur',
+          description: 'Niveau de risque majeur',
+          color: '#F44336', // Red
+        },
+      ];
+      
+      const { error: levelsError } = await supabase
+        .from('risk_scale_levels')
+        .insert(defaultLevels);
+      
+      if (levelsError) {
+        console.error('Error creating default levels:', levelsError);
+      }
+      
+      // Fetch the complete scale with levels
+      const newScaleWithLevels = {
+        ...data,
+        levels: defaultLevels,
+      };
+      
+      setCompanyRiskScales(prev => [...prev, newScaleWithLevels]);
+      return newScaleWithLevels;
+    } catch (error) {
+      console.error('Error adding company risk scale:', error);
+      throw error;
+    }
+  }, []);
 
   // Update a risk scale level
-  const updateRiskScaleLevel = useCallback(async (levelId: string, updates: Partial<RiskScaleLevel>): Promise<RiskScaleLevel | null> => {
+  const updateRiskScaleLevel = useCallback(async (
+    levelId: string,
+    updates: Partial<RiskScaleLevel>
+  ) => {
     try {
-      const dbUpdates = mapRiskScaleLevelToDbScaleLevel(updates);
-      
       const { data, error } = await supabase
         .from('risk_scale_levels')
-        .update(dbUpdates)
+        .update(updates)
         .eq('id', levelId)
         .select()
         .single();
       
       if (error) {
-        console.error('Error updating risk scale level:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de mettre à jour le niveau d'échelle",
-          variant: "destructive",
-        });
-        return null;
+        throw error;
       }
-      
-      const updatedLevel = mapDbScaleLevelToRiskScaleLevel(data);
       
       // Update the local state
       setCompanyRiskScales(prev => 
-        prev.map(scale => {
-          if (scale.levels.some(level => level.id === levelId)) {
-            return {
-              ...scale,
-              levels: scale.levels.map(level => 
-                level.id === levelId ? updatedLevel : level
-              )
-            };
-          }
-          return scale;
-        })
+        prev.map(scale => ({
+          ...scale,
+          levels: (scale.levels || []).map(level => 
+            level.id === levelId ? { ...level, ...updates } : level
+          )
+        }))
       );
       
-      toast({
-        title: "Succès",
-        description: "Niveau d'échelle mis à jour avec succès",
-      });
-      
-      return updatedLevel;
+      return data;
     } catch (error) {
       console.error('Error updating risk scale level:', error);
-      return null;
+      throw error;
     }
-  }, [toast]);
+  }, []);
 
-  // Toggle a company risk scale active status
-  const toggleRiskScaleActive = useCallback(async (scaleId: string, isActive: boolean): Promise<boolean> => {
+  // Toggle a risk scale active status
+  const toggleRiskScaleActive = useCallback(async (
+    scaleId: string,
+    isActive: boolean
+  ) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('company_risk_scales')
         .update({ is_active: isActive })
-        .eq('id', scaleId);
+        .eq('id', scaleId)
+        .select()
+        .single();
       
       if (error) {
-        console.error('Error toggling risk scale active status:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de changer le statut de l'échelle",
-          variant: "destructive",
-        });
-        return false;
+        throw error;
       }
       
       // Update the local state
       setCompanyRiskScales(prev => 
         prev.map(scale => 
-          scale.id === scaleId ? { ...scale, isActive } : scale
+          scale.id === scaleId ? { ...scale, is_active: isActive } : scale
         )
       );
       
-      toast({
-        title: "Succès",
-        description: `Échelle ${isActive ? 'activée' : 'désactivée'} avec succès`,
-      });
-      
-      return true;
+      return data;
     } catch (error) {
       console.error('Error toggling risk scale active status:', error);
-      return false;
+      throw error;
     }
-  }, [toast]);
+  }, []);
 
-  // Create a new scale type
-  const addRiskScaleType = useCallback(async (name: string, description: string): Promise<RiskScaleType | null> => {
+  // Setup a likelihood scale for a company if none exists
+  const setupLikelihoodScale = useCallback(async (companyId: string) => {
     try {
-      // Check if scale type already exists
-      const { data: existingTypes, error: checkError } = await supabase
-        .from('risk_scale_types')
-        .select('*')
-        .eq('name', name);
-      
-      if (checkError) {
-        console.error('Error checking existing scale types:', checkError);
-        return null;
-      }
-      
-      // If the scale type already exists, just return it
-      if (existingTypes && existingTypes.length > 0) {
-        return mapDbScaleTypeToRiskScaleType(existingTypes[0]);
-      }
-      
-      // If not, create a new one
-      const { data, error } = await supabase
-        .from('risk_scale_types')
-        .insert([{ name, description }])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error adding risk scale type:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ajouter le type d'échelle",
-          variant: "destructive",
-        });
-        return null;
-      }
-      
-      const newScaleType = mapDbScaleTypeToRiskScaleType(data);
-      setRiskScaleTypes(prev => [...prev, newScaleType]);
-      
-      toast({
-        title: "Succès",
-        description: "Type d'échelle ajouté avec succès",
-      });
-      
-      return newScaleType;
-    } catch (error) {
-      console.error('Error adding risk scale type:', error);
-      return null;
-    }
-  }, [toast]);
-
-  // Add a new scale with levels for a company
-  const addCompanyRiskScale = useCallback(async (
-    companyId: string, 
-    scaleTypeId: string, 
-    levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[]
-  ): Promise<RiskScaleWithLevels | null> => {
-    try {
-      // Check if company already has this scale type
-      const { data: existingScales, error: checkError } = await supabase
-        .from('company_risk_scales')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('scale_type_id', scaleTypeId);
-      
-      if (checkError) {
-        console.error('Error checking existing company scales:', checkError);
-        return null;
-      }
-      
-      // If the scale already exists, return null or update it
-      if (existingScales && existingScales.length > 0) {
-        return null; // Or implement update logic
-      }
-      
-      // Create the new scale
-      const { data: scaleData, error: scaleError } = await supabase
-        .from('company_risk_scales')
-        .insert([{ 
-          company_id: companyId, 
-          scale_type_id: scaleTypeId,
-          is_active: true
-        }])
-        .select()
-        .single();
-      
-      if (scaleError) {
-        console.error('Error adding company risk scale:', scaleError);
-        return null;
-      }
-      
-      // Create the levels for this scale
-      const levelsToInsert = levels.map(level => ({
-        company_risk_scale_id: scaleData.id,
-        level_value: level.levelValue,
-        name: level.name,
-        description: level.description,
-        color: level.color
-      }));
-      
-      const { data: levelsData, error: levelsError } = await supabase
-        .from('risk_scale_levels')
-        .insert(levelsToInsert)
-        .select();
-      
-      if (levelsError) {
-        console.error('Error adding risk scale levels:', levelsError);
-        // Consider rolling back the scale creation here
-        return null;
-      }
-      
-      // Fetch the complete scale with its type and levels
-      const createdScale = await fetchCompanyRiskScales(companyId).then(
-        scales => scales.find(s => s.id === scaleData.id)
+      // Check if a likelihood scale already exists
+      const likelihoodScales = companyRiskScales.filter(scale => 
+        scale.risk_scale_types?.name === 'likelihood'
       );
       
-      return createdScale || null;
-    } catch (error) {
-      console.error('Error adding company risk scale:', error);
-      return null;
-    }
-  }, [fetchCompanyRiskScales]);
-
-  // Function to setup a likelihood scale for a company if it doesn't exist
-  const setupLikelihoodScale = useCallback(async (companyId: string): Promise<boolean> => {
-    try {
-      // Check if company already has the likelihood scale first
-      const existingScale = companyRiskScales.find(
-        scale => scale.companyId === companyId && scale.scaleType.name === 'likelihood'
-      );
-      
-      if (existingScale) return true; // Already exists, no need to proceed
-      
-      // First, check if we already have the likelihood scale type
-      let likelihoodScaleType = riskScaleTypes.find(scale => scale.name === 'likelihood');
-      
-      // If not in state, try to fetch from DB or create it
-      if (!likelihoodScaleType) {
-        likelihoodScaleType = await addRiskScaleType('likelihood', 'Échelle de probabilité');
-        if (!likelihoodScaleType) return false;
+      if (likelihoodScales.length > 0) {
+        console.log('Likelihood scale already exists');
+        return likelihoodScales[0];
       }
       
-      // Double-check if company already has this scale in the database (in case our local state isn't up to date)
-      const { data: existingScalesData, error: checkError } = await supabase
-        .from('company_risk_scales')
-        .select('id')
-        .eq('company_id', companyId)
-        .eq('scale_type_id', likelihoodScaleType.id)
-        .limit(1);
+      // Check if the likelihood scale type exists
+      let likelihoodType = riskScaleTypes.find(type => type.name === 'likelihood');
       
-      if (checkError) {
-        console.error('Error checking for existing likelihood scale:', checkError);
-        return false;
-      }
-      
-      if (existingScalesData && existingScalesData.length > 0) {
-        // Scale exists in DB but not in our state, refresh the scales
-        await fetchCompanyRiskScales(companyId);
-        return true;
-      }
-      
-      // Define the likelihood levels
-      const likelihoodLevels = [
-        {
-          levelValue: 1,
-          name: 'Peu probable',
-          description: 'L\'évènement n\'a que très peu de chances moyennes de se produire sur la période (1 fois tous les 10 ans)',
-          color: '#4CAF50'
-        },
-        {
-          levelValue: 2,
-          name: 'Relativement probable',
-          description: 'L\'évènement a des chances moyennes de se produire sur la période (1 fois tous les 5 ans)',
-          color: '#FFA726'
-        },
-        {
-          levelValue: 3,
-          name: 'Hautement probable',
-          description: 'L\'évènement a de très grandes chances de se produire sur la période (1 fois tous les 2 ans)',
-          color: '#9C27B0'
-        },
-        {
-          levelValue: 4,
-          name: 'Certain',
-          description: 'L\'évènement a de très grandes chances de se produire sur la période (1 fois par an)',
-          color: '#F44336'
+      if (!likelihoodType) {
+        // Create the likelihood scale type
+        const { data, error } = await supabase
+          .from('risk_scale_types')
+          .insert({
+            name: 'likelihood',
+            description: 'Échelle de probabilité',
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          throw error;
         }
-      ];
+        
+        likelihoodType = data;
+        setRiskScaleTypes(prev => [...prev, data]);
+      }
       
-      // Create the scale with levels
-      const result = await addCompanyRiskScale(companyId, likelihoodScaleType.id, likelihoodLevels);
-      
-      return result !== null;
+      // Create the company risk scale for likelihood
+      return await addCompanyRiskScale({
+        companyId,
+        scaleTypeId: likelihoodType.id,
+      });
     } catch (error) {
       console.error('Error setting up likelihood scale:', error);
-      return false;
+      throw error;
     }
-  }, [riskScaleTypes, companyRiskScales, addRiskScaleType, addCompanyRiskScale, fetchCompanyRiskScales]);
+  }, [companyRiskScales, riskScaleTypes, addCompanyRiskScale]);
 
   return {
     riskScaleTypes,
@@ -441,10 +319,10 @@ export const useRiskScales = () => {
     loading,
     fetchRiskScaleTypes,
     fetchCompanyRiskScales,
-    updateRiskScaleLevel,
-    toggleRiskScaleActive,
     addRiskScaleType,
     addCompanyRiskScale,
-    setupLikelihoodScale
+    updateRiskScaleLevel,
+    toggleRiskScaleActive,
+    setupLikelihoodScale,
   };
 };

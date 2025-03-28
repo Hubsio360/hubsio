@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { OrganizationContextDialog } from '@/components/risk-analysis/OrganizationContextDialog';
 import RiskScalesDialog from '@/components/risk-analysis/RiskScalesDialog';
 
-// Import the new component files
+// Import the component files
 import RiskSummaryCards from '@/components/risk-analysis/RiskSummaryCards';
 import OverviewTab from '@/components/risk-analysis/OverviewTab';
 import ScenariosTab from '@/components/risk-analysis/ScenariosTab';
@@ -37,13 +37,19 @@ const RiskAnalysis = () => {
   const { toast } = useToast();
   const [openContextDialog, setOpenContextDialog] = useState(false);
   const [openScalesDialog, setOpenScalesDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
-      fetchRiskAssetsByCompanyId(id);
-      fetchRiskThreatsByCompanyId(id);
-      fetchRiskVulnerabilitiesByCompanyId(id);
-      fetchRiskScenariosByCompanyId(id);
+      setIsLoading(true);
+      Promise.all([
+        fetchRiskAssetsByCompanyId(id),
+        fetchRiskThreatsByCompanyId(id),
+        fetchRiskVulnerabilitiesByCompanyId(id),
+        fetchRiskScenariosByCompanyId(id)
+      ]).finally(() => {
+        setIsLoading(false);
+      });
     }
   }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId]);
 
@@ -73,8 +79,6 @@ const RiskAnalysis = () => {
       </div>
     );
   }
-
-  const isLoading = loading.riskAssets || loading.riskThreats || loading.riskVulnerabilities || loading.riskScenarios || loading.riskTreatments;
 
   // Calculate risk statistics
   const totalScenarios = riskScenarios.length;
@@ -208,11 +212,14 @@ const RiskAnalysis = () => {
         }}
       />
 
-      <RiskScalesDialog
-        open={openScalesDialog}
-        onOpenChange={setOpenScalesDialog}
-        companyId={id}
-      />
+      {/* Seulement monter le composant s'il est ouvert pour éviter les requêtes inutiles */}
+      {openScalesDialog && (
+        <RiskScalesDialog
+          open={openScalesDialog}
+          onOpenChange={setOpenScalesDialog}
+          companyId={id}
+        />
+      )}
     </div>
   );
 };
