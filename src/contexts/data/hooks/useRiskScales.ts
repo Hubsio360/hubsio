@@ -12,6 +12,27 @@ export const useRiskScales = () => {
   });
   const { toast } = useToast();
 
+  // Helper function to normalize risk scale type data
+  const normalizeRiskScaleType = useCallback((data: any): RiskScaleType => {
+    return {
+      ...data,
+      category: data.category === 'likelihood' ? 'likelihood' : 'impact'
+    };
+  }, []);
+
+  // Convert database response to properly typed RiskScaleWithLevels
+  const mapToRiskScaleWithLevels = useCallback((scale: any, levels: any[], scaleType: RiskScaleType): RiskScaleWithLevels => {
+    return {
+      ...scale,
+      levels: levels || [],
+      scaleType: {
+        ...scaleType,
+        // Normalize category to one of the expected values or default to 'impact'
+        category: scaleType.category === 'likelihood' ? 'likelihood' : 'impact'
+      }
+    };
+  }, []);
+
   // Fetch risk scale types
   const fetchRiskScaleTypes = useCallback(async (): Promise<RiskScaleType[]> => {
     setLoading(prev => ({ ...prev, riskScaleTypes: true }));
@@ -105,19 +126,6 @@ export const useRiskScales = () => {
     }
   }, [fetchRiskScaleTypes, riskScaleTypes.length, mapToRiskScaleWithLevels]);
 
-  // Convert database response to properly typed RiskScaleWithLevels
-  const mapToRiskScaleWithLevels = useCallback((scale: any, levels: any[], scaleType: RiskScaleType): RiskScaleWithLevels => {
-    return {
-      ...scale,
-      levels: levels || [],
-      scaleType: {
-        ...scaleType,
-        // Normalize category to one of the expected values or default to 'impact'
-        category: scaleType.category === 'likelihood' ? 'likelihood' : 'impact'
-      }
-    };
-  }, []);
-
   // Ensure default risk scales exist for a company
   const ensureDefaultScalesExist = useCallback(async (companyId: string): Promise<boolean> => {
     try {
@@ -203,7 +211,7 @@ export const useRiskScales = () => {
         }
       }
       
-      // Récupérer tous les types d'échelles après avoir créé les manquants
+      // R��cupérer tous les types d'échelles après avoir créé les manquants
       const { data: allTypes, error: allTypesError } = await supabase
         .from('risk_scale_types')
         .select('id, name, category');
@@ -714,14 +722,6 @@ export const useRiskScales = () => {
       console.error('Error creating likelihood levels:', error);
       return false;
     }
-  };
-
-  // Helper function to normalize risk scale type data
-  const normalizeRiskScaleType = (data: any): RiskScaleType => {
-    return {
-      ...data,
-      category: data.category === 'likelihood' ? 'likelihood' : 'impact'
-    };
   };
 
   return {

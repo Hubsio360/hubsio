@@ -132,7 +132,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       setNewScaleType(newType);
       form.setValue('name', newType.name);
       form.setValue('description', newType.description || '');
-      form.setValue('category', newType.category || category);
+      form.setValue('category', (newType.category === 'likelihood' ? 'likelihood' : 'impact'));
       setEditSheetOpen(true);
     }
   };
