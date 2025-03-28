@@ -14,19 +14,33 @@ export const useScenarioTemplates = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [groupedTemplates, setGroupedTemplates] = useState<GroupedTemplate[]>([]);
   
-  // Get templates from the hook
-  const { templates = [], loading, error, fetchRiskScenarioTemplates } = useRiskScenarioTemplates();
+  // Get templates from the hook - ensure we always have arrays
+  const { 
+    templates: rawTemplates = [], 
+    loading, 
+    error, 
+    fetchRiskScenarioTemplates 
+  } = useRiskScenarioTemplates();
+
+  // Ensure templates is always an array
+  const templates = Array.isArray(rawTemplates) ? rawTemplates : [];
 
   // Load templates on mount
   useEffect(() => {
-    fetchRiskScenarioTemplates().catch(err => 
-      console.error("Failed to fetch templates:", err)
-    );
-  }, []);
+    const loadTemplates = async () => {
+      try {
+        await fetchRiskScenarioTemplates();
+      } catch (err) {
+        console.error("Failed to fetch templates:", err);
+      }
+    };
+    
+    loadTemplates();
+  }, [fetchRiskScenarioTemplates]);
 
   // Filter and group templates when templates or search term changes
   useEffect(() => {
-    if (!Array.isArray(templates) || templates.length === 0) {
+    if (!templates.length) {
       setGroupedTemplates([]);
       return;
     }
@@ -70,7 +84,6 @@ export const useScenarioTemplates = () => {
     }
   }, [templates, searchTerm]);
 
-  // Handle template selection
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
     if (template && template.id) {
       setSelectedTemplate(template);
@@ -80,7 +93,6 @@ export const useScenarioTemplates = () => {
     return null;
   };
 
-  // Handle retry
   const handleRetry = () => {
     fetchRiskScenarioTemplates();
   };
