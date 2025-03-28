@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditInterview } from '@/types';
@@ -73,6 +72,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
           );
           
+          console.log('Valid interviews filtered:', realInterviews.length);
           setPlanExists(realInterviews.length > 0);
           setInterviews(realInterviews);
           
@@ -85,6 +85,11 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             themeMap[theme].push(interview);
           });
           setInterviewsByTheme(themeMap);
+          
+          // If interviews exist, update the active tab if it's on generate
+          if (realInterviews.length > 0 && activeTab === 'generate') {
+            setActiveTab('steps');
+          }
         } else {
           console.warn('No valid interviews data returned');
           setPlanExists(false);
@@ -106,7 +111,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
       setInitialLoading(false);
       setDataLoaded(true);
     }
-  }, [auditId, fetchInterviewsByAuditId, fetchTopics, loading, dataLoaded]);
+  }, [auditId, fetchInterviewsByAuditId, fetchTopics, loading, dataLoaded, activeTab]);
 
   useEffect(() => {
     if (auditId && !dataLoaded) {
@@ -135,6 +140,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           interview.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)
         );
         
+        console.log('Valid interviews after refresh:', realInterviews.length);
         setPlanExists(realInterviews.length > 0);
         setInterviews(realInterviews);
         
@@ -150,14 +156,14 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         
         toast({
           title: "Plan d'audit mis à jour",
-          description: "Le plan d'audit a été actualisé avec succès",
+          description: `Plan actualisé avec ${realInterviews.length} interviews`,
         });
         
         if (realInterviews.length > 0) {
           if (targetTab) {
             setActiveTab(targetTab);
           } else if (activeTab === 'generate') {
-            setActiveTab('calendar');
+            setActiveTab('steps');
           }
         }
       } else {
@@ -207,6 +213,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
     }
   }, [dataLoaded, planExists, activeTab]);
 
+  // Renommer 'themes' en 'steps' pour plus de cohérence avec la demande
   return (
     <Card>
       <CardContent className="p-6">
@@ -217,9 +224,9 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                 <Calendar className="h-4 w-4 mr-2" />
                 Calendrier
               </TabsTrigger>
-              <TabsTrigger value="themes" className="flex items-center" disabled={!planExists}>
+              <TabsTrigger value="steps" className="flex items-center" disabled={!planExists}>
                 <Layers className="h-4 w-4 mr-2" />
-                Thématiques
+                Étapes d'audit
               </TabsTrigger>
               <TabsTrigger value="generate" className="flex items-center">
                 <Clock className="h-4 w-4 mr-2" />
@@ -228,7 +235,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             </TabsList>
             
             <div className="flex gap-2">
-              {planExists && (activeTab === 'calendar' || activeTab === 'themes') && (
+              {planExists && (activeTab === 'calendar' || activeTab === 'steps') && (
                 <>
                   <Button
                     size="sm"
@@ -296,11 +303,11 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             )}
           </TabsContent>
           
-          <TabsContent value="themes" className="mt-0">
+          <TabsContent value="steps" className="mt-0">
             {initialLoading ? (
               <div className="py-8 text-center">
                 <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Chargement des thématiques...</p>
+                <p className="text-muted-foreground">Chargement des étapes d'audit...</p>
               </div>
             ) : loadError ? (
               <div className="py-8 text-center border rounded-lg">
@@ -351,9 +358,9 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             ) : (
               <div className="py-16 text-center border rounded-lg">
                 <Layers className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                <h3 className="text-xl font-medium mb-2">Aucune thématique définie</h3>
+                <h3 className="text-xl font-medium mb-2">Aucune étape d'audit définie</h3>
                 <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  Aucune thématique n'a encore été définie pour cet audit. Vous pouvez générer un plan automatiquement ou ajouter des interviews manuellement.
+                  Aucune étape d'audit n'a encore été définie. Vous pouvez générer un plan automatiquement ou ajouter des interviews manuellement.
                 </p>
                 <Button onClick={() => setActiveTab('generate')}>
                   Générer un plan d'audit

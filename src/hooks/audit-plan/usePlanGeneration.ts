@@ -11,7 +11,7 @@ export const usePlanGeneration = (
   onPlanGenerated?: (targetTab?: string) => void
 ) => {
   const [generating, setGenerating] = useState(false);
-  const { generateAuditPlan, fetchThemes } = useData();
+  const { generateAuditPlan, fetchThemes, fetchInterviewsByAuditId } = useData();
   const { toast } = useToast();
 
   const generatePlan = async (
@@ -114,9 +114,13 @@ export const usePlanGeneration = (
       const success = await generateAuditPlan(auditId, startDate, endDate, generationOptions);
 
       if (success) {
+        // Récupérer les interviews générées pour vérifier qu'elles existent
+        const interviews = await fetchInterviewsByAuditId(auditId);
+        console.log(`Plan généré avec succès, ${interviews.length} interviews créées`);
+        
         toast({
           title: "Plan d'audit généré",
-          description: "Le plan d'audit a été généré avec succès et enregistré en base de données",
+          description: `Le plan d'audit a été généré avec succès avec ${interviews.length} interviews planifiées`,
         });
 
         if (onPlanGenerated) {
