@@ -11,7 +11,7 @@ export const usePlanGeneration = (
   onPlanGenerated?: (targetTab?: string) => void
 ) => {
   const [generating, setGenerating] = useState(false);
-  const { generateAuditPlan } = useData();
+  const { generateAuditPlan, fetchThemes } = useData();
   const { toast } = useToast();
 
   const generatePlan = async (
@@ -34,13 +34,36 @@ export const usePlanGeneration = (
       return;
     }
 
+    // Si aucune thématique n'est sélectionnée, tenter de charger toutes les thématiques disponibles
+    let topicsToUse = selectedTopicIds;
+    
     if (selectedTopicIds.length === 0) {
-      toast({
-        title: "Thématiques requises",
-        description: "Veuillez sélectionner au moins une thématique",
-        variant: "destructive",
-      });
-      return;
+      console.log("Aucune thématique sélectionnée, tentative de charger toutes les thématiques");
+      try {
+        const allThemes = await fetchThemes();
+        topicsToUse = allThemes
+          .filter(theme => !['ADMIN', 'Cloture'].includes(theme.name))
+          .map(theme => theme.id);
+          
+        console.log(`Utilisation de ${topicsToUse.length} thématiques par défaut`);
+        
+        if (topicsToUse.length === 0) {
+          toast({
+            title: "Thématiques requises",
+            description: "Impossible de trouver des thématiques. Veuillez contacter l'administrateur.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } catch (error) {
+        console.error("Impossible de charger les thématiques:", error);
+        toast({
+          title: "Thématiques requises",
+          description: "Impossible de charger les thématiques. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (selectedDays.length === 0) {
@@ -68,15 +91,23 @@ export const usePlanGeneration = (
         auditId,
         startDate,
         endDate,
-        topicIds: selectedTopicIds,
+        topicIds: topicsToUse,
         selectedDays,
         themeDurations
       });
       
+      // Créer des durées par défaut pour toutes les thématiques si nécessaire
+      const durationsToUse = { ...themeDurations };
+      topicsToUse.forEach(topicId => {
+        if (!durationsToUse[topicId]) {
+          durationsToUse[topicId] = 60; // 60 minutes par défaut
+        }
+      });
+      
       const generationOptions: PlanGenerationOptions = {
-        topicIds: selectedTopicIds,
+        topicIds: topicsToUse,
         selectedDays: selectedDays,
-        themeDurations: themeDurations,
+        themeDurations: durationsToUse,
         maxHoursPerDay: maxHoursPerDay
       };
       

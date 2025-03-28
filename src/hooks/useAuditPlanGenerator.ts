@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { AuditTheme } from '@/types';
 import { UseAuditPlanGeneratorProps } from './audit-plan/types';
@@ -16,9 +16,25 @@ export const useAuditPlanGenerator = ({
   endDate,
   onPlanGenerated
 }: UseAuditPlanGeneratorProps) => {
-  const { themes } = useData();
+  const { themes, fetchThemes } = useData();
   const { state, setState } = useAuditPlanData(auditId, startDate, endDate);
   const [previewInterviews, setPreviewInterviews] = useState<Partial<any>[]>([]);
+  
+  // S'assurer que nous avons des thématiques
+  useEffect(() => {
+    const ensureThemes = async () => {
+      if (themes.length === 0) {
+        console.log("Pas de thématiques chargées, tentative de chargement");
+        try {
+          await fetchThemes();
+        } catch (error) {
+          console.error("Erreur lors du chargement des thématiques:", error);
+        }
+      }
+    };
+    
+    ensureThemes();
+  }, [themes, fetchThemes]);
   
   const {
     totalHours,

@@ -1,19 +1,11 @@
 
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useData } from '@/contexts/DataContext';
-import { getBusinessDays, SYSTEM_THEME_NAMES } from './useInterviewScheduler';
-import { parseISO } from 'date-fns';
 import { AuditPlanState } from './types';
+import { useData } from '@/contexts/DataContext';
+import { addDays, differenceInCalendarDays, format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useAuditPlanData = (
-  auditId: string,
-  startDate: string,
-  endDate: string
-) => {
-  const { fetchInterviewsByAuditId, fetchThemes, fetchTopics, themes } = useData();
-  const { toast } = useToast();
-  
+export const useAuditPlanData = (auditId: string, startDate: string, endDate: string) => {
   const [state, setState] = useState<AuditPlanState>({
     selectedTopicIds: [],
     selectedDays: [],
@@ -23,79 +15,100 @@ export const useAuditPlanData = (
     existingInterviews: 0,
     existingThemes: 0,
     initialLoad: false,
-    maxHoursPerDay: 8,
+    maxHoursPerDay: 6,
     previewInterviews: [],
-    hasOpeningClosing: true
+    hasOpeningClosing: true,
   });
 
-  // Initialize selected days based on date range
-  useEffect(() => {
-    if (startDate && endDate && !state.initialLoad) {
-      const businessDays = getBusinessDays(startDate, endDate);
-      setState(prev => ({ ...prev, selectedDays: businessDays }));
-    }
-  }, [startDate, endDate, state.initialLoad]);
+  const { themes, fetchThemes } = useData();
 
-  // Load existing data when component mounts
   useEffect(() => {
-    const loadExistingData = async () => {
-      if (!auditId || state.initialLoad) return;
-      
+    const loadPlanData = async () => {
       try {
-        const existingInterviewsData = await fetchInterviewsByAuditId(auditId);
+        console.log("useAuditPlanData - Loading initial data for audit:", auditId);
         
-        const uniqueThemes = new Set(
-          existingInterviewsData
-            .filter(interview => {
-              const theme = themes.find(t => t.id === interview.themeId);
-              return theme && !SYSTEM_THEME_NAMES.includes(theme.name);
-            })
-            .map(interview => interview.themeId)
-            .filter(Boolean)
-        );
+        // Chargement des thématiques
+        const themeData = await fetchThemes();
+        console.log("useAuditPlanData - Themes loaded:", themeData);
         
-        await fetchThemes();
-        await fetchTopics();
+        // Par défaut, sélectionner toutes les thématiques disponibles
+        // (sauf celles destinées à l'administration comme ADMIN et Cloture)
+        const allThemeIds = themeData
+          .filter(theme => !['ADMIN', 'Cloture'].includes(theme.name))
+          .map(theme => theme.id);
+        
+        // Initialiser les durées par défaut (60 minutes par thématique)
+        const defaultDurations: Record<string, number> = {};
+        themeData.forEach(theme => {
+          defaultDurations[theme.id] = 60; // 60 minutes par défaut
+        });
 
-        const initialThemeDurations: Record<string, number> = {};
-        themes.forEach(theme => {
-          initialThemeDurations[theme.id] = 60;
+        // Générer les jours disponibles
+        const daysArray = generateAvailableDays(startDate, endDate);
+        
+        // Vérifier les entretiens existants
+        const { data: existingInterviews } = await supabase
+          .from('audit_interviews')
+          .select('*')
+          .eq('audit_id', auditId);
+          
+        const existingCount = existingInterviews?.length || 0;
+        
+        // Compter les thématiques existantes (basé sur les theme_id uniques)
+        const existingThemeIds = new Set<string>();
+        existingInterviews?.forEach(interview => {
+          if (interview.theme_id) {
+            existingThemeIds.add(interview.theme_id);
+          }
         });
         
         setState(prev => ({
           ...prev,
-          existingInterviews: existingInterviewsData.length,
-          existingThemes: uniqueThemes.size,
-          themeDurations: initialThemeDurations,
+          selectedTopicIds: allThemeIds, // Toutes les thématiques sélectionnées par défaut
+          themeDurations: defaultDurations,
+          selectedDays: daysArray,
+          interviews: existingCount + allThemeIds.length + 2, // +2 pour réunions d'ouverture/clôture
+          existingInterviews: existingCount,
+          existingThemes: existingThemeIds.size,
           initialLoad: true
         }));
+        
+        console.log("useAuditPlanData - Initial state set with themes:", allThemeIds.length);
       } catch (error) {
-        console.error("Error loading existing audit data:", error);
+        console.error("Error loading initial audit plan data:", error);
+        // En cas d'erreur, on initialise quand même avec les thématiques vides
+        // mais on marque l'initialisation comme complète
+        setState(prev => ({
+          ...prev,
+          initialLoad: true
+        }));
       }
     };
-    
-    loadExistingData();
-  }, [auditId, fetchInterviewsByAuditId, fetchThemes, fetchTopics, state.initialLoad, themes]);
 
-  // Validate selected days against date range
-  useEffect(() => {
-    if (startDate && endDate && state.selectedDays.length > 0 && state.initialLoad) {
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-      
-      const validDays = state.selectedDays.filter(day => {
-        const date = new Date(day);
-        return date >= start && date <= end;
-      });
-      
-      if (validDays.length !== state.selectedDays.length) {
-        setState(prev => ({ ...prev, selectedDays: validDays }));
-      }
+    if (!state.initialLoad) {
+      loadPlanData();
     }
-  }, [startDate, endDate, state.selectedDays, state.initialLoad]);
+  }, [auditId, startDate, endDate, fetchThemes, state.initialLoad]);
 
-  return {
-    state,
-    setState
-  };
+  return { state, setState };
+};
+
+// Fonction pour générer les jours disponibles pour l'audit
+const generateAvailableDays = (startDate: string, endDate: string): string[] => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const days = [];
+  
+  const totalDays = differenceInCalendarDays(end, start) + 1;
+  for (let i = 0; i < totalDays; i++) {
+    const currentDay = addDays(start, i);
+    const dayOfWeek = currentDay.getDay();
+    
+    // Exclure les week-ends (0 = dimanche, 6 = samedi)
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      days.push(format(currentDay, 'yyyy-MM-dd'));
+    }
+  }
+  
+  return days;
 };
