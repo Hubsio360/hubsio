@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, Plus, Save } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,7 @@ interface RiskScenariosStepProps {
   onToggleScenario: (id: string) => void;
   onComplete: () => void;
   onPrevious: () => void;
+  onGenerateMoreScenarios: () => Promise<void>;
 }
 
 export function RiskScenariosStep({
@@ -36,10 +37,12 @@ export function RiskScenariosStep({
   onSelectTemplate,
   onToggleScenario,
   onComplete,
-  onPrevious
+  onPrevious,
+  onGenerateMoreScenarios
 }: RiskScenariosStepProps) {
   const { toast } = useToast();
   const selectedCount = suggestedScenarios.filter(s => s.selected).length;
+  const [generatingMore, setGeneratingMore] = React.useState(false);
 
   const handleComplete = () => {
     if (selectedCount === 0) {
@@ -52,6 +55,15 @@ export function RiskScenariosStep({
     }
     
     onComplete();
+  };
+
+  const handleGenerateMore = async () => {
+    setGeneratingMore(true);
+    try {
+      await onGenerateMoreScenarios();
+    } finally {
+      setGeneratingMore(false);
+    }
   };
 
   return (
@@ -68,6 +80,24 @@ export function RiskScenariosStep({
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium">Scénarios suggérés</h3>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleGenerateMore}
+                disabled={loading || generatingMore}
+              >
+                {generatingMore ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-1 h-4 w-4" />
+                    + de scénarios
+                  </>
+                )}
+              </Button>
               <ScenarioTemplateSelect onSelect={onSelectTemplate} />
             </div>
           </div>
@@ -118,22 +148,23 @@ export function RiskScenariosStep({
         <Button variant="outline" onClick={onPrevious}>
           Retour
         </Button>
-        <Button 
-          onClick={handleComplete}
-          disabled={loading || selectedCount === 0}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Traitement...
-            </>
-          ) : (
-            <>
-              Terminer
-              <CheckCircle className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
+        <div className="space-x-2">
+          <Button 
+            variant="secondary"
+            onClick={handleComplete}
+            disabled={loading || selectedCount === 0}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Valider
+          </Button>
+          <Button 
+            onClick={onComplete}
+            disabled={loading || selectedCount === 0}
+          >
+            Terminer
+            <CheckCircle className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
       </DialogFooter>
     </>
   );

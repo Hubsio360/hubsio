@@ -44,7 +44,8 @@ export function AnalysisWizard({
     goToNextStep,
     goToPreviousStep,
     setConfirmDialogOpen,
-    saveScenarios
+    saveScenarios,
+    generateAdditionalScenarios
   } = useAnalysisWizard(companyId, companyName, onComplete);
 
   const handleModalClose = () => {
@@ -107,6 +108,7 @@ export function AnalysisWizard({
               onToggleScenario={toggleScenarioSelection}
               onComplete={saveScenarios}
               onPrevious={goToPreviousStep}
+              onGenerateMoreScenarios={generateAdditionalScenarios}
             />
           )}
         </DialogContent>

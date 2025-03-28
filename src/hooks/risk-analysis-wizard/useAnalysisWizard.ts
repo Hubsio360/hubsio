@@ -25,6 +25,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     generatingScenarios,
     generationProgress,
     generateRiskScenarios,
+    generateAdditionalScenarios,
     handleTemplateSelect,
     toggleScenarioSelection,
     saveScenarios
@@ -117,6 +118,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     goToNextStep,
     goToPreviousStep,
     setConfirmDialogOpen,
-    saveScenarios
+    saveScenarios,
+    generateAdditionalScenarios
   };
 }

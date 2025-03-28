@@ -107,6 +107,68 @@ export function useRiskScenarios(companyId: string) {
     }
   };
 
+  // Generate additional risk scenarios
+  const generateAdditionalScenarios = async () => {
+    if (suggestedScenarios.length === 0) {
+      toast({
+        title: "Attention",
+        description: "Veuillez d'abord générer des scénarios initiaux",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Récupérer les noms des scénarios déjà suggérés
+      const existingScenarioNames = suggestedScenarios.map(s => s.name);
+
+      const { data, error } = await supabase.functions.invoke('ai-risk-analysis', {
+        body: {
+          action: 'generateAdditionalScenarios',
+          data: { 
+            existingScenarios: existingScenarioNames
+          }
+        }
+      });
+
+      if (error) {
+        throw new Error(`Erreur lors de la génération des scénarios additionnels: ${error.message}`);
+      }
+
+      const additionalScenarios = Array.isArray(data) ? data : (data.scenarios || []);
+      
+      if (additionalScenarios.length === 0) {
+        throw new Error('Aucun scénario additionnel n\'a été généré.');
+      }
+
+      // Fusionner les nouveaux scénarios avec les existants
+      setSuggestedScenarios(prev => [
+        ...prev,
+        ...additionalScenarios.map(scenario => ({
+          id: `scenario-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          name: scenario.name,
+          description: scenario.description,
+          selected: false
+        }))
+      ]);
+
+      toast({
+        title: "Succès",
+        description: `${additionalScenarios.length} scénarios additionnels générés`,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la génération des scénarios additionnels:", error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de générer des scénarios additionnels",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle template selection
   const handleTemplateSelect = (template: EnhancedTemplate) => {
     const newScenario: SuggestedScenario = {
@@ -191,6 +253,7 @@ export function useRiskScenarios(companyId: string) {
     generatingScenarios,
     generationProgress,
     generateRiskScenarios,
+    generateAdditionalScenarios,
     handleTemplateSelect,
     toggleScenarioSelection,
     saveScenarios,
