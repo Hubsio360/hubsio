@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRiskScenarioTemplates } from '@/contexts/DataContext';
 import type { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
 
@@ -25,27 +25,32 @@ export const useScenarioTemplates = () => {
   // Ensure templates is always an array
   const templates = Array.isArray(rawTemplates) ? rawTemplates : [];
 
+  // Callback for fetching templates
+  const handleRetry = useCallback(async () => {
+    console.log("Manually fetching templates...");
+    try {
+      const fetchedTemplates = await fetchRiskScenarioTemplates();
+      console.log(`Fetched ${fetchedTemplates.length} templates`);
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+    }
+  }, [fetchRiskScenarioTemplates]);
+
   // Load templates on mount
   useEffect(() => {
-    const loadTemplates = async () => {
-      try {
-        await fetchRiskScenarioTemplates();
-      } catch (err) {
-        console.error("Failed to fetch templates:", err);
-      }
-    };
-    
-    loadTemplates();
-  }, [fetchRiskScenarioTemplates]);
+    handleRetry();
+  }, [handleRetry]);
 
   // Filter and group templates when templates or search term changes
   useEffect(() => {
-    if (!templates.length) {
+    if (!templates || !templates.length) {
       setGroupedTemplates([]);
       return;
     }
     
     try {
+      console.log(`Processing ${templates.length} templates with search "${searchTerm}"`);
+      
       // Filter templates based on search term
       const filtered = templates.filter(template => 
         template && 
@@ -77,6 +82,7 @@ export const useScenarioTemplates = () => {
         .filter(group => group.templates.length > 0)
         .sort((a, b) => a.domain.localeCompare(b.domain));
       
+      console.log(`Grouped into ${groupedArray.length} domain groups`);
       setGroupedTemplates(groupedArray);
     } catch (error) {
       console.error('Error grouping templates:', error);
@@ -86,15 +92,12 @@ export const useScenarioTemplates = () => {
 
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
     if (template && template.id) {
+      console.log(`Selected template: ${template.id} - ${template.domain}`);
       setSelectedTemplate(template);
       setOpen(false);
       return template;
     }
     return null;
-  };
-
-  const handleRetry = () => {
-    fetchRiskScenarioTemplates();
   };
 
   return {

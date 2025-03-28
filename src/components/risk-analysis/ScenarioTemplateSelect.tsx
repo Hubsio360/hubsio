@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,13 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     handleRetry,
     templates
   } = useScenarioTemplates();
+
+  // Force fetch templates on mount
+  useEffect(() => {
+    if (!templates || templates.length === 0) {
+      handleRetry();
+    }
+  }, [templates, handleRetry]);
 
   const onTemplateSelect = (template: RiskScenarioTemplate) => {
     const selected = handleSelectTemplate(template);
@@ -80,8 +87,8 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
         </Button>
         
         {open && (
-          <Card className="absolute z-50 w-[calc(100%-2rem)] mt-1 max-h-[300px] overflow-auto">
-            <CardContent className="p-2">
+          <div className="absolute z-50 w-[calc(100%-2rem)] mt-1 bg-background border rounded-md shadow-md max-h-[300px] overflow-auto">
+            <div className="p-2">
               {error ? (
                 <div className="py-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
                   <span>{error}</span>
@@ -140,8 +147,8 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
                   </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
