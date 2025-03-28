@@ -362,6 +362,13 @@ export const useRiskScales = () => {
   // Function to setup a likelihood scale for a company if it doesn't exist
   const setupLikelihoodScale = useCallback(async (companyId: string): Promise<boolean> => {
     try {
+      // Check if company already has the likelihood scale first
+      const existingScale = companyRiskScales.find(
+        scale => scale.companyId === companyId && scale.scaleType.name === 'likelihood'
+      );
+      
+      if (existingScale) return true; // Already exists, no need to proceed
+      
       // First, check if we already have the likelihood scale type
       let likelihoodScaleType = riskScaleTypes.find(scale => scale.name === 'likelihood');
       
@@ -371,12 +378,24 @@ export const useRiskScales = () => {
         if (!likelihoodScaleType) return false;
       }
       
-      // Check if company already has this scale
-      const existingScale = companyRiskScales.find(
-        scale => scale.companyId === companyId && scale.scaleType.name === 'likelihood'
-      );
+      // Double-check if company already has this scale in the database (in case our local state isn't up to date)
+      const { data: existingScalesData, error: checkError } = await supabase
+        .from('company_risk_scales')
+        .select('id')
+        .eq('company_id', companyId)
+        .eq('scale_type_id', likelihoodScaleType.id)
+        .limit(1);
       
-      if (existingScale) return true; // Already exists
+      if (checkError) {
+        console.error('Error checking for existing likelihood scale:', checkError);
+        return false;
+      }
+      
+      if (existingScalesData && existingScalesData.length > 0) {
+        // Scale exists in DB but not in our state, refresh the scales
+        await fetchCompanyRiskScales(companyId);
+        return true;
+      }
       
       // Define the likelihood levels
       const likelihoodLevels = [
@@ -414,7 +433,7 @@ export const useRiskScales = () => {
       console.error('Error setting up likelihood scale:', error);
       return false;
     }
-  }, [riskScaleTypes, companyRiskScales, addRiskScaleType, addCompanyRiskScale]);
+  }, [riskScaleTypes, companyRiskScales, addRiskScaleType, addCompanyRiskScale, fetchCompanyRiskScales]);
 
   return {
     riskScaleTypes,

@@ -29,10 +29,12 @@ import {
   Shield,
   ClipboardList,
   Loader2,
-  Clock
+  Clock,
+  AlertCircle
 } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -55,18 +57,27 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   } = useData();
   const [activeTab, setActiveTab] = useState<string>('');
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Load company risk scales when the dialog opens
   useEffect(() => {
     if (open && companyId) {
       const loadScales = async () => {
         setIsInitialLoading(true);
+        setError(null);
         try {
+          // First fetch existing scales
           await fetchCompanyRiskScales(companyId);
-          // Ensure the likelihood scale is set up
-          await setupLikelihoodScale(companyId);
-        } catch (error) {
-          console.error('Error loading scales:', error);
+          
+          // Then try to setup the likelihood scale if needed
+          // We don't await this to prevent blocking
+          setupLikelihoodScale(companyId).catch(err => {
+            console.error('Non-blocking error setting up likelihood scale:', err);
+            // We don't set an error here as it's non-critical
+          });
+        } catch (err) {
+          console.error('Error loading scales:', err);
+          setError("Impossible de charger les échelles de risque. Veuillez réessayer.");
         } finally {
           setIsInitialLoading(false);
         }
@@ -76,19 +87,30 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   }, [open, companyId, fetchCompanyRiskScales, setupLikelihoodScale]);
 
+  // Set active tab when scales are loaded
   useEffect(() => {
-    // Set the first scale as active tab when scales are loaded
     if (companyRiskScales && companyRiskScales.length > 0 && !activeTab) {
       setActiveTab(companyRiskScales[0].scaleType.name);
     }
   }, [companyRiskScales, activeTab]);
 
   const handleToggleScale = async (scaleId: string, currentActive: boolean) => {
-    await toggleRiskScaleActive(scaleId, !currentActive);
+    try {
+      await toggleRiskScaleActive(scaleId, !currentActive);
+    } catch (err) {
+      console.error('Error toggling scale:', err);
+      setError("Impossible de modifier le statut de l'échelle.");
+    }
   };
 
   const handleUpdateLevel = async (level: RiskScaleLevel, updates: Partial<RiskScaleLevel>) => {
-    await updateRiskScaleLevel(level.id, updates);
+    try {
+      await updateRiskScaleLevel(level.id, updates);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating level:', err);
+      setError("Impossible de mettre à jour le niveau.");
+    }
   };
 
   // Get the icon for each scale type
@@ -111,13 +133,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   };
 
-  // Function to get the current scale by type
-  const getCurrentScale = () => {
-    return companyRiskScales.find(
-      scale => scale.scaleType.name === activeTab
-    );
-  };
-
   const renderSkeletonTabs = () => (
     <div className="w-full space-y-4">
       <div className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
@@ -137,6 +152,27 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const renderContent = () => {
     if (isInitialLoading) {
       return renderSkeletonTabs();
+    }
+
+    if (error) {
+      return (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      );
+    }
+
+    if (!companyRiskScales || companyRiskScales.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium">Aucune échelle de risque</h3>
+          <p className="text-sm text-muted-foreground max-w-md mt-2">
+            Aucune échelle de risque n'a été configurée pour cette entreprise.
+          </p>
+        </div>
+      );
     }
 
     return (
