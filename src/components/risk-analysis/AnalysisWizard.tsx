@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -317,6 +318,12 @@ export function AnalysisWizard({
     }
   };
 
+  // Gérer la soumission du formulaire à l'étape 1
+  const handleSearchFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchCompanyInfo();
+  };
+
   // Avancer à l'étape suivante
   const goToNextStep = async () => {
     if (step === 2) {
@@ -348,7 +355,7 @@ export function AnalysisWizard({
         </DialogDescription>
       </DialogHeader>
       
-      <div className="space-y-4 py-4">
+      <form onSubmit={handleSearchFormSubmit} className="space-y-4 py-4">
         <div className="space-y-2">
           <label htmlFor="company-name" className="text-sm font-medium">
             Nom de l'entreprise
@@ -360,8 +367,10 @@ export function AnalysisWizard({
               onChange={(e) => setCompanyInfo(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Acme Sécurité"
               className="flex-1"
+              disabled={loading}
             />
             <Button 
+              type="submit"
               onClick={fetchCompanyInfo}
               disabled={loading || !companyInfo.name.trim()}
               size="sm" 
@@ -402,7 +411,7 @@ export function AnalysisWizard({
             />
           </div>
         )}
-      </div>
+      </form>
 
       <DialogFooter>
         <Button variant="outline" onClick={handleClose}>
