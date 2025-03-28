@@ -3,12 +3,13 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, ShieldAlert, Sparkles } from 'lucide-react';
+import { AlertCircle, ShieldAlert, Sparkles, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield, FileText, Layers, Wrench, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { OrganizationContextDialog } from '@/components/risk-analysis/OrganizationContextDialog';
+import RiskScalesDialog from '@/components/risk-analysis/RiskScalesDialog';
 
 // Import the new component files
 import RiskSummaryCards from '@/components/risk-analysis/RiskSummaryCards';
@@ -35,6 +36,7 @@ const RiskAnalysis = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const { toast } = useToast();
   const [openContextDialog, setOpenContextDialog] = useState(false);
+  const [openScalesDialog, setOpenScalesDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -107,6 +109,10 @@ const RiskAnalysis = () => {
         </div>
 
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setOpenScalesDialog(true)}>
+            <Settings className="mr-2 h-4 w-4" />
+            Échelles de risque
+          </Button>
           <Button onClick={() => setOpenContextDialog(true)}>
             <Sparkles className="mr-2 h-4 w-4" />
             Commencer l'analyse
@@ -199,6 +205,12 @@ const RiskAnalysis = () => {
             variant: "default",
           });
         }}
+      />
+
+      <RiskScalesDialog
+        open={openScalesDialog}
+        onOpenChange={setOpenScalesDialog}
+        companyId={id}
       />
     </div>
   );

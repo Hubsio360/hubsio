@@ -166,4 +166,12 @@ export interface DataContextProps {
   associateRiskScenarioWithAsset: (scenarioId: string, assetId: string) => Promise<boolean>;
   removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
   getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
+  
+  // Risk Scales
+  riskScaleTypes: RiskScaleType[];
+  companyRiskScales: RiskScaleWithLevels[];
+  fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
+  fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
+  updateRiskScaleLevel: (levelId: string, updates: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
+  toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
 }

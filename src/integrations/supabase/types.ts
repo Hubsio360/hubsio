@@ -360,6 +360,48 @@ export type Database = {
         }
         Relationships: []
       }
+      company_risk_scales: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          scale_type_id: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          scale_type_id: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          scale_type_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_risk_scales_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_risk_scales_scale_type_id_fkey"
+            columns: ["scale_type_id"]
+            isOneToOne: false
+            referencedRelation: "risk_scale_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consulting_projects: {
         Row: {
           created_at: string
@@ -651,6 +693,71 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      risk_scale_levels: {
+        Row: {
+          color: string | null
+          company_risk_scale_id: string
+          created_at: string
+          description: string | null
+          id: string
+          level_value: number
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          company_risk_scale_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level_value: number
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          company_risk_scale_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          level_value?: number
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_scale_levels_company_risk_scale_id_fkey"
+            columns: ["company_risk_scale_id"]
+            isOneToOne: false
+            referencedRelation: "company_risk_scales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_scale_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       risk_scenario_assets: {
         Row: {
@@ -1061,6 +1168,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_default_company_risk_scales: {
+        Args: {
+          company_id: string
+        }
+        Returns: undefined
+      }
       estimate_audit_days: {
         Args: {
           framework_id: string

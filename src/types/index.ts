@@ -1,4 +1,3 @@
-
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -275,3 +274,6 @@ export interface RiskScenarioAsset {
   riskScenarioId: string;
   assetId: string;
 }
+
+// Exported from risk-scales.ts
+export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from './risk-scales';

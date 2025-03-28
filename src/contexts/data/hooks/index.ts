@@ -1,4 +1,3 @@
-
 export * from './useCompanies';
 export * from './useAudits';
 export * from './useFrameworks';
@@ -13,3 +12,4 @@ export * from './useStandardClauses';
 export * from './useUsers';
 export * from './useAuth';
 export * from './useRiskAnalysis';
+export * from './useRiskScales';

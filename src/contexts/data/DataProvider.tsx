@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -17,12 +16,13 @@ import { useUsers } from './hooks/useUsers';
 import { useAuth } from './hooks/useAuth';
 import { useRiskAnalysis } from './hooks/useRiskAnalysis';
 import { useServices } from './hooks/useServices';
+import { useRiskScales } from './hooks/useRiskScales';
 
 export const DataContext = createContext<DataContextProps>({} as DataContextProps);
 
 export const useData = () => useContext(DataContext);
 
-export const DataProvider = ({ children }: { children: React.ReactNode }) => {
+export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const companiesHook = useCompanies();
   const auditsHook = useAudits();
   const findingsHook = useFindings();
@@ -37,6 +37,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const authHook = useAuth();
   const riskAnalysisHook = useRiskAnalysis();
   const servicesHook = useServices();
+  const riskScalesHook = useRiskScales();
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -133,7 +134,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     addRiskThreat: riskAnalysisHook.addRiskThreat,
     addRiskVulnerability: riskAnalysisHook.addRiskVulnerability,
     addRiskScenario: riskAnalysisHook.addRiskScenario,
-    createRiskScenario: riskAnalysisHook.createRiskScenario, // Add the alias to the context value
+    createRiskScenario: riskAnalysisHook.createRiskScenario,
     addRiskTreatment: riskAnalysisHook.addRiskTreatment,
     updateRiskAsset: riskAnalysisHook.updateRiskAsset,
     updateRiskThreat: riskAnalysisHook.updateRiskThreat,
@@ -149,8 +150,15 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     removeRiskScenarioAssetAssociation: riskAnalysisHook.removeRiskScenarioAssetAssociation,
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
+    riskScaleTypes,
+    companyRiskScales,
+    fetchRiskScaleTypes,
+    fetchCompanyRiskScales,
+    updateRiskScaleLevel,
+    toggleRiskScaleActive,
+    
     loading: {
-      companies: companiesHook.loading, // Added 'companies' property to loading object
+      companies: companiesHook.loading,
       frameworks: frameworksHook.loading,
       controls: controlsHook.loading,
       topics: topicsHook.loading,
@@ -166,7 +174,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       riskThreats: riskAnalysisHook.loading.riskThreats,
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,
       riskScenarios: riskAnalysisHook.loading.riskScenarios,
-      riskTreatments: riskAnalysisHook.loading.riskTreatments
+      riskTreatments: riskAnalysisHook.loading.riskTreatments,
+      riskScaleTypes: riskScalesLoading.scaleTypes,
+      companyRiskScales: riskScalesLoading.companyScales
     }
   };
 
