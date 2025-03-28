@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRiskScenarioTemplates } from '@/contexts/DataContext';
 import type { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
+import { RiskScope } from '@/types';
 
 // Interface for the templates grouped by domain
 export interface GroupedTemplate {
@@ -9,10 +10,12 @@ export interface GroupedTemplate {
   templates: EnhancedTemplate[];
 }
 
-// Interface for the templates with name and description separated
+// Interface for the templates with name, description, and additional fields separated
 export interface EnhancedTemplate extends RiskScenarioTemplate {
   name: string;
   shortDescription: string;
+  description: string; // Adding this property
+  category?: RiskScope; // Adding this property
 }
 
 export const useScenarioTemplates = () => {
@@ -40,6 +43,7 @@ export const useScenarioTemplates = () => {
       // Try to extract a name from the scenario_description
       let name = template.scenario_description;
       let shortDescription = '';
+      let fullDescription = template.scenario_description;
       
       // Try to identify if there's a colon or period to separate title from description
       if (name.includes(':')) {
@@ -57,10 +61,28 @@ export const useScenarioTemplates = () => {
         shortDescription = template.scenario_description;
       }
       
+      // Determine category based on domain if possible
+      let category: RiskScope | undefined = undefined;
+      const domainLower = template.domain.toLowerCase();
+      
+      if (domainLower.includes('technique') || domainLower.includes('technical')) {
+        category = 'technical';
+      } else if (domainLower.includes('humain') || domainLower.includes('human')) {
+        category = 'human';
+      } else if (domainLower.includes('organisationnel') || domainLower.includes('organizational')) {
+        category = 'organizational';
+      } else if (domainLower.includes('physique') || domainLower.includes('physical')) {
+        category = 'physical';
+      } else if (domainLower.includes('environnement') || domainLower.includes('environmental')) {
+        category = 'environmental';
+      }
+      
       return {
         ...template,
         name,
-        shortDescription
+        shortDescription,
+        description: fullDescription, // Adding full description
+        category // Adding category based on the domain
       };
     });
   }, []);

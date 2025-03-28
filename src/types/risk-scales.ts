@@ -1,4 +1,6 @@
 
+import { RiskLevel } from './index';
+
 export interface RiskScaleType {
   id: string;
   name: string;
