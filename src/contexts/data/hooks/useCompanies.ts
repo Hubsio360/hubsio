@@ -176,11 +176,12 @@ export const useCompanies = () => {
               // Rafraîchir la liste complète
               // Fix: Convert PromiseLike to a proper Promise and handle it correctly
               const fetchPromise = fetchCompanies();
+              // Use async/await in Promise executor to handle properly
               Promise.resolve(fetchPromise)
                 .then(() => {
                   resolve(enrichedCompany);
                 })
-                .catch(error => {
+                .catch((error) => {
                   console.error('Error refreshing companies after enrich:', error);
                   reject(error);
                 });
