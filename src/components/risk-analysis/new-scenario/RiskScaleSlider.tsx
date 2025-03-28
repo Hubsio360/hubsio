@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Progress } from "@/components/ui/progress";
 import { RiskScaleLevel } from '@/types/risk-scales';
 import { RiskLevel } from '@/types';
 
@@ -27,7 +26,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   
   // Sort levels by level_value
   const sortedLevels = [...levels].sort((a, b) => 
-    (a.levelValue || 0) - (b.levelValue || 0)
+    (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0)
   );
   
   // Map risk level (low, medium, etc.) to slider position
@@ -39,16 +38,16 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       }
       
       // Then try to match by approximate mapping
-      if (value === 'low' && (level.levelValue === 1 || level.name.toLowerCase().includes('faibl'))) {
+      if (value === 'low' && (level.levelValue === 1 || level.level_value === 1 || level.name.toLowerCase().includes('faibl'))) {
         return true;
       }
-      if (value === 'medium' && (level.levelValue === 2 || level.name.toLowerCase().includes('moyen') || level.name.toLowerCase().includes('modér'))) {
+      if (value === 'medium' && (level.levelValue === 2 || level.level_value === 2 || level.name.toLowerCase().includes('moyen') || level.name.toLowerCase().includes('modér'))) {
         return true;
       }
-      if (value === 'high' && (level.levelValue === 3 || level.name.toLowerCase().includes('élev') || level.name.toLowerCase().includes('haut'))) {
+      if (value === 'high' && (level.levelValue === 3 || level.level_value === 3 || level.name.toLowerCase().includes('élev') || level.name.toLowerCase().includes('haut'))) {
         return true;
       }
-      if (value === 'critical' && (level.levelValue === 4 || level.name.toLowerCase().includes('critique') || level.name.toLowerCase().includes('critic'))) {
+      if (value === 'critical' && (level.levelValue === 4 || level.level_value === 4 || level.name.toLowerCase().includes('critique') || level.name.toLowerCase().includes('critic'))) {
         return true;
       }
       
@@ -83,7 +82,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     }
   };
   
-  if (!sortedLevels.length) {
+  if (!sortedLevels || !sortedLevels.length) {
     return (
       <FormItem>
         <FormLabel>{label}</FormLabel>

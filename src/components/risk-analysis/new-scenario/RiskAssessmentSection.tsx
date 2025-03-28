@@ -13,7 +13,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { RiskLevel } from '@/types';
 import { useData } from '@/contexts/DataContext';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import RiskScaleSlider from './RiskScaleSlider';
 import { RiskScaleWithLevels } from '@/types/risk-scales';
 
@@ -28,14 +28,18 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
   const [impactScale, setImpactScale] = useState<RiskScaleWithLevels | null>(null);
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
   
+  console.log("Scales in component:", companyRiskScales);
+  
   // Load risk scales for this company
   useEffect(() => {
     const loadRiskScales = async () => {
       setIsLoading(true);
       try {
+        console.log("Loading risk scales for company:", companyId);
         // Ensure default scales exist for this company
         await ensureDefaultScalesExist(companyId);
         const scales = await fetchCompanyRiskScales(companyId);
+        console.log("Fetched scales:", scales);
         
         // Find active impact and likelihood scales
         const activeImpactScale = scales.find(
@@ -46,6 +50,9 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
           s => s.isActive && s.scaleType?.category === 'likelihood'
         ) || null;
         
+        console.log("Impact scale:", activeImpactScale);
+        console.log("Likelihood scale:", activeLikelihoodScale);
+        
         setImpactScale(activeImpactScale);
         setLikelihoodScale(activeLikelihoodScale);
       } catch (error) {
@@ -55,7 +62,9 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
       }
     };
     
-    loadRiskScales();
+    if (companyId) {
+      loadRiskScales();
+    }
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
   
   return (
@@ -66,7 +75,12 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
           Évaluez le risque sans tenir compte (ou en tenant compte de façon minimale) des mesures de sécurité existantes.
         </p>
         
-        {!isLoading && (!impactScale || !likelihoodScale) && (
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+            <p>Chargement des échelles de risque...</p>
+          </div>
+        ) : (!impactScale || !likelihoodScale) ? (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Échelles de risque manquantes</AlertTitle>
@@ -75,14 +89,12 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
               Veuillez configurer les échelles d'impact et de probabilité.
             </AlertDescription>
           </Alert>
-        )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="rawLikelihood"
-            render={({ field }) => (
-              likelihoodScale ? (
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="rawLikelihood"
+              render={({ field }) => (
                 <RiskScaleSlider
                   levels={likelihoodScale.levels || []}
                   value={field.value}
@@ -91,20 +103,13 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                   label="Probabilité brute"
                   description="Évaluez la probabilité sans considérer les mesures de sécurité"
                 />
-              ) : (
-                <FormItem>
-                  <FormLabel>Probabilité brute</FormLabel>
-                  <FormMessage>Échelle de probabilité non configurée</FormMessage>
-                </FormItem>
-              )
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="rawImpact"
-            render={({ field }) => (
-              impactScale ? (
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="rawImpact"
+              render={({ field }) => (
                 <RiskScaleSlider
                   levels={impactScale.levels || []}
                   value={field.value}
@@ -113,15 +118,10 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                   label="Impact brut"
                   description="Évaluez l'impact sans considérer les mesures de sécurité"
                 />
-              ) : (
-                <FormItem>
-                  <FormLabel>Impact brut</FormLabel>
-                  <FormMessage>Échelle d'impact non configurée</FormMessage>
-                </FormItem>
-              )
-            )}
-          />
-        </div>
+              )}
+            />
+          </div>
+        )}
         
         <FormField
           control={form.control}
@@ -168,12 +168,12 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
           )}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="residualLikelihood"
-            render={({ field }) => (
-              likelihoodScale ? (
+        {!isLoading && (impactScale && likelihoodScale) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="residualLikelihood"
+              render={({ field }) => (
                 <RiskScaleSlider
                   levels={likelihoodScale.levels || []}
                   value={field.value}
@@ -182,20 +182,13 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                   label="Probabilité résiduelle"
                   description="Évaluez la probabilité après application des mesures de sécurité"
                 />
-              ) : (
-                <FormItem>
-                  <FormLabel>Probabilité résiduelle</FormLabel>
-                  <FormMessage>Échelle de probabilité non configurée</FormMessage>
-                </FormItem>
-              )
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="residualImpact"
-            render={({ field }) => (
-              impactScale ? (
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="residualImpact"
+              render={({ field }) => (
                 <RiskScaleSlider
                   levels={impactScale.levels || []}
                   value={field.value}
@@ -204,15 +197,10 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                   label="Impact résiduel"
                   description="Évaluez l'impact après application des mesures de sécurité"
                 />
-              ) : (
-                <FormItem>
-                  <FormLabel>Impact résiduel</FormLabel>
-                  <FormMessage>Échelle d'impact non configurée</FormMessage>
-                </FormItem>
-              )
-            )}
-          />
-        </div>
+              )}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
