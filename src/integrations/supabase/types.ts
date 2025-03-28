@@ -608,6 +608,279 @@ export type Database = {
           },
         ]
       }
+      risk_assets: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner: string | null
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner?: string | null
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner?: string | null
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_assets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_scenario_assets: {
+        Row: {
+          asset_id: string
+          risk_scenario_id: string
+        }
+        Insert: {
+          asset_id: string
+          risk_scenario_id: string
+        }
+        Update: {
+          asset_id?: string
+          risk_scenario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_scenario_assets_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "risk_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_scenario_assets_risk_scenario_id_fkey"
+            columns: ["risk_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "risk_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_scenarios: {
+        Row: {
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          impact_description: string | null
+          impact_level: Database["public"]["Enums"]["risk_level"]
+          likelihood: Database["public"]["Enums"]["risk_level"]
+          name: string
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          scope: Database["public"]["Enums"]["risk_scope"]
+          status: Database["public"]["Enums"]["risk_status"]
+          threat_id: string | null
+          updated_at: string
+          vulnerability_id: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_description?: string | null
+          impact_level: Database["public"]["Enums"]["risk_level"]
+          likelihood: Database["public"]["Enums"]["risk_level"]
+          name: string
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          scope: Database["public"]["Enums"]["risk_scope"]
+          status?: Database["public"]["Enums"]["risk_status"]
+          threat_id?: string | null
+          updated_at?: string
+          vulnerability_id?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_description?: string | null
+          impact_level?: Database["public"]["Enums"]["risk_level"]
+          likelihood?: Database["public"]["Enums"]["risk_level"]
+          name?: string
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          scope?: Database["public"]["Enums"]["risk_scope"]
+          status?: Database["public"]["Enums"]["risk_status"]
+          threat_id?: string | null
+          updated_at?: string
+          vulnerability_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_scenarios_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_scenarios_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "risk_threats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "risk_scenarios_vulnerability_id_fkey"
+            columns: ["vulnerability_id"]
+            isOneToOne: false
+            referencedRelation: "risk_vulnerabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_threats: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_threats_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_treatments: {
+        Row: {
+          created_at: string
+          deadline: string | null
+          description: string
+          id: string
+          residual_risk_level: Database["public"]["Enums"]["risk_level"] | null
+          responsible: string | null
+          risk_scenario_id: string
+          status: string
+          strategy: Database["public"]["Enums"]["risk_treatment_strategy"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deadline?: string | null
+          description: string
+          id?: string
+          residual_risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          responsible?: string | null
+          risk_scenario_id: string
+          status?: string
+          strategy: Database["public"]["Enums"]["risk_treatment_strategy"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          id?: string
+          residual_risk_level?: Database["public"]["Enums"]["risk_level"] | null
+          responsible?: string | null
+          risk_scenario_id?: string
+          status?: string
+          strategy?: Database["public"]["Enums"]["risk_treatment_strategy"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_treatments_risk_scenario_id_fkey"
+            columns: ["risk_scenario_id"]
+            isOneToOne: false
+            referencedRelation: "risk_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_vulnerabilities: {
+        Row: {
+          category: string
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_vulnerabilities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rssi_services: {
         Row: {
           allocation_time: number
@@ -863,6 +1136,20 @@ export type Database = {
         | "improvement_opportunity"
         | "strength"
       finding_status: "draft" | "pending_review" | "validated"
+      risk_level: "low" | "medium" | "high" | "critical"
+      risk_scope:
+        | "technical"
+        | "organizational"
+        | "human"
+        | "physical"
+        | "environmental"
+      risk_status:
+        | "identified"
+        | "analyzed"
+        | "treated"
+        | "accepted"
+        | "monitored"
+      risk_treatment_strategy: "reduce" | "maintain" | "avoid" | "share"
       service_type: "conseil" | "audit" | "rssi_as_service"
       user_role: "admin" | "auditor" | "reviewer"
     }

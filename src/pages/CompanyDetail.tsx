@@ -32,6 +32,7 @@ import {
   Trash2,
   Briefcase,
   Shield,
+  ShieldAlert,
   Wrench,
 } from 'lucide-react';
 
@@ -242,6 +243,12 @@ const CompanyDetail = () => {
         </div>
 
         <div className="flex gap-2">
+          <Button asChild variant="outline">
+            <Link to={`/risk-analysis/${company.id}`}>
+              <ShieldAlert className="mr-2 h-4 w-4" />
+              Analyse des risques
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link to={`/new-service/${company.id}`}>
               <Plus className="mr-2 h-4 w-4" />

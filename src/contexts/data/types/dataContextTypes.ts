@@ -16,7 +16,16 @@ import {
   UserRole,
   Service,
   ConsultingProject,
-  RssiService
+  RssiService,
+  RiskAsset,
+  RiskThreat,
+  RiskVulnerability,
+  RiskScenario,
+  RiskTreatment,
+  RiskLevel,
+  RiskStatus,
+  RiskScope,
+  RiskTreatmentStrategy
 } from '@/types';
 
 export interface DataContextProps {
@@ -43,6 +52,11 @@ export interface DataContextProps {
     services: boolean; 
     consultingProjects: boolean;
     rssiServices: boolean;
+    riskAssets: boolean;
+    riskThreats: boolean;
+    riskVulnerabilities: boolean;
+    riskScenarios: boolean;
+    riskTreatments: boolean;
   };
   
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
@@ -116,4 +130,56 @@ export interface DataContextProps {
   fetchServices: () => Promise<void>;
   fetchConsultingProjects: () => Promise<void>;
   fetchRssiServices: () => Promise<void>;
+  
+  riskAssets: RiskAsset[];
+  riskThreats: RiskThreat[];
+  riskVulnerabilities: RiskVulnerability[];
+  riskScenarios: RiskScenario[];
+  riskTreatments: RiskTreatment[];
+  loading: {
+    frameworks: boolean;
+    controls: boolean;
+    topics: boolean;
+    interviews: boolean;
+    themes: boolean;
+    standardClauses: boolean;
+    audits: boolean;
+    users: boolean;
+    services: boolean; 
+    consultingProjects: boolean;
+    rssiServices: boolean;
+    riskAssets: boolean;
+    riskThreats: boolean;
+    riskVulnerabilities: boolean;
+    riskScenarios: boolean;
+    riskTreatments: boolean;
+  };
+  
+  fetchRiskAssetsByCompanyId: (companyId: string) => Promise<RiskAsset[]>;
+  fetchRiskThreatsByCompanyId: (companyId: string) => Promise<RiskThreat[]>;
+  fetchRiskVulnerabilitiesByCompanyId: (companyId: string) => Promise<RiskVulnerability[]>;
+  fetchRiskScenariosByCompanyId: (companyId: string) => Promise<RiskScenario[]>;
+  fetchRiskTreatmentsByScenarioId: (scenarioId: string) => Promise<RiskTreatment[]>;
+  
+  addRiskAsset: (asset: Omit<RiskAsset, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskAsset>;
+  addRiskThreat: (threat: Omit<RiskThreat, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskThreat>;
+  addRiskVulnerability: (vulnerability: Omit<RiskVulnerability, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskVulnerability>;
+  addRiskScenario: (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskScenario>;
+  addRiskTreatment: (treatment: Omit<RiskTreatment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskTreatment>;
+  
+  updateRiskAsset: (id: string, asset: Partial<RiskAsset>) => Promise<RiskAsset>;
+  updateRiskThreat: (id: string, threat: Partial<RiskThreat>) => Promise<RiskThreat>;
+  updateRiskVulnerability: (id: string, vulnerability: Partial<RiskVulnerability>) => Promise<RiskVulnerability>;
+  updateRiskScenario: (id: string, scenario: Partial<RiskScenario>) => Promise<RiskScenario>;
+  updateRiskTreatment: (id: string, treatment: Partial<RiskTreatment>) => Promise<RiskTreatment>;
+  
+  deleteRiskAsset: (id: string) => Promise<boolean>;
+  deleteRiskThreat: (id: string) => Promise<boolean>;
+  deleteRiskVulnerability: (id: string) => Promise<boolean>;
+  deleteRiskScenario: (id: string) => Promise<boolean>;
+  deleteRiskTreatment: (id: string) => Promise<boolean>;
+  
+  associateRiskScenarioWithAsset: (scenarioId: string, assetId: string) => Promise<boolean>;
+  removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
+  getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
 }

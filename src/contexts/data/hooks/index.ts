@@ -12,3 +12,4 @@ export * from './useThemes';
 export * from './useStandardClauses';
 export * from './useUsers';
 export * from './useAuth';
+export * from './useRiskAnalysis';
