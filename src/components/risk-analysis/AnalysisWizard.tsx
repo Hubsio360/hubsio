@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +104,8 @@ export function AnalysisWizard({
     setLoading(true);
     try {
       console.log('Appel de la fonction Edge pour obtenir les infos de l\'entreprise');
+      
+      // Utilisation de l'URL complète pour l'appel à la fonction Edge
       const { data, error } = await supabase.functions.invoke('ai-risk-analysis', {
         body: {
           action: 'getCompanyInfo',
@@ -188,6 +189,8 @@ export function AnalysisWizard({
     setLoading(true);
     try {
       console.log('Appel de la fonction Edge pour générer des scénarios');
+      
+      // Utilisation de l'URL complète pour l'appel à la fonction Edge
       const { data, error } = await supabase.functions.invoke('ai-risk-analysis', {
         body: {
           action: 'generateRiskScenarios',
