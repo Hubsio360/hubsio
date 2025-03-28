@@ -1,4 +1,3 @@
-
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService, RiskAsset, RiskThreat, RiskVulnerability, RiskScenario, RiskTreatment, RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from '@/types';
 
 // Add missing type definitions
@@ -159,4 +158,7 @@ export interface DataContextProps {
   toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
   deleteRiskScale: (scaleId: string) => Promise<boolean>;
   setupLikelihoodScale: (companyId: string) => Promise<boolean>;
+  
+  fetchRiskScenarioTemplates: () => Promise<any[]>;
+  getRiskScenarioTemplatesByDomain: (domain: string) => Promise<any[]>;
 }

@@ -862,6 +862,24 @@ export type Database = {
           },
         ]
       }
+      risk_scenarios_templates: {
+        Row: {
+          domain: string
+          id: string
+          scenario_description: string
+        }
+        Insert: {
+          domain: string
+          id?: string
+          scenario_description: string
+        }
+        Update: {
+          domain?: string
+          id?: string
+          scenario_description?: string
+        }
+        Relationships: []
+      }
       risk_threats: {
         Row: {
           category: string
