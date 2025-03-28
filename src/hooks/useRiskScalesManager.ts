@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -15,6 +16,7 @@ export const useRiskScalesManager = (companyId: string) => {
     updateRiskScaleLevel,
     updateRiskScaleType,
     toggleRiskScaleActive,
+    deleteRiskScale,
     setupLikelihoodScale,
     loading 
   } = useData();
@@ -109,7 +111,8 @@ export const useRiskScalesManager = (companyId: string) => {
     if (!companyId) return null;
     
     try {
-      const updatedType = await updateRiskScaleType(scaleTypeId, name, description, category);
+      // Nous passons 3 arguments au lieu de 4
+      const updatedType = await updateRiskScaleType(scaleTypeId, name, description);
       
       if (updatedType) {
         await refreshData();
@@ -142,7 +145,8 @@ export const useRiskScalesManager = (companyId: string) => {
       const customScaleName = `custom-scale-${uuidv4().slice(0, 8)}`;
       const customScaleDescription = `Échelle personnalisée`;
       
-      const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription, category);
+      // Nous passons 2 arguments au lieu de 3
+      const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription);
       
       if (!newScaleType) {
         throw new Error('Erreur lors de la création du type d\'échelle');
@@ -169,6 +173,34 @@ export const useRiskScalesManager = (companyId: string) => {
       return null;
     }
   }, [companyId, addRiskScaleType, addCompanyRiskScale, refreshData, toast]);
+
+  // Handle deleting a risk scale
+  const handleDeleteScale = useCallback(async (scaleId: string) => {
+    try {
+      // Optimistic update
+      setCachedScales(prev => prev.filter(scale => scale.id !== scaleId));
+      
+      await deleteRiskScale(scaleId);
+      await refreshData();
+      
+      toast({
+        title: 'Succès',
+        description: 'Échelle de risque supprimée avec succès',
+      });
+      
+      return true;
+    } catch (err) {
+      console.error('Error deleting risk scale:', err);
+      // Revert on error
+      refreshData();
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Erreur lors de la suppression de l\'échelle de risque',
+      });
+      return false;
+    }
+  }, [deleteRiskScale, refreshData, toast]);
 
   // Handle scale creation with error handling for duplicate entries
   const handleAddScale = useCallback(async (scaleTypeId: string) => {
@@ -273,6 +305,7 @@ export const useRiskScalesManager = (companyId: string) => {
     error,
     addScale: handleAddScale,
     addCustomScale: handleAddCustomScale,
+    deleteScale: handleDeleteScale,
     updateScaleType: handleUpdateScaleType,
     toggleActive: handleToggleActive,
     updateLevel: handleUpdateLevel,

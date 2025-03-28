@@ -1,4 +1,3 @@
-
 export interface RiskScaleType {
   id: string;
   name: string;

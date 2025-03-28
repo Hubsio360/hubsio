@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -159,6 +160,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
     updateRiskScaleType: riskScalesHook.updateRiskScaleType,
     toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
+    deleteRiskScale: riskScalesHook.deleteRiskScale,
     setupLikelihoodScale: riskScalesHook.setupLikelihoodScale,
     
     loading: {

@@ -354,18 +354,13 @@ export const useRiskScales = () => {
   const updateRiskScaleType = useCallback(async (
     scaleTypeId: string,
     name: string,
-    description: string,
-    category?: 'impact' | 'likelihood'
+    description: string
   ): Promise<RiskScaleType | null> => {
     try {
       const updates: any = {
         name: name,
         description: description
       };
-      
-      if (category) {
-        updates.category = category;
-      }
       
       const { data, error } = await supabase
         .from('risk_scale_types')
@@ -385,8 +380,7 @@ export const useRiskScales = () => {
           type.id === scaleTypeId ? {
             ...type,
             name: name || type.name,
-            description: description || type.description,
-            category: category || type.category
+            description: description || type.description
           } : type
         )
       );
@@ -427,6 +421,36 @@ export const useRiskScales = () => {
       return true;
     } catch (error) {
       console.error('Error toggling risk scale active status:', error);
+      throw error;
+    }
+  }, []);
+
+  const deleteRiskScale = useCallback(async (scaleId: string): Promise<boolean> => {
+    try {
+      const { error: levelError } = await supabase
+        .from('risk_scale_levels')
+        .delete()
+        .eq('company_risk_scale_id', scaleId);
+        
+      if (levelError) {
+        console.error('Error deleting risk scale levels:', levelError);
+        throw levelError;
+      }
+      
+      const { error } = await supabase
+        .from('company_risk_scales')
+        .delete()
+        .eq('id', scaleId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      setCompanyRiskScales(prev => prev.filter(scale => scale.id !== scaleId));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting risk scale:', error);
       throw error;
     }
   }, []);
@@ -486,6 +510,7 @@ export const useRiskScales = () => {
     updateRiskScaleLevel,
     updateRiskScaleType,
     toggleRiskScaleActive,
+    deleteRiskScale,
     setupLikelihoodScale,
   };
 };

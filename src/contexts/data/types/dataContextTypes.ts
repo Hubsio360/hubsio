@@ -183,5 +183,6 @@ export interface DataContextProps {
   updateRiskScaleLevel: (levelId: string, updatedData: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
   updateRiskScaleType: (scaleTypeId: string, name: string, description: string) => Promise<RiskScaleType | null>;
   toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
+  deleteRiskScale: (scaleId: string) => Promise<boolean>;
   setupLikelihoodScale: (companyId: string) => Promise<boolean>;
 }

@@ -25,7 +25,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { AlertCircle, Plus } from 'lucide-react';
+import { AlertCircle, Plus, Trash2 } from 'lucide-react';
 import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
@@ -51,6 +51,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [activeTab, setActiveTab] = useState('impact');
   const [newScaleDialogOpen, setNewScaleDialogOpen] = useState(false);
   const [newScaleType, setNewScaleType] = useState<RiskScaleType | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [scaleToDelete, setScaleToDelete] = useState<string | null>(null);
   
   const {
     riskScaleTypes,
@@ -62,6 +64,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     updateScaleType,
     toggleActive,
     updateLevel,
+    deleteScale,
     refreshData
   } = useRiskScalesManager(companyId);
 
@@ -119,10 +122,27 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   // Handle saving the scale type details
   const onSubmitScaleForm = async (values: ScaleFormValues) => {
     if (newScaleType) {
-      await updateScaleType(newScaleType.id, values.name, values.description, values.category);
+      await updateScaleType(newScaleType.id, values.name, values.description);
       setNewScaleDialogOpen(false);
       setNewScaleType(null);
+      // Refresh the data to reflect the changes
+      await refreshData();
     }
+  };
+
+  // Handle delete confirmation
+  const confirmDelete = async () => {
+    if (scaleToDelete) {
+      await deleteScale(scaleToDelete);
+      setScaleToDelete(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  // Open delete confirmation dialog
+  const handleDeleteScale = (scaleId: string) => {
+    setScaleToDelete(scaleId);
+    setDeleteDialogOpen(true);
   };
 
   // Get levels for a scale
@@ -171,15 +191,24 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                     </div>
                   ) : (
                     impactScales.map((scale) => (
-                      <RiskScaleCard
-                        key={scale.id}
-                        companyScale={scale}
-                        scaleType={getScaleType(getScaleTypeId(scale))}
-                        levels={getLevelsForScale(scale.id)}
-                        isLoading={isLoading}
-                        onToggleActive={toggleActive}
-                        onUpdateLevel={updateLevel}
-                      />
+                      <div key={scale.id} className="relative">
+                        <RiskScaleCard
+                          companyScale={scale}
+                          scaleType={getScaleType(getScaleTypeId(scale))}
+                          levels={getLevelsForScale(scale.id)}
+                          isLoading={isLoading}
+                          onToggleActive={toggleActive}
+                          onUpdateLevel={updateLevel}
+                        />
+                        <Button 
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-3 right-3"
+                          onClick={() => handleDeleteScale(scale.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))
                   )}
                 </div>
@@ -195,15 +224,24 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                     </div>
                   ) : (
                     likelihoodScales.map((scale) => (
-                      <RiskScaleCard
-                        key={scale.id}
-                        companyScale={scale}
-                        scaleType={getScaleType(getScaleTypeId(scale))}
-                        levels={getLevelsForScale(scale.id)}
-                        isLoading={isLoading}
-                        onToggleActive={toggleActive}
-                        onUpdateLevel={updateLevel}
-                      />
+                      <div key={scale.id} className="relative">
+                        <RiskScaleCard
+                          companyScale={scale}
+                          scaleType={getScaleType(getScaleTypeId(scale))}
+                          levels={getLevelsForScale(scale.id)}
+                          isLoading={isLoading}
+                          onToggleActive={toggleActive}
+                          onUpdateLevel={updateLevel}
+                        />
+                        <Button 
+                          variant="destructive"
+                          size="sm"
+                          className="absolute top-3 right-3"
+                          onClick={() => handleDeleteScale(scale.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))
                   )}
                 </div>
@@ -219,7 +257,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={newScaleDialogOpen} onOpenChange={setNewScaleDialogOpen}>
+      <AlertDialog 
+        open={newScaleDialogOpen} 
+        onOpenChange={(open) => {
+          // Empêcher la fermeture automatique lors de la saisie
+          if (!open && newScaleType) {
+            // Ne fermez que si l'utilisateur clique explicitement sur Annuler ou Enregistrer
+          } else {
+            setNewScaleDialogOpen(open);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Configurer votre nouvelle échelle</AlertDialogTitle>
@@ -288,13 +336,42 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               />
               
               <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogCancel 
+                  onClick={() => {
+                    setNewScaleDialogOpen(false);
+                    setNewScaleType(null);
+                  }}
+                >
+                  Annuler
+                </AlertDialogCancel>
                 <AlertDialogAction asChild>
                   <Button type="submit">Enregistrer</Button>
                 </AlertDialogAction>
               </AlertDialogFooter>
             </form>
           </Form>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialogue de confirmation de suppression */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette échelle de risque ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setScaleToDelete(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
