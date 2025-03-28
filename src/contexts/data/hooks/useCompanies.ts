@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
@@ -114,7 +115,7 @@ export const useCompanies = () => {
       setCompanies(prev => [...prev, newCompany]);
       
       try {
-        await Promise.resolve(fetchCompanies());
+        await fetchCompanies();
       } catch (error) {
         console.error('Error refreshing companies after add:', error);
       }
@@ -129,53 +130,62 @@ export const useCompanies = () => {
   const enrichCompanyData = async (companyId: string): Promise<Company> => {
     try {
       console.log('Enriching company data for ID:', companyId);
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          const companyIndex = companies.findIndex((c) => c.id === companyId);
-          if (companyIndex === -1) {
-            return reject(new Error('Company not found'));
-          }
+      
+      return new Promise<Company>((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            // Trouver l'entreprise actuelle
+            const companyIndex = companies.findIndex((c) => c.id === companyId);
+            if (companyIndex === -1) {
+              return reject(new Error('Company not found'));
+            }
 
-          const company = companies[companyIndex];
-          
-          const enrichedData = {
-            activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions de cybersécurité avancées.`,
-            creationYear: company.creationYear || 2018,
-            marketScope: company.marketScope || 'National',
-          };
+            const company = companies[companyIndex];
+            
+            // Données enrichies
+            const enrichedData = {
+              activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions de cybersécurité avancées.`,
+              creationYear: company.creationYear || 2018,
+              marketScope: company.marketScope || 'National',
+            };
 
-          const enrichedCompany = {
-            ...company,
-            ...enrichedData,
-          };
+            const enrichedCompany = {
+              ...company,
+              ...enrichedData,
+            };
 
-          supabase
-            .from('companies')
-            .update({
-              activity: enrichedData.activity,
-              creation_year: enrichedData.creationYear,
-              market_scope: enrichedData.marketScope
-            })
-            .eq('id', companyId)
-            .then(() => {
-              const newCompanies = [...companies];
-              newCompanies[companyIndex] = enrichedCompany;
-              setCompanies(newCompanies);
+            // Mettre à jour dans la base de données
+            const { error } = await supabase
+              .from('companies')
+              .update({
+                activity: enrichedData.activity,
+                creation_year: enrichedData.creationYear,
+                market_scope: enrichedData.marketScope
+              })
+              .eq('id', companyId);
               
-              (async () => {
-                try {
-                  await Promise.resolve(fetchCompanies());
-                  resolve(enrichedCompany);
-                } catch (error) {
-                  console.error('Error refreshing companies after enrich:', error);
-                  resolve(enrichedCompany);
-                }
-              })();
-            })
-            .catch(error => {
+            if (error) {
               console.error('Error updating enriched company data:', error);
-              reject(error);
-            });
+              return reject(error);
+            }
+              
+            // Mettre à jour l'état local
+            const newCompanies = [...companies];
+            newCompanies[companyIndex] = enrichedCompany;
+            setCompanies(newCompanies);
+            
+            // Rafraîchir les données
+            try {
+              await fetchCompanies();
+              resolve(enrichedCompany);
+            } catch (error) {
+              console.error('Error refreshing companies after enrich:', error);
+              resolve(enrichedCompany); // Résoudre quand même avec l'entreprise enrichie
+            }
+          } catch (error) {
+            console.error('Error in enrichCompanyData processing:', error);
+            reject(error);
+          }
         }, 1000);
       });
     } catch (error) {
