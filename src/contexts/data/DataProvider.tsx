@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -39,6 +38,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const riskAnalysisHook = useRiskAnalysis();
   const servicesHook = useServices();
   const riskScalesHook = useRiskScales();
+
+  const { 
+    riskScaleTypes, 
+    companyRiskScales, 
+    loading: riskScalesLoading,
+    fetchRiskScaleTypes,
+    fetchCompanyRiskScales,
+    addRiskScaleType,
+    addCompanyRiskScale,
+    updateRiskScaleLevel,
+    updateRiskScaleType,
+    toggleRiskScaleActive,
+    setupLikelihoodScale
+  } = useRiskScales();
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -151,17 +164,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeRiskScenarioAssetAssociation: riskAnalysisHook.removeRiskScenarioAssetAssociation,
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
-    riskScaleTypes: riskScalesHook.riskScaleTypes,
-    companyRiskScales: riskScalesHook.companyRiskScales,
-    fetchRiskScaleTypes: riskScalesHook.fetchRiskScaleTypes,
-    fetchCompanyRiskScales: riskScalesHook.fetchCompanyRiskScales,
-    updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
-    toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
-    // Add the three missing properties from the useRiskScales hook
-    setupLikelihoodScale: riskScalesHook.setupLikelihoodScale,
-    addRiskScaleType: riskScalesHook.addRiskScaleType,
-    addCompanyRiskScale: riskScalesHook.addCompanyRiskScale,
-    
+    riskScaleTypes,
+    companyRiskScales,
+    fetchRiskScaleTypes,
+    fetchCompanyRiskScales,
+    addRiskScaleType,
+    addCompanyRiskScale,
+    updateRiskScaleLevel,
+    updateRiskScaleType,
+    toggleRiskScaleActive,
+    setupLikelihoodScale,
     loading: {
       companies: companiesHook.loading,
       frameworks: frameworksHook.loading,
@@ -180,8 +192,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,
       riskScenarios: riskAnalysisHook.loading.riskScenarios,
       riskTreatments: riskAnalysisHook.loading.riskTreatments,
-      riskScaleTypes: riskScalesHook.loading.scaleTypes,
-      companyRiskScales: riskScalesHook.loading.companyScales
+      riskScaleTypes: riskScalesLoading.scaleTypes,
+      companyRiskScales: riskScalesLoading.companyScales
     }
   };
 

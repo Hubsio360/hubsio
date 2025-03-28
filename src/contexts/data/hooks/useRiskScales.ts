@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -367,6 +366,46 @@ export const useRiskScales = () => {
       return convertDbRiskScaleLevel(data);
     } catch (error) {
       console.error('Error updating risk scale level:', error);
+      throw error;
+    }
+  }, []);
+
+  // Update a risk scale type
+  const updateRiskScaleType = useCallback(async (
+    scaleTypeId: string,
+    updates: { name?: string; description?: string }
+  ): Promise<RiskScaleType | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('risk_scale_types')
+        .update({
+          name: updates.name,
+          description: updates.description
+        })
+        .eq('id', scaleTypeId)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      const convertedData = convertDbRiskScaleType(data);
+      
+      // Update the local state
+      setRiskScaleTypes(prev => 
+        prev.map(type => 
+          type.id === scaleTypeId ? {
+            ...type,
+            name: updates.name || type.name,
+            description: updates.description || type.description
+          } : type
+        )
+      );
+      
+      return convertedData;
+    } catch (error) {
+      console.error('Error updating risk scale type:', error);
       throw error;
     }
   }, []);

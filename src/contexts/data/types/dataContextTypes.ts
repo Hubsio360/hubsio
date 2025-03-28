@@ -1,4 +1,3 @@
-
 import {
   Company,
   Audit,
@@ -176,16 +175,16 @@ export interface DataContextProps {
   removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
   getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
   
-  // Risk Scales methods with correct types
-  fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
-  fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
-  updateRiskScaleLevel: (levelId: string, updates: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
-  toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
-  setupLikelihoodScale: (companyId: string) => Promise<boolean>;
-  addRiskScaleType: (name: string, description: string) => Promise<RiskScaleType | null>;
-  addCompanyRiskScale: (
-    companyId: string, 
-    scaleTypeId: string, 
-    levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[]
-  ) => Promise<RiskScaleWithLevels | null>;
+  export interface RiskScaleData {
+    riskScaleTypes: RiskScaleType[];
+    companyRiskScales: RiskScaleWithLevels[];
+    fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
+    fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
+    addRiskScaleType: (name: string, description: string) => Promise<RiskScaleType | null>;
+    addCompanyRiskScale: (companyId: string, scaleTypeId: string, levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[]) => Promise<RiskScaleWithLevels | null>;
+    updateRiskScaleLevel: (levelId: string, updatedData: Partial<RiskScaleLevel>) => Promise<RiskScaleLevel | null>;
+    updateRiskScaleType: (scaleTypeId: string, name: string, description: string) => Promise<RiskScaleType | null>;
+    toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
+    setupLikelihoodScale: (companyId: string) => Promise<boolean>;
+  }
 }

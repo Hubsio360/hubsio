@@ -14,6 +14,7 @@ export const useRiskScalesManager = (companyId: string) => {
     addRiskScaleType,
     addCompanyRiskScale,
     updateRiskScaleLevel,
+    updateRiskScaleType,
     toggleRiskScaleActive,
     loading 
   } = useData();
@@ -97,6 +98,35 @@ export const useRiskScalesManager = (companyId: string) => {
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
 
+  // Handle updating a risk scale type
+  const handleUpdateScaleType = useCallback(async (scaleTypeId: string, name: string, description: string) => {
+    if (!companyId) return null;
+    
+    try {
+      const updatedType = await updateRiskScaleType(scaleTypeId, { name, description });
+      
+      if (updatedType) {
+        await refreshData();
+        
+        toast({
+          title: 'Succès',
+          description: 'Échelle de risque mise à jour avec succès',
+        });
+        
+        return updatedType;
+      }
+      return null;
+    } catch (err) {
+      console.error('Error updating risk scale type:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Erreur lors de la mise à jour de l\'échelle de risque',
+      });
+      return null;
+    }
+  }, [companyId, updateRiskScaleType, refreshData, toast]);
+
   // Handle adding a custom scale
   const handleAddCustomScale = useCallback(async () => {
     if (!companyId) return;
@@ -121,6 +151,8 @@ export const useRiskScalesManager = (companyId: string) => {
         title: 'Succès',
         description: 'Nouvelle échelle de risque créée avec succès',
       });
+
+      return newScaleType;
     } catch (err) {
       console.error('Error adding custom risk scale:', err);
       toast({
@@ -128,6 +160,7 @@ export const useRiskScalesManager = (companyId: string) => {
         title: 'Erreur',
         description: 'Erreur lors de la création de l\'échelle de risque personnalisée',
       });
+      return null;
     }
   }, [companyId, addRiskScaleType, addCompanyRiskScale, refreshData, toast]);
 
@@ -234,6 +267,7 @@ export const useRiskScalesManager = (companyId: string) => {
     error,
     addScale: handleAddScale,
     addCustomScale: handleAddCustomScale,
+    updateScaleType: handleUpdateScaleType,
     toggleActive: handleToggleActive,
     updateLevel: handleUpdateLevel,
     refreshData
