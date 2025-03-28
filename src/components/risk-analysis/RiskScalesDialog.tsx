@@ -32,6 +32,7 @@ import {
   Clock
 } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -52,15 +53,23 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     updateRiskScaleLevel, 
     setupLikelihoodScale 
   } = useData();
-  const [activeTab, setActiveTab] = useState<string>('financial_impact');
+  const [activeTab, setActiveTab] = useState<string>('');
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   // Load company risk scales when the dialog opens
   useEffect(() => {
     if (open && companyId) {
       const loadScales = async () => {
-        await fetchCompanyRiskScales(companyId);
-        // Ensure the likelihood scale is set up
-        await setupLikelihoodScale(companyId);
+        setIsInitialLoading(true);
+        try {
+          await fetchCompanyRiskScales(companyId);
+          // Ensure the likelihood scale is set up
+          await setupLikelihoodScale(companyId);
+        } catch (error) {
+          console.error('Error loading scales:', error);
+        } finally {
+          setIsInitialLoading(false);
+        }
       };
       
       loadScales();
@@ -109,7 +118,128 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     );
   };
 
-  const currentScale = getCurrentScale();
+  const renderSkeletonTabs = () => (
+    <div className="w-full space-y-4">
+      <div className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Skeleton key={i} className="h-16 rounded-md" />
+        ))}
+      </div>
+      <Separator />
+      <div className="space-y-6">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-32 w-full rounded-md" />
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderContent = () => {
+    if (isInitialLoading) {
+      return renderSkeletonTabs();
+    }
+
+    return (
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col"
+      >
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
+          {companyRiskScales.map((scale) => (
+            <TabsTrigger
+              key={scale.id}
+              value={scale.scaleType.name}
+              className="py-2 px-3 flex flex-col items-center justify-center gap-1 h-auto"
+            >
+              {getScaleIcon(scale.scaleType.name)}
+              <span className="text-xs text-center line-clamp-2">{scale.scaleType.description}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {companyRiskScales.map((scale) => (
+          <TabsContent
+            key={scale.id}
+            value={scale.scaleType.name}
+            className="flex-1 flex flex-col space-y-4 mt-4"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-medium">{scale.scaleType.description}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Configurez les niveaux de cette échelle
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id={`scale-active-${scale.id}`}
+                  checked={scale.isActive}
+                  onCheckedChange={() => handleToggleScale(scale.id, scale.isActive)}
+                />
+                <Label htmlFor={`scale-active-${scale.id}`}>
+                  {scale.isActive ? 'Activée' : 'Désactivée'}
+                </Label>
+              </div>
+            </div>
+
+            <Separator />
+
+            <ScrollArea className="flex-1 pr-4">
+              <div className="space-y-6 pb-6">
+                {scale.levels.sort((a, b) => a.levelValue - b.levelValue).map((level) => (
+                  <div
+                    key={level.id}
+                    className="border rounded-md overflow-hidden"
+                    style={{ borderLeftColor: level.color, borderLeftWidth: '4px' }}
+                  >
+                    <div className="bg-muted/30 p-3 flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                        style={{ backgroundColor: level.color }}
+                      >
+                        {level.levelValue}
+                      </div>
+                      <div className="flex-1">
+                        <Input
+                          id={`level-name-${level.id}`}
+                          value={level.name}
+                          onChange={(e) => handleUpdateLevel(level, { name: e.target.value })}
+                          className="text-sm font-medium bg-background"
+                          placeholder="Nom du niveau"
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        <Input
+                          id={`level-color-${level.id}`}
+                          type="color"
+                          value={level.color}
+                          onChange={(e) => handleUpdateLevel(level, { color: e.target.value })}
+                          className="w-10 h-10 p-1 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-3">
+                      <Label htmlFor={`level-description-${level.id}`} className="text-xs text-muted-foreground mb-1 block">
+                        Description
+                      </Label>
+                      <Textarea
+                        id={`level-description-${level.id}`}
+                        value={level.description}
+                        onChange={(e) => handleUpdateLevel(level, { description: e.target.value })}
+                        className="min-h-[80px] resize-none"
+                        placeholder="Description détaillée du niveau de risque"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        ))}
+      </Tabs>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -121,111 +251,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        {loading.companyRiskScales ? (
-          <div className="flex items-center justify-center py-10">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Chargement des échelles...</span>
-          </div>
-        ) : (
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="flex-1 flex flex-col"
-          >
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
-              {companyRiskScales.map((scale) => (
-                <TabsTrigger
-                  key={scale.id}
-                  value={scale.scaleType.name}
-                  className="py-2 px-3 flex flex-col items-center justify-center gap-1 h-auto"
-                >
-                  {getScaleIcon(scale.scaleType.name)}
-                  <span className="text-xs text-center line-clamp-2">{scale.scaleType.description}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            {companyRiskScales.map((scale) => (
-              <TabsContent
-                key={scale.id}
-                value={scale.scaleType.name}
-                className="flex-1 flex flex-col space-y-4 mt-4"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-medium">{scale.scaleType.description}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Configurez les niveaux de cette échelle
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id={`scale-active-${scale.id}`}
-                      checked={scale.isActive}
-                      onCheckedChange={() => handleToggleScale(scale.id, scale.isActive)}
-                    />
-                    <Label htmlFor={`scale-active-${scale.id}`}>
-                      {scale.isActive ? 'Activée' : 'Désactivée'}
-                    </Label>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <ScrollArea className="flex-1 pr-4">
-                  <div className="space-y-6 pb-6">
-                    {scale.levels.sort((a, b) => a.levelValue - b.levelValue).map((level) => (
-                      <div
-                        key={level.id}
-                        className="border rounded-md overflow-hidden"
-                        style={{ borderLeftColor: level.color, borderLeftWidth: '4px' }}
-                      >
-                        <div className="bg-muted/30 p-3 flex items-center gap-3">
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                            style={{ backgroundColor: level.color }}
-                          >
-                            {level.levelValue}
-                          </div>
-                          <div className="flex-1">
-                            <Input
-                              id={`level-name-${level.id}`}
-                              value={level.name}
-                              onChange={(e) => handleUpdateLevel(level, { name: e.target.value })}
-                              className="text-sm font-medium bg-background"
-                              placeholder="Nom du niveau"
-                            />
-                          </div>
-                          <div className="flex items-center space-x-2 flex-shrink-0">
-                            <Input
-                              id={`level-color-${level.id}`}
-                              type="color"
-                              value={level.color}
-                              onChange={(e) => handleUpdateLevel(level, { color: e.target.value })}
-                              className="w-10 h-10 p-1 cursor-pointer"
-                            />
-                          </div>
-                        </div>
-                        <div className="p-3">
-                          <Label htmlFor={`level-description-${level.id}`} className="text-xs text-muted-foreground mb-1 block">
-                            Description
-                          </Label>
-                          <Textarea
-                            id={`level-description-${level.id}`}
-                            value={level.description}
-                            onChange={(e) => handleUpdateLevel(level, { description: e.target.value })}
-                            className="min-h-[80px] resize-none"
-                            placeholder="Description détaillée du niveau de risque"
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-            ))}
-          </Tabs>
-        )}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {renderContent()}
+        </div>
 
         <DialogFooter className="mt-4">
           <Button onClick={() => onOpenChange(false)}>Fermer</Button>
