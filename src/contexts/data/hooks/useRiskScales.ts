@@ -373,14 +373,15 @@ export const useRiskScales = () => {
   // Update a risk scale type
   const updateRiskScaleType = useCallback(async (
     scaleTypeId: string,
-    updates: { name?: string; description?: string }
+    name: string,
+    description: string
   ): Promise<RiskScaleType | null> => {
     try {
       const { data, error } = await supabase
         .from('risk_scale_types')
         .update({
-          name: updates.name,
-          description: updates.description
+          name: name,
+          description: description
         })
         .eq('id', scaleTypeId)
         .select()
@@ -397,8 +398,8 @@ export const useRiskScales = () => {
         prev.map(type => 
           type.id === scaleTypeId ? {
             ...type,
-            name: updates.name || type.name,
-            description: updates.description || type.description
+            name: name || type.name,
+            description: description || type.description
           } : type
         )
       );
@@ -502,6 +503,7 @@ export const useRiskScales = () => {
     addRiskScaleType,
     addCompanyRiskScale,
     updateRiskScaleLevel,
+    updateRiskScaleType,
     toggleRiskScaleActive,
     setupLikelihoodScale,
   };

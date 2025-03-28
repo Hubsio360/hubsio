@@ -39,20 +39,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const servicesHook = useServices();
   const riskScalesHook = useRiskScales();
 
-  const { 
-    riskScaleTypes, 
-    companyRiskScales, 
-    loading: riskScalesLoading,
-    fetchRiskScaleTypes,
-    fetchCompanyRiskScales,
-    addRiskScaleType,
-    addCompanyRiskScale,
-    updateRiskScaleLevel,
-    updateRiskScaleType,
-    toggleRiskScaleActive,
-    setupLikelihoodScale
-  } = useRiskScales();
-
   const handleRefresh = async () => {
     await Promise.all([
       companiesHook.fetchCompanies(),
@@ -164,16 +150,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeRiskScenarioAssetAssociation: riskAnalysisHook.removeRiskScenarioAssetAssociation,
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
-    riskScaleTypes,
-    companyRiskScales,
-    fetchRiskScaleTypes,
-    fetchCompanyRiskScales,
-    addRiskScaleType,
-    addCompanyRiskScale,
-    updateRiskScaleLevel,
-    updateRiskScaleType,
-    toggleRiskScaleActive,
-    setupLikelihoodScale,
+    riskScaleTypes: riskScalesHook.riskScaleTypes,
+    companyRiskScales: riskScalesHook.companyRiskScales,
+    fetchRiskScaleTypes: riskScalesHook.fetchRiskScaleTypes,
+    fetchCompanyRiskScales: riskScalesHook.fetchCompanyRiskScales,
+    addRiskScaleType: riskScalesHook.addRiskScaleType,
+    addCompanyRiskScale: riskScalesHook.addCompanyRiskScale,
+    updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
+    updateRiskScaleType: riskScalesHook.updateRiskScaleType,
+    toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
+    setupLikelihoodScale: riskScalesHook.setupLikelihoodScale,
+    
     loading: {
       companies: companiesHook.loading,
       frameworks: frameworksHook.loading,
@@ -192,8 +179,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,
       riskScenarios: riskAnalysisHook.loading.riskScenarios,
       riskTreatments: riskAnalysisHook.loading.riskTreatments,
-      riskScaleTypes: riskScalesLoading.scaleTypes,
-      companyRiskScales: riskScalesLoading.companyScales
+      riskScaleTypes: riskScalesHook.loading.scaleTypes,
+      companyRiskScales: riskScalesHook.loading.companyScales
     }
   };
 

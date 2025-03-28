@@ -16,6 +16,7 @@ export const useRiskScalesManager = (companyId: string) => {
     updateRiskScaleLevel,
     updateRiskScaleType,
     toggleRiskScaleActive,
+    setupLikelihoodScale,
     loading 
   } = useData();
 
@@ -103,7 +104,7 @@ export const useRiskScalesManager = (companyId: string) => {
     if (!companyId) return null;
     
     try {
-      const updatedType = await updateRiskScaleType(scaleTypeId, { name, description });
+      const updatedType = await updateRiskScaleType(scaleTypeId, name, description);
       
       if (updatedType) {
         await refreshData();
