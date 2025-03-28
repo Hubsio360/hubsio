@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +20,6 @@ interface RiskScenarioTemplate {
   scenario_description: string;
 }
 
-// Define a type for the grouped templates
-interface GroupedTemplates {
-  domain: string;
-  templates: RiskScenarioTemplate[];
-}
-
 const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelect }) => {
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<RiskScenarioTemplate | null>(null);
@@ -35,22 +29,17 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Use a stable reference for the loadTemplates function
+  // Function to fetch templates
   const loadTemplates = async () => {
-    if (!isLoading && templates.length > 0) return; // Avoid unnecessary fetches
-    
     setIsLoading(true);
     setLoadError(null);
     
     try {
       const data = await fetchRiskScenarioTemplates();
       
-      // Safely handle the data and validate it
       if (Array.isArray(data) && data.length > 0) {
-        // Filter out any invalid templates
         const validTemplates = data.filter(
-          (item): item is RiskScenarioTemplate => 
-            !!item && 
+          item => !!item && 
             typeof item === 'object' && 
             typeof item.id === 'string' && 
             typeof item.scenario_description === 'string' &&
@@ -73,14 +62,14 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     }
   };
 
-  // Only fetch templates once on mount
+  // Load templates on mount
   useEffect(() => {
     loadTemplates();
   }, []);
 
-  // Memoize filtered templates to prevent unnecessary recalculations
-  const filteredTemplates = useMemo(() => {
-    if (!templates || !templates.length) return [];
+  // Filter templates based on search term
+  const filteredTemplates = React.useMemo(() => {
+    if (!Array.isArray(templates) || templates.length === 0) return [];
     
     return templates.filter(template => 
       template.scenario_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,33 +77,40 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     );
   }, [templates, searchTerm]);
 
-  // Group templates by domain, sorted alphabetically - also memoized
-  const groupedTemplates = useMemo(() => {
-    if (!filteredTemplates || !filteredTemplates.length) return [];
-    
-    const groups: Record<string, RiskScenarioTemplate[]> = {};
-    
-    // First create groups with valid domains only
-    for (const template of filteredTemplates) {
-      if (template && template.domain) {
-        const domainKey = template.domain;
-        if (!groups[domainKey]) {
-          groups[domainKey] = [];
-        }
-        groups[domainKey].push(template);
-      }
+  // Group templates by domain
+  const groupedTemplates = React.useMemo(() => {
+    if (!Array.isArray(filteredTemplates) || filteredTemplates.length === 0) {
+      return [];
     }
     
-    // Create array of grouped templates
-    return Object.entries(groups)
-      .sort(([domainA], [domainB]) => domainA.localeCompare(domainB))
-      .map(([domain, domainTemplates]) => ({ 
-        domain, 
-        templates: domainTemplates.filter(t => t && t.id && t.scenario_description) 
-      }))
-      .filter(group => group.templates.length > 0); // Only include groups with templates
+    try {
+      const groups: Record<string, RiskScenarioTemplate[]> = {};
+      
+      // First group templates by domain
+      for (const template of filteredTemplates) {
+        if (template && template.domain) {
+          if (!groups[template.domain]) {
+            groups[template.domain] = [];
+          }
+          groups[template.domain].push(template);
+        }
+      }
+      
+      // Convert to array and sort
+      return Object.entries(groups)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([domain, templates]) => ({
+          domain,
+          templates: templates.filter(t => t && t.id && t.scenario_description)
+        }))
+        .filter(group => group.templates.length > 0);
+    } catch (error) {
+      console.error('Error grouping templates:', error);
+      return [];
+    }
   }, [filteredTemplates]);
 
+  // Handle template selection
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
     if (template && template.id) {
       setSelectedTemplate(template);
@@ -123,10 +119,10 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     }
   };
 
-  // Show a skeleton while loading, with a key to prevent flickering
+  // Show loading state
   if (isLoading) {
     return (
-      <Card key="loading-skeleton">
+      <Card>
         <CardHeader>
           <Skeleton className="h-6 w-3/4 mb-2" />
           <Skeleton className="h-4 w-5/6" />
@@ -158,7 +154,6 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
               aria-expanded={open}
               className="w-full justify-between"
               onClick={() => {
-                // Refresh templates if needed
                 if (templates.length === 0 && !isLoading) {
                   loadTemplates();
                 }
