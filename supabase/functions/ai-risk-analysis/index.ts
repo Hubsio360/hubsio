@@ -51,8 +51,15 @@ async function getCompanyInfo(companyName: string) {
   const prompt = `
     Agis comme un analyste de risques expérimenté. Tu dois rechercher et synthétiser des informations sur l'entreprise nommée "${companyName}".
     
+    Un processus métier est un ensemble d'activités coordonnées qui permettent à une entreprise de créer de la valeur pour ses clients. 
+    C'est une séquence d'étapes ou d'opérations qui contribuent à la réalisation des objectifs commerciaux de l'entreprise. 
+    Exemples de processus métier: gestion des commandes clients, recrutement de personnel, développement de nouveaux produits, etc.
+    
     1. Fournis une description concise de l'entreprise (secteur d'activité, taille, positionnement sur le marché)
-    2. Identifie les 5-7 processus métier clés de cette entreprise qui sont essentiels à son fonctionnement
+    2. Identifie 5-7 processus métier clés de cette entreprise qui sont essentiels à son fonctionnement
+       • Chaque processus doit être clairement identifiable et isolé
+       • Formule le nom de chaque processus de manière concise (2-5 mots)
+       • Utilise des verbes d'action (gestion, traitement, développement, etc.)
     
     Réponds au format JSON avec deux champs :
     - "description": une description détaillée de l'entreprise en 3-4 phrases

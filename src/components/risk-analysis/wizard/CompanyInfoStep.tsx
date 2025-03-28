@@ -9,7 +9,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, Search, ArrowRight } from 'lucide-react';
+import { Loader2, Search, ArrowRight, InfoIcon } from 'lucide-react';
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface CompanyInfoStepProps {
   companyInfo: {
@@ -94,9 +99,33 @@ export function CompanyInfoStep({
 
         {companyInfo.activities && (
           <div className="space-y-2">
-            <label htmlFor="company-activities" className="text-sm font-medium">
-              Activités et processus clés
-            </label>
+            <div className="flex items-center gap-2">
+              <label htmlFor="company-activities" className="text-sm font-medium">
+                Processus métier clés
+              </label>
+              <HoverCard>
+                <HoverCardTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
+                    <InfoIcon className="h-3 w-3" />
+                    <span className="sr-only">Info sur les processus métier</span>
+                  </Button>
+                </HoverCardTrigger>
+                <HoverCardContent className="w-80">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold">Qu'est-ce qu'un processus métier ?</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Un processus métier est un ensemble d'activités coordonnées qui permettent
+                      à une entreprise de créer de la valeur pour ses clients. C'est une séquence 
+                      d'étapes qui contribuent à la réalisation des objectifs commerciaux.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">Exemples :</span> Gestion des commandes clients, 
+                      Recrutement de personnel, Développement de produits, etc.
+                    </p>
+                  </div>
+                </HoverCardContent>
+              </HoverCard>
+            </div>
             <Textarea
               id="company-activities"
               value={companyInfo.activities}
