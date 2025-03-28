@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CornerDownRight } from 'lucide-react';
+import { Loader2, CornerDownRight, CheckCircle } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 
@@ -107,7 +107,7 @@ export function RiskScenariosStep({
           ) : (
             <>
               Terminer
-              <CornerDownRight className="ml-2 h-4 w-4" />
+              <CheckCircle className="ml-2 h-4 w-4" />
             </>
           )}
         </Button>

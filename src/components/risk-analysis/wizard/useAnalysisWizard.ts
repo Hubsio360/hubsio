@@ -38,6 +38,8 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
   const [businessProcesses, setBusinessProcesses] = useState<BusinessProcess[]>([]);
   const [suggestedScenarios, setSuggestedScenarios] = useState<SuggestedScenario[]>([]);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [generatingScenarios, setGeneratingScenarios] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   // Update company name
   const updateCompanyName = (name: string) => {
@@ -150,6 +152,24 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     setBusinessProcesses(businessProcesses.filter(process => process.id !== id));
   };
 
+  // Simuler la progression de génération
+  const simulateProgress = () => {
+    setGeneratingScenarios(true);
+    setGenerationProgress(0);
+    
+    const interval = setInterval(() => {
+      setGenerationProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(interval);
+          return prev;
+        }
+        return prev + 5;
+      });
+    }, 300);
+    
+    return () => clearInterval(interval);
+  };
+
   // Generate risk scenarios
   const generateRiskScenarios = async () => {
     if (businessProcesses.length === 0) {
@@ -162,6 +182,9 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     }
 
     setLoading(true);
+    // Lancer l'animation de progression
+    const stopProgress = simulateProgress();
+    
     try {
       console.log('Appel de la fonction Edge pour générer des scénarios');
       
@@ -189,14 +212,25 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
         throw new Error('Aucun scénario n\'a été généré. Veuillez réessayer ou affiner les processus métier.');
       }
 
-      setSuggestedScenarios(scenarios);
-      setLoading(false);
-      toast({
-        title: "Succès",
-        description: `${scenarios.length} scénarios de risque générés avec succès`,
-      });
+      // Compléter la progression à 100%
+      setGenerationProgress(100);
+      
+      // Attendre un court instant avant de passer à l'étape suivante
+      setTimeout(() => {
+        setSuggestedScenarios(scenarios);
+        setGeneratingScenarios(false);
+        setLoading(false);
+        setStep(3); // Avancer à l'étape 3 automatiquement
+        
+        toast({
+          title: "Succès",
+          description: `${scenarios.length} scénarios de risque générés avec succès`,
+        });
+      }, 500);
     } catch (error) {
       console.error("Erreur lors de la génération des scénarios:", error);
+      stopProgress();
+      setGeneratingScenarios(false);
       setLoading(false);
       toast({
         title: "Erreur",
@@ -304,6 +338,11 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
   const resetAndClose = () => {
     setStep(1);
     setConfirmDialogOpen(false);
+    
+    // Fermer toutes les modales de l'application
+    if (onComplete) {
+      onComplete();
+    }
   };
 
   // Go to next step
@@ -311,6 +350,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     if (step === 2) {
       // Before moving to step 3, generate scenarios
       await generateRiskScenarios();
+      return; // La navigation vers l'étape 3 se fait dans generateRiskScenarios()
     }
     
     if (step === 3) {
@@ -334,6 +374,8 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     businessProcesses,
     suggestedScenarios,
     confirmDialogOpen,
+    generatingScenarios,
+    generationProgress,
     updateCompanyName,
     updateCompanyDescription,
     updateCompanyActivities,
@@ -346,6 +388,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     resetAndClose,
     goToNextStep,
     goToPreviousStep,
-    setConfirmDialogOpen
+    setConfirmDialogOpen,
+    saveScenarios
   };
 }

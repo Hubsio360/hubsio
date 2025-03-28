@@ -49,20 +49,27 @@ async function getCompanyInfo(companyName: string) {
   console.log(`Fetching information for company: ${companyName}`);
 
   const prompt = `
-    Agis comme un analyste de risques expérimenté. Tu dois rechercher et synthétiser des informations sur l'entreprise nommée "${companyName}".
+    Agis comme un analyste de risques expérimenté disposant d'une vaste connaissance des entreprises et des processus métiers. 
+    
+    Ta mission est de rechercher et d'analyser en détail l'entreprise "${companyName}". Fais des recherches approfondies en te basant sur tes connaissances et en imaginant que tu as effectué des recherches en ligne pour cette entreprise spécifique.
     
     Un processus métier est un ensemble d'activités coordonnées qui permettent à une entreprise de créer de la valeur pour ses clients. 
     C'est une séquence d'étapes ou d'opérations qui contribuent à la réalisation des objectifs commerciaux de l'entreprise. 
     Exemples de processus métier: gestion des commandes clients, recrutement de personnel, développement de nouveaux produits, etc.
     
-    1. Fournis une description concise de l'entreprise (secteur d'activité, taille, positionnement sur le marché)
-    2. Identifie 5-7 processus métier clés de cette entreprise qui sont essentiels à son fonctionnement
+    1. Fournis une description détaillée de l'entreprise (secteur d'activité, taille, positionnement sur le marché, historique si pertinent)
+    
+    2. Identifie au moins 15 processus métier clés de cette entreprise qui sont essentiels à son fonctionnement
        • Chaque processus doit être clairement identifiable et isolé
        • Formule le nom de chaque processus de manière concise (2-5 mots)
        • Utilise des verbes d'action (gestion, traitement, développement, etc.)
+       • Couvre tous les aspects de l'entreprise: opérations, finance, marketing, RH, IT, etc.
+       • Sois très spécifique au secteur d'activité de l'entreprise
     
     Réponds au format JSON strict avec deux champs seulement:
-    {"description": "description détaillée de l'entreprise en 3-4 phrases", "activities": "liste à puces des processus métier clés (chaque élément commençant par un tiret \"-\")"}
+    {"description": "description détaillée de l'entreprise en 3-4 phrases", "activities": ["Processus 1", "Processus 2", ...]}
+    
+    IMPORTANT: Le champ "activities" doit être un tableau (array) de chaînes de caractères, PAS une chaîne de texte formatée.
   `;
 
   try {
@@ -75,7 +82,7 @@ async function getCompanyInfo(companyName: string) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un assistant spécialisé dans l\'analyse de risques et la cybersécurité.' },
+          { role: 'system', content: 'Tu es un assistant spécialisé dans l\'analyse de risques et la cybersécurité avec une vaste connaissance des entreprises et de leurs processus métier.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -125,7 +132,7 @@ async function getCompanyInfo(companyName: string) {
       console.warn('Falling back to manual text extraction');
       
       let description = '';
-      let activities = '';
+      let activities: string[] = [];
       
       // Extraction simple basée sur le texte
       if (content.includes('description') || content.includes('Description')) {
@@ -133,7 +140,10 @@ async function getCompanyInfo(companyName: string) {
       }
       
       if (content.includes('activités') || content.includes('processus') || content.includes('Activities')) {
-        activities = content.split(/activités.*?:|processus.*?:|activities.*?:/i)[1]?.trim() || '';
+        const activitiesText = content.split(/activités.*?:|processus.*?:|activities.*?:/i)[1]?.trim() || '';
+        activities = activitiesText.split('\n')
+          .filter(line => line.trim().startsWith('-'))
+          .map(line => line.trim().substring(1).trim());
       }
       
       return new Response(
@@ -154,20 +164,25 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
   const processesText = businessProcesses.map(p => `- ${p}`).join('\n');
   
   const prompt = `
-    En tant qu'expert en analyse de risques pour l'entreprise "${companyName}", génère 4 à 6 scénarios de risque pertinents 
+    En tant qu'expert en analyse de risques pour l'entreprise "${companyName}", génère au moins 15 scénarios de risque pertinents 
     pour les processus métier suivants:
     
     ${processesText}
     
     Pour chaque scénario:
-    1. Donne un titre court et descriptif
-    2. Fournis une description détaillée qui explique la nature du risque, ses causes potentielles et ses impacts
+    1. Donne un titre court et descriptif (5-10 mots maximum)
+    2. Fournis une description détaillée qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
+    3. Assure-toi que les scénarios couvrent un large éventail de risques: technologiques, opérationnels, humains, liés à la sécurité de l'information, etc.
+    4. Chaque scénario doit être réaliste et spécifique au contexte de l'entreprise et de ses processus métier
+    5. Évite les doublons et les descriptions trop génériques
     
-    Réponds au format JSON avec une liste d'objets, chacun ayant:
-    - "id": un identifiant unique (format "scenario-X")
-    - "name": le titre du scénario
+    Réponds au format JSON strict avec une liste d'objets, chacun ayant:
+    - "id": un identifiant unique (format "scenario-X" où X est un nombre)
+    - "name": le titre court du scénario
     - "description": la description détaillée
     - "selected": true (tous les scénarios seront présélectionnés)
+    
+    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre.
   `;
 
   try {
@@ -180,10 +195,11 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents.' },
+          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en JSON valide sans aucun texte supplémentaire.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -202,11 +218,28 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
     // Tenter de parser la réponse en JSON
     try {
       // Essayer d'abord de parser directement le contenu
-      const scenarios = JSON.parse(content);
-      return new Response(
-        JSON.stringify(scenarios),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const parsedContent = JSON.parse(content);
+      // S'assurer que nous avons un tableau de scénarios
+      const scenarios = parsedContent.scenarios || parsedContent;
+      
+      // Vérifier si scenarios est bien un tableau
+      if (Array.isArray(scenarios)) {
+        return new Response(
+          JSON.stringify(scenarios),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Si c'est un objet mais pas un tableau, chercher un tableau dedans
+        for (const key in parsedContent) {
+          if (Array.isArray(parsedContent[key])) {
+            return new Response(
+              JSON.stringify(parsedContent[key]),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+        throw new Error('Le format de réponse n\'est pas un tableau de scénarios');
+      }
     } catch (parseError) {
       // Si le parsing direct échoue, essayer de nettoyer le contenu
       console.warn('Could not parse OpenAI response as JSON directly, trying to clean the content:', parseError);
