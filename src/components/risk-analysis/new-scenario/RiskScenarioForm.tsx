@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -222,7 +221,7 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
               </div>
               
               {/* Risk Assessment Section */}
-              <RiskAssessmentSection form={form} />
+              <RiskAssessmentSection form={form} companyId={companyId} />
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button variant="outline" type="button">
