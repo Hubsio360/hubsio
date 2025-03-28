@@ -114,6 +114,7 @@ export const useCompanies = () => {
 
       setCompanies(prev => [...prev, newCompany]);
       
+      // Fix: Use Promise.resolve to ensure we have a full Promise object with catch method
       await Promise.resolve(fetchCompanies())
         .catch(error => {
           console.error('Error refreshing companies after add:', error);
