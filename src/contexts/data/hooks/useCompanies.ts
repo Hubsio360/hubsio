@@ -162,7 +162,7 @@ export const useCompanies = () => {
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
-              // Fix: Using proper Promise handling
+              // Fix: Using proper Promise handling for fetchCompanies
               Promise.resolve(fetchCompanies())
                 .then(() => {
                   resolve(enrichedCompany);
