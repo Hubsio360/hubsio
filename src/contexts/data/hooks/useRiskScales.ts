@@ -289,7 +289,8 @@ export const useRiskScales = () => {
         .from('risk_scale_types')
         .insert([{
           name,
-          description
+          description,
+          category: 'impact' // Default category
         }])
         .select()
         .single();
