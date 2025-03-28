@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
@@ -161,6 +162,7 @@ export const useCompanies = () => {
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
+              // Fix: Using proper Promise handling
               Promise.resolve(fetchCompanies())
                 .then(() => {
                   resolve(enrichedCompany);
