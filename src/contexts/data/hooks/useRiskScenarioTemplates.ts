@@ -2,11 +2,17 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface RiskScenarioTemplate {
+  id: string;
+  domain: string;
+  scenario_description: string;
+}
+
 export const useRiskScenarioTemplates = () => {
   const [loading, setLoading] = useState<boolean>(false);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<RiskScenarioTemplate[]>([]);
 
-  const fetchRiskScenarioTemplates = async () => {
+  const fetchRiskScenarioTemplates = async (): Promise<RiskScenarioTemplate[]> => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -16,11 +22,13 @@ export const useRiskScenarioTemplates = () => {
 
       if (error) {
         console.error('Error fetching risk scenario templates:', error);
+        setTemplates([]);
         return [];
       }
 
       if (!data || !Array.isArray(data)) {
         console.error('Invalid data format returned from supabase:', data);
+        setTemplates([]);
         return [];
       }
 
@@ -31,19 +39,20 @@ export const useRiskScenarioTemplates = () => {
         typeof template.id === 'string' && 
         typeof template.scenario_description === 'string' &&
         typeof template.domain === 'string'
-      );
+      ) as RiskScenarioTemplate[];
 
       setTemplates(validTemplates);
       return validTemplates;
     } catch (error) {
       console.error('Exception when fetching risk scenario templates:', error);
+      setTemplates([]);
       return [];
     } finally {
       setLoading(false);
     }
   };
 
-  const getRiskScenarioTemplatesByDomain = async (domain: string) => {
+  const getRiskScenarioTemplatesByDomain = async (domain: string): Promise<RiskScenarioTemplate[]> => {
     try {
       const { data, error } = await supabase
         .from('risk_scenarios_templates')
@@ -66,7 +75,7 @@ export const useRiskScenarioTemplates = () => {
         typeof template.id === 'string' && 
         typeof template.scenario_description === 'string' &&
         typeof template.domain === 'string'
-      );
+      ) as RiskScenarioTemplate[];
     } catch (error) {
       console.error('Exception when fetching risk scenario templates by domain:', error);
       return [];

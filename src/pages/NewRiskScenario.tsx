@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,9 +15,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ShieldAlert, Loader2 } from 'lucide-react';
 import { RiskLevel, RiskStatus, RiskScope } from '@/types';
 import ScenarioTemplateSelect from '@/components/risk-analysis/ScenarioTemplateSelect';
+import { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
@@ -50,6 +51,16 @@ const NewRiskScenario = () => {
     companies,
     createRiskScenario
   } = useData();
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Set loading to false after a short delay to ensure companies data has been loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [companies]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -99,7 +110,7 @@ const NewRiskScenario = () => {
     }
   };
 
-  const handleTemplateSelect = (template: any) => {
+  const handleTemplateSelect = (template: RiskScenarioTemplate) => {
     if (!template) return;
     
     // Extract scenario name - typically the first sentence or part before ":"
@@ -142,8 +153,19 @@ const NewRiskScenario = () => {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p>Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Find the company by ID using the companies array
-  const company = companies.find(company => company.id === id);
+  const company = companies?.find(company => company.id === id);
 
   if (!company) {
     return (

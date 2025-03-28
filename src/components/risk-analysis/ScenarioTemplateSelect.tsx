@@ -6,18 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, ChevronsUpDown, Sparkles } from 'lucide-react';
+import { Check, ChevronsUpDown, Sparkles, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
 
 interface ScenarioTemplateSelectProps {
   onSelect: (template: RiskScenarioTemplate) => void;
 }
 
-// Define a type for the risk scenario template
-interface RiskScenarioTemplate {
-  id: string;
+interface GroupedTemplate {
   domain: string;
-  scenario_description: string;
+  templates: RiskScenarioTemplate[];
 }
 
 const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelect }) => {
@@ -28,6 +27,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   const [templates, setTemplates] = useState<RiskScenarioTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [groupedTemplates, setGroupedTemplates] = useState<GroupedTemplate[]>([]);
 
   // Function to fetch templates
   const loadTemplates = async () => {
@@ -38,16 +38,8 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       const data = await fetchRiskScenarioTemplates();
       
       if (Array.isArray(data) && data.length > 0) {
-        const validTemplates = data.filter(
-          item => !!item && 
-            typeof item === 'object' && 
-            typeof item.id === 'string' && 
-            typeof item.scenario_description === 'string' &&
-            typeof item.domain === 'string'
-        );
-        
-        setTemplates(validTemplates);
-        console.log('Templates loaded successfully:', validTemplates.length);
+        setTemplates(data);
+        console.log('Templates loaded successfully:', data.length);
       } else {
         console.error('No valid templates returned:', data);
         setTemplates([]);
@@ -68,26 +60,23 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   }, []);
 
   // Filter templates based on search term
-  const filteredTemplates = React.useMemo(() => {
-    if (!Array.isArray(templates) || templates.length === 0) return [];
+  useEffect(() => {
+    if (!Array.isArray(templates) || templates.length === 0) {
+      setGroupedTemplates([]);
+      return;
+    }
     
-    return templates.filter(template => 
+    const filtered = templates.filter(template => 
+      template && 
       template.scenario_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.domain?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [templates, searchTerm]);
-
-  // Group templates by domain
-  const groupedTemplates = React.useMemo(() => {
-    if (!Array.isArray(filteredTemplates) || filteredTemplates.length === 0) {
-      return [];
-    }
     
     try {
       const groups: Record<string, RiskScenarioTemplate[]> = {};
       
       // First group templates by domain
-      for (const template of filteredTemplates) {
+      for (const template of filtered) {
         if (template && template.domain) {
           if (!groups[template.domain]) {
             groups[template.domain] = [];
@@ -97,18 +86,20 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       }
       
       // Convert to array and sort
-      return Object.entries(groups)
+      const groupedArray = Object.entries(groups)
         .sort(([a], [b]) => a.localeCompare(b))
-        .map(([domain, templates]) => ({
+        .map(([domain, domainTemplates]) => ({
           domain,
-          templates: templates.filter(t => t && t.id && t.scenario_description)
+          templates: domainTemplates.filter(t => t && t.id && t.scenario_description)
         }))
         .filter(group => group.templates.length > 0);
+      
+      setGroupedTemplates(groupedArray);
     } catch (error) {
       console.error('Error grouping templates:', error);
-      return [];
+      setGroupedTemplates([]);
     }
-  }, [filteredTemplates]);
+  }, [templates, searchTerm]);
 
   // Handle template selection
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
@@ -167,9 +158,21 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
           </PopoverTrigger>
           <PopoverContent className="w-[400px] p-0">
             {loadError ? (
-              <div className="py-6 text-center text-sm text-muted-foreground">{loadError}</div>
+              <div className="py-6 text-center text-sm text-muted-foreground flex flex-col items-center gap-2">
+                <span>{loadError}</span>
+                <Button variant="outline" size="sm" onClick={loadTemplates} className="mt-2">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Réessayer
+                </Button>
+              </div>
             ) : templates.length === 0 ? (
-              <div className="py-6 text-center text-sm">Chargement des modèles...</div>
+              <div className="py-6 text-center text-sm flex flex-col items-center gap-2">
+                Chargement des modèles...
+                <Button variant="outline" size="sm" onClick={loadTemplates} className="mt-2">
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Recharger
+                </Button>
+              </div>
             ) : (
               <Command>
                 <CommandInput 
