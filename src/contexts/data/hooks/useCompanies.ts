@@ -174,9 +174,10 @@ export const useCompanies = () => {
               setCompanies(newCompanies);
               
               // Rafraîchir la liste complète
-              // Fix: Convert PromiseLike to a proper Promise and handle it correctly
+              // Fix: Properly convert PromiseLike to an actual Promise with .catch support
               const fetchPromise = fetchCompanies();
-              // Use async/await in Promise executor to handle properly
+              
+              // Proper Promise handling with Promise.resolve()
               Promise.resolve(fetchPromise)
                 .then(() => {
                   resolve(enrichedCompany);
