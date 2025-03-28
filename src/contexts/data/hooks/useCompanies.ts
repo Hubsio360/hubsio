@@ -174,8 +174,9 @@ export const useCompanies = () => {
               setCompanies(newCompanies);
               
               // Rafraîchir la liste complète
-              // Fixed: Using Promise.resolve() to ensure it's a full Promise
-              Promise.resolve(fetchCompanies())
+              // Fix: Convert PromiseLike to a proper Promise and handle it correctly
+              const fetchPromise = fetchCompanies();
+              Promise.resolve(fetchPromise)
                 .then(() => {
                   resolve(enrichedCompany);
                 })
