@@ -53,6 +53,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [newScaleType, setNewScaleType] = useState<RiskScaleType | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [scaleToDelete, setScaleToDelete] = useState<string | null>(null);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   
   const {
     riskScaleTypes,
@@ -122,11 +123,16 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   // Handle saving the scale type details
   const onSubmitScaleForm = async (values: ScaleFormValues) => {
     if (newScaleType) {
-      await updateScaleType(newScaleType.id, values.name, values.description);
-      setNewScaleDialogOpen(false);
-      setNewScaleType(null);
-      // Refresh the data to reflect the changes
-      await refreshData();
+      setIsFormSubmitting(true);
+      try {
+        await updateScaleType(newScaleType.id, values.name, values.description);
+        setNewScaleDialogOpen(false);
+        setNewScaleType(null);
+        // Refresh the data to reflect the changes
+        await refreshData();
+      } finally {
+        setIsFormSubmitting(false);
+      }
     }
   };
 
@@ -149,6 +155,22 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const getLevelsForScale = (scaleId: string) => {
     const scale = companyRiskScales.find(s => s.id === scaleId);
     return scale?.levels || [];
+  };
+
+  // Empêcher la fermeture du dialogue pendant la soumission du formulaire
+  const handleDialogOpenChange = (open: boolean) => {
+    if (!open && isFormSubmitting) {
+      // Ne pas fermer le dialogue si le formulaire est en cours de soumission
+      return;
+    }
+    
+    if (!open && !isFormSubmitting) {
+      // Si l'utilisateur essaie de fermer le dialogue sans soumettre
+      setNewScaleDialogOpen(false);
+      setNewScaleType(null);
+    } else {
+      setNewScaleDialogOpen(open);
+    }
   };
 
   return (
@@ -259,7 +281,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
 
       <AlertDialog 
         open={newScaleDialogOpen} 
-        onOpenChange={setNewScaleDialogOpen}
+        onOpenChange={handleDialogOpenChange}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -330,6 +352,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               
               <AlertDialogFooter>
                 <AlertDialogCancel 
+                  type="button"
                   onClick={() => {
                     setNewScaleDialogOpen(false);
                     setNewScaleType(null);
@@ -337,9 +360,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                 >
                   Annuler
                 </AlertDialogCancel>
-                <AlertDialogAction type="submit">
-                  Enregistrer
-                </AlertDialogAction>
+                <Button type="submit" disabled={isFormSubmitting}>
+                  {isFormSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
               </AlertDialogFooter>
             </form>
           </Form>
