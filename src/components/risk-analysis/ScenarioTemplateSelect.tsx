@@ -53,7 +53,8 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
             !!item && 
             typeof item === 'object' && 
             typeof item.id === 'string' && 
-            typeof item.scenario_description === 'string'
+            typeof item.scenario_description === 'string' &&
+            typeof item.domain === 'string'
         );
         
         setTemplates(validTemplates);
@@ -91,23 +92,25 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   const groupedTemplates = useMemo(() => {
     if (!filteredTemplates || !filteredTemplates.length) return [];
     
-    const groups = filteredTemplates.reduce((acc, template) => {
-      // Make sure domain is not undefined before using it as a key
-      const domainKey = template.domain || 'Uncategorized';
-      if (!acc[domainKey]) {
-        acc[domainKey] = [];
+    const groups: Record<string, RiskScenarioTemplate[]> = {};
+    
+    // First create groups with valid domains only
+    for (const template of filteredTemplates) {
+      if (template && template.domain) {
+        const domainKey = template.domain;
+        if (!groups[domainKey]) {
+          groups[domainKey] = [];
+        }
+        groups[domainKey].push(template);
       }
-      acc[domainKey].push(template);
-      return acc;
-    }, {} as Record<string, RiskScenarioTemplate[]>);
-
-    // Create array of grouped templates, ensuring no undefined values
+    }
+    
+    // Create array of grouped templates
     return Object.entries(groups)
-      .filter(([domain]) => domain) // Filter out any undefined domains
       .sort(([domainA], [domainB]) => domainA.localeCompare(domainB))
       .map(([domain, domainTemplates]) => ({ 
         domain, 
-        templates: domainTemplates.filter(t => t && t.id && t.scenario_description) // Ensure valid templates only
+        templates: domainTemplates.filter(t => t && t.id && t.scenario_description) 
       }))
       .filter(group => group.templates.length > 0); // Only include groups with templates
   }, [filteredTemplates]);
@@ -168,19 +171,22 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[400px] p-0">
-            <Command>
-              <CommandInput 
-                placeholder="Rechercher un modèle..." 
-                value={searchTerm}
-                onValueChange={setSearchTerm}
-              />
-              {loadError ? (
-                <div className="py-6 text-center text-sm text-muted-foreground">{loadError}</div>
-              ) : (
-                <>
+            {loadError ? (
+              <div className="py-6 text-center text-sm text-muted-foreground">{loadError}</div>
+            ) : templates.length === 0 ? (
+              <div className="py-6 text-center text-sm">Chargement des modèles...</div>
+            ) : (
+              <Command>
+                <CommandInput 
+                  placeholder="Rechercher un modèle..." 
+                  value={searchTerm}
+                  onValueChange={setSearchTerm}
+                />
+                {!groupedTemplates || groupedTemplates.length === 0 ? (
                   <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
-                  {groupedTemplates && groupedTemplates.length > 0 ? (
-                    groupedTemplates.map((group) => (
+                ) : (
+                  <>
+                    {groupedTemplates.map((group) => (
                       <CommandGroup key={`group-${group.domain}`} heading={group.domain}>
                         {group.templates.map((template) => (
                           <CommandItem
@@ -198,15 +204,11 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
                           </CommandItem>
                         ))}
                       </CommandGroup>
-                    ))
-                  ) : (
-                    <div className="py-6 text-center text-sm">
-                      {templates.length > 0 ? "Aucun résultat pour cette recherche" : "Chargement des modèles..."}
-                    </div>
-                  )}
-                </>
-              )}
-            </Command>
+                    ))}
+                  </>
+                )}
+              </Command>
+            )}
           </PopoverContent>
         </Popover>
       </CardContent>
