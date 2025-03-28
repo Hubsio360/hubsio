@@ -24,7 +24,7 @@ export const SYSTEM_THEME_NAMES = ['ADMIN', 'Cloture'];
  */
 export const isDuringLunch = (time: Date): boolean => {
   const hour = time.getHours();
-  return hour === LUNCH_BREAK_START;
+  return hour >= LUNCH_BREAK_START && hour < LUNCH_BREAK_END;
 };
 
 /**
@@ -63,11 +63,16 @@ export const getNextTimeSlot = (
     setMinutes(nextTime, BREAK_DURATION);
   }
   
-  // Si nous sommes maintenant dans la pause déjeuner
-  if (isDuringLunch(nextTime) || (isDuringLunch(currentTime) && nextTime.getHours() < LUNCH_BREAK_END)) {
-    nextTime = new Date(nextTime);
+  // Si nous sommes maintenant dans la pause déjeuner ou si l'entretien chevauche la pause déjeuner
+  if (isDuringLunch(nextTime) || (currentTime.getHours() < LUNCH_BREAK_START && nextTime.getHours() >= LUNCH_BREAK_START)) {
+    nextTime = new Date(currentTime);
     setHours(nextTime, LUNCH_BREAK_END);
     setMinutes(nextTime, 0);
+    // Ajuster le temps alloué pour tenir compte de la pause déjeuner
+    if (currentTime.getHours() < LUNCH_BREAK_START) {
+      const timeBeforeLunch = (LUNCH_BREAK_START - currentTime.getHours()) * 60 - currentTime.getMinutes();
+      newMinutesScheduled = timeBeforeLunch;
+    }
   }
   
   // Si nous sommes maintenant dans la pause de 16h
@@ -79,7 +84,8 @@ export const getNextTimeSlot = (
   
   // Si nous avons dépassé la limite idéale de minutes par jour ou si nous sommes en fin de journée
   if ((newMinutesScheduled > idealMinutesPerDay && newDayIndex < sortedDays.length - 1) || 
-      nextTime.getHours() >= WORKING_DAY_END) {
+      nextTime.getHours() >= WORKING_DAY_END || 
+      (nextTime.getHours() === WORKING_DAY_END - 1 && nextTime.getMinutes() > 0)) {
     newDayIndex++;
     
     // Si nous avons utilisé tous les jours sélectionnés
@@ -242,6 +248,33 @@ export const generatePreviewInterviews = (
         
         setHours(currentTime, LUNCH_BREAK_END);
         setMinutes(currentTime, 0);
+        // Réinitialiser le compteur de minutes pour l'après-midi
+        minutesScheduledToday = 0;
+      }
+      
+      // Vérifier si l'entretien chevauche la pause déjeuner
+      const endTime = new Date(currentTime);
+      endTime.setMinutes(endTime.getMinutes() + duration);
+      
+      if (currentTime.getHours() < LUNCH_BREAK_START && endTime.getHours() >= LUNCH_BREAK_START) {
+        // L'entretien chevauche la pause déjeuner, il faut le décaler après
+        const lunchTime = new Date(currentTime);
+        setHours(lunchTime, LUNCH_BREAK_START);
+        setMinutes(lunchTime, 0);
+        
+        interviewsToPreview.push({
+          title: "Pause déjeuner",
+          description: "Pause d'une heure",
+          startTime: lunchTime.toISOString(),
+          durationMinutes: LUNCH_DURATION,
+          location: "Restaurant d'entreprise",
+        });
+        
+        // Décaler l'entretien après le déjeuner
+        setHours(currentTime, LUNCH_BREAK_END);
+        setMinutes(currentTime, 0);
+        // Réinitialiser le compteur de minutes pour l'après-midi
+        minutesScheduledToday = 0;
       }
       
       // Vérifier la pause de l'après-midi
@@ -288,6 +321,21 @@ export const generatePreviewInterviews = (
           durationMinutes: BREAK_DURATION,
           location: "Salle de pause",
         });
+      }
+      
+      // S'assurer que nous ne planifions pas après les heures de bureau
+      if (currentTime.getHours() >= WORKING_DAY_END) {
+        currentDayIndex++;
+        
+        if (currentDayIndex >= sortedDays.length) {
+          // Revenir au premier jour pour la prévisualisation
+          currentDayIndex = 0;
+        }
+        
+        currentTime = new Date(sortedDays[currentDayIndex]);
+        setHours(currentTime, WORKING_DAY_START);
+        setMinutes(currentTime, 0);
+        minutesScheduledToday = 0;
       }
       
       // Créer l'entretien
@@ -367,3 +415,4 @@ export const generatePreviewInterviews = (
     return [];
   }
 };
+

@@ -19,7 +19,7 @@ const LUNCH_DURATION = 60; // 60 minutes
  */
 const isDuringLunch = (time: Date): boolean => {
   const hour = time.getHours();
-  return hour === LUNCH_BREAK_START;
+  return hour >= LUNCH_BREAK_START && hour < LUNCH_BREAK_END;
 };
 
 /**
@@ -58,11 +58,10 @@ const checkTopicExists = async (topicId: string): Promise<boolean> => {
 /**
  * Fonction utilitaire pour créer un topic temporaire si nécessaire
  */
-const createTemporaryTopic = async (auditId: string, themeId: string): Promise<string | null> => {
+const createTemporaryTopic = async (themeId: string): Promise<string | null> => {
   try {
     console.log(`Création d'un topic temporaire pour thème ${themeId}`);
     
-    // Corrigé : Inclure uniquement les propriétés valides pour la table audit_topics
     // Ne pas inclure audit_id car cette colonne n'existe pas dans la table
     const { data, error } = await supabase
       .from('audit_topics')
@@ -160,7 +159,7 @@ export const generatePlanSchedule = async (
     console.log(`Création d'une réunion d'ouverture le ${firstDay.toISOString()}`);
     
     // Créer un topic spécifique pour la réunion d'ouverture
-    const openingTopicId = await createTemporaryTopic(auditId, "opening");
+    const openingTopicId = await createTemporaryTopic("opening");
     
     if (!openingTopicId) {
       console.error("Impossible de créer un topic pour la réunion d'ouverture");
@@ -202,6 +201,27 @@ export const generatePlanSchedule = async (
     
     console.log(`Planification de ${topicIds.length} entretiens thématiques à partir de ${currentTime.toISOString()}`);
     
+    // Ajouter une pause café à 10h le premier jour
+    const morningBreakTime = new Date(sortedDays[currentDayIndex]);
+    setHours(morningBreakTime, MORNING_BREAK_TIME);
+    setMinutes(morningBreakTime, 0);
+    
+    // Créer un topic pour la pause café
+    const breakTopicId = await createTemporaryTopic("break");
+    
+    if (breakTopicId) {
+      dbInterviewsToCreate.push({
+        audit_id: auditId,
+        title: "Pause café",
+        description: "Pause de 15 minutes",
+        start_time: morningBreakTime.toISOString(),
+        duration_minutes: BREAK_DURATION,
+        location: "Salle de pause",
+        meeting_link: null,
+        topic_id: breakTopicId
+      });
+    }
+    
     // Traiter chaque thématique/topic
     for (const topicId of topicIds) {
       try {
@@ -216,7 +236,7 @@ export const generatePlanSchedule = async (
         // Si le topic n'existe pas, il s'agit peut-être d'un ID de thème
         if (!topicExists) {
           console.log(`Le topic ${topicId} n'existe pas, création d'un topic temporaire`);
-          const tempTopicId = await createTemporaryTopic(auditId, topicId);
+          const tempTopicId = await createTemporaryTopic(topicId);
           
           if (!tempTopicId) {
             console.error(`Impossible de créer un topic temporaire pour ${topicId}, on ignore cette thématique`);
@@ -227,46 +247,20 @@ export const generatePlanSchedule = async (
           console.log(`Topic temporaire créé: ${actualTopicId} pour remplacer ${topicId}`);
         }
         
-        // Vérifier s'il reste assez de temps aujourd'hui
-        const timeAfterInterview = addMinutes(new Date(currentTime), duration);
-        
         // Cas spéciaux: pause café de 10h
         if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() === 0) {
-          console.log(`Ajout d'une pause café à 10h`);
-          
-          // Créer un topic pour la pause
-          const breakTopicId = await createTemporaryTopic(auditId, "break");
-          
-          if (!breakTopicId) {
-            console.error("Impossible de créer un topic pour la pause café");
-            // On continue quand même
-          } else {
-            dbInterviewsToCreate.push({
-              audit_id: auditId,
-              title: "Pause café",
-              description: "Pause de 15 minutes",
-              start_time: new Date(currentTime).toISOString(),
-              duration_minutes: BREAK_DURATION,
-              location: "Salle de pause",
-              meeting_link: null,
-              topic_id: breakTopicId
-            });
-          }
-          
+          console.log(`On saute la pause café de 10h car déjà programmée`);
           currentTime = addMinutes(currentTime, BREAK_DURATION);
         }
         
         // Cas spéciaux: déjeuner
-        if (isDuringLunch(currentTime) || isDuringLunch(timeAfterInterview)) {
-          console.log(`Ajout d'une pause déjeuner`);
+        if (isDuringLunch(currentTime)) {
+          console.log(`Ajout d'une pause déjeuner automatique`);
           
           // Créer un topic pour le déjeuner
-          const lunchTopicId = await createTemporaryTopic(auditId, "lunch");
+          const lunchTopicId = await createTemporaryTopic("lunch");
           
-          if (!lunchTopicId) {
-            console.error("Impossible de créer un topic pour le déjeuner");
-            // On continue quand même
-          } else {
+          if (lunchTopicId) {
             dbInterviewsToCreate.push({
               audit_id: auditId,
               title: "Pause déjeuner",
@@ -282,6 +276,40 @@ export const generatePlanSchedule = async (
           currentTime = new Date(currentTime);
           setHours(currentTime, LUNCH_BREAK_END);
           setMinutes(currentTime, 0);
+          minutesScheduledToday = 0; // Réinitialiser pour l'après-midi
+        }
+        
+        // Vérifier si l'entretien chevauche la pause déjeuner
+        const endTime = new Date(currentTime);
+        endTime.setMinutes(endTime.getMinutes() + duration);
+        
+        if (currentTime.getHours() < LUNCH_BREAK_START && endTime.getHours() >= LUNCH_BREAK_START) {
+          console.log(`L'entretien chevauche la pause déjeuner, on programme une pause déjeuner`);
+          
+          // Créer un topic pour le déjeuner
+          const lunchTopicId = await createTemporaryTopic("lunch");
+          
+          if (lunchTopicId) {
+            const lunchTime = new Date(currentTime);
+            setHours(lunchTime, LUNCH_BREAK_START);
+            setMinutes(lunchTime, 0);
+            
+            dbInterviewsToCreate.push({
+              audit_id: auditId,
+              title: "Pause déjeuner",
+              description: "Pause d'une heure",
+              start_time: lunchTime.toISOString(),
+              duration_minutes: LUNCH_DURATION,
+              location: "Restaurant d'entreprise",
+              meeting_link: null,
+              topic_id: lunchTopicId
+            });
+          }
+          
+          currentTime = new Date(currentTime);
+          setHours(currentTime, LUNCH_BREAK_END);
+          setMinutes(currentTime, 0);
+          minutesScheduledToday = 0; // Réinitialiser pour l'après-midi
         }
         
         // Cas spéciaux: pause café de l'après-midi
@@ -289,12 +317,9 @@ export const generatePlanSchedule = async (
           console.log(`Ajout d'une pause café à 16h`);
           
           // Créer un topic pour la pause
-          const breakTopicId = await createTemporaryTopic(auditId, "break");
+          const breakTopicId = await createTemporaryTopic("break");
           
-          if (!breakTopicId) {
-            console.error("Impossible de créer un topic pour la pause café");
-            // On continue quand même
-          } else {
+          if (breakTopicId) {
             dbInterviewsToCreate.push({
               audit_id: auditId,
               title: "Pause café",
@@ -327,10 +352,42 @@ export const generatePlanSchedule = async (
           setMinutes(currentTime, 0);
           minutesScheduledToday = 0;
           
-          // Si c'est 9h, vérifiez à nouveau pour les pauses
-          if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() === 0) {
-            currentTime = addMinutes(currentTime, BREAK_DURATION);
+          // Ajouter une pause café pour ce nouveau jour
+          const morningBreakNewDay = new Date(sortedDays[currentDayIndex]);
+          setHours(morningBreakNewDay, MORNING_BREAK_TIME);
+          setMinutes(morningBreakNewDay, 0);
+          
+          const newDayBreakTopicId = await createTemporaryTopic("break");
+          
+          if (newDayBreakTopicId) {
+            dbInterviewsToCreate.push({
+              audit_id: auditId,
+              title: "Pause café",
+              description: "Pause de 15 minutes",
+              start_time: morningBreakNewDay.toISOString(),
+              duration_minutes: BREAK_DURATION,
+              location: "Salle de pause",
+              meeting_link: null,
+              topic_id: newDayBreakTopicId
+            });
           }
+        }
+        
+        // S'assurer que le planning est toujours dans les heures de bureau
+        if (currentTime.getHours() < WORKING_DAY_START) {
+          currentTime = new Date(currentTime);
+          setHours(currentTime, WORKING_DAY_START);
+          setMinutes(currentTime, 0);
+        } else if (currentTime.getHours() >= WORKING_DAY_END) {
+          // Si nous sommes en fin de journée, passer au jour suivant
+          currentDayIndex++;
+          if (currentDayIndex >= sortedDays.length) {
+            currentDayIndex = 0;
+          }
+          currentTime = new Date(sortedDays[currentDayIndex]);
+          setHours(currentTime, WORKING_DAY_START);
+          setMinutes(currentTime, 0);
+          minutesScheduledToday = 0;
         }
         
         // Créer l'entretien thématique
@@ -350,9 +407,34 @@ export const generatePlanSchedule = async (
           topic_id: actualTopicId // Utiliser l'ID de topic valide
         });
         
-        // Mettre à jour le temps et les minutes programmées aujourd'hui
+        // Mettre à jour le temps et les minutes programmées
         currentTime = addMinutes(new Date(currentTime), duration);
         minutesScheduledToday += duration;
+        
+        // Si nous approchons de la pause de l'après-midi, l'ajouter
+        if (currentDayIndex === currentDayIndex && // Si on est toujours sur le même jour
+            currentTime.getHours() === AFTERNOON_BREAK_TIME && // Et qu'on est à 16h
+            currentTime.getMinutes() === 0) { // Et qu'on est à 0 minute
+          
+          const afternoonBreakTopicId = await createTemporaryTopic("break");
+          
+          if (afternoonBreakTopicId) {
+            console.log(`Ajout d'une pause café à 16h`);
+            
+            dbInterviewsToCreate.push({
+              audit_id: auditId,
+              title: "Pause café",
+              description: "Pause de 15 minutes",
+              start_time: new Date(currentTime).toISOString(),
+              duration_minutes: BREAK_DURATION,
+              location: "Salle de pause",
+              meeting_link: null,
+              topic_id: afternoonBreakTopicId
+            });
+            
+            currentTime = addMinutes(new Date(currentTime), BREAK_DURATION);
+          }
+        }
       } catch (topicError) {
         console.error(`Erreur lors du traitement du topic ${topicId}:`, topicError);
         // Continuer avec le topic suivant
@@ -367,7 +449,7 @@ export const generatePlanSchedule = async (
     console.log(`Création d'une réunion de clôture le ${lastDay.toISOString()}`);
     
     // Créer un topic spécifique pour la réunion de clôture
-    const closingTopicId = await createTemporaryTopic(auditId, "closing");
+    const closingTopicId = await createTemporaryTopic("closing");
     
     if (!closingTopicId) {
       console.error("Impossible de créer un topic pour la réunion de clôture");
@@ -431,4 +513,3 @@ export const checkAuditHasPlan = async (auditId: string): Promise<boolean> => {
     return false;
   }
 };
-
