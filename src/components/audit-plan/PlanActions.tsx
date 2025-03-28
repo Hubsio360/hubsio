@@ -6,27 +6,19 @@ import { CheckIcon, Loader2 } from 'lucide-react';
 
 interface PlanActionsProps {
   generating: boolean;
-  selectedTopicIds: string[];
-  selectedDays: string[];
-  businessDays: number;
+  isValid: boolean;
+  totalInterviews: number;
   requiredDays: number;
-  interviewsCount: number;
-  totalHours: number;
-  maxHoursPerDay: number;
-  hasOpeningClosing: boolean;
+  selectedDays: number;
   onGeneratePlan: () => void;
 }
 
 const PlanActions: React.FC<PlanActionsProps> = ({
   generating,
-  selectedTopicIds,
-  selectedDays,
-  businessDays,
+  isValid,
+  totalInterviews,
   requiredDays,
-  interviewsCount,
-  totalHours,
-  maxHoursPerDay,
-  hasOpeningClosing,
+  selectedDays,
   onGeneratePlan
 }) => {
   return (
@@ -35,13 +27,13 @@ const PlanActions: React.FC<PlanActionsProps> = ({
         <div className="p-3 bg-muted/50 rounded-md">
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-medium">État du plan</div>
-            <div className={`text-xs px-2 py-1 rounded-full ${businessDays >= requiredDays ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
-              {businessDays >= requiredDays ? 'Valide' : 'Incomplet'}
+            <div className={`text-xs px-2 py-1 rounded-full ${selectedDays >= requiredDays ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'}`}>
+              {selectedDays >= requiredDays ? 'Valide' : 'Incomplet'}
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {businessDays < requiredDays 
-              ? `Il vous manque ${requiredDays - businessDays} jour(s) pour couvrir toutes les thématiques sélectionnées.`
+            {selectedDays < requiredDays 
+              ? `Il vous manque ${requiredDays - selectedDays} jour(s) pour couvrir toutes les thématiques sélectionnées.`
               : "Toutes les thématiques peuvent être couvertes dans les jours sélectionnés."}
           </p>
         </div>
@@ -49,12 +41,7 @@ const PlanActions: React.FC<PlanActionsProps> = ({
       <CardFooter>
         <Button 
           onClick={onGeneratePlan} 
-          disabled={
-            generating || 
-            selectedTopicIds.length === 0 || 
-            selectedDays.length === 0 ||
-            selectedDays.length < requiredDays
-          }
+          disabled={generating || !isValid}
           className="w-full"
         >
           {generating ? (

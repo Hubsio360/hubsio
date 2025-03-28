@@ -3,26 +3,34 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, AlertCircle, Clock, Calendar as CalendarIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { AuditTheme } from '@/types';
 
 interface PlanSummaryProps {
-  businessDays: number;
-  requiredDays: number;
-  topicsCount: number;
-  interviewsCount: number;
+  selectedTopicIds: string[];
+  themes: AuditTheme[];
+  themeDurations: Record<string, number>;
+  selectedDays: string[];
   totalHours: number;
-  maxHoursPerDay: number;
-  hasOpeningClosing: boolean;
+  totalInterviews: number;
+  requiredDays: number;
+  availableHoursPerDay: number;
+  previewInterviews: Partial<any>[];
 }
 
 const PlanSummary: React.FC<PlanSummaryProps> = ({
-  businessDays,
-  requiredDays,
-  topicsCount,
-  interviewsCount,
+  selectedTopicIds,
+  themes,
+  selectedDays,
   totalHours,
-  maxHoursPerDay,
-  hasOpeningClosing
+  totalInterviews,
+  requiredDays,
+  availableHoursPerDay,
+  previewInterviews
 }) => {
+  // Calculate the number of business days
+  const businessDays = selectedDays.length;
+  const topicsCount = selectedTopicIds.length;
+  const hasOpeningClosing = true;
   const isValid = businessDays >= requiredDays && topicsCount > 0;
   
   return (
@@ -71,7 +79,7 @@ const PlanSummary: React.FC<PlanSummaryProps> = ({
         
         <div className="flex items-center justify-between">
           <span>Total entretiens</span>
-          <span className="font-medium">{interviewsCount}</span>
+          <span className="font-medium">{totalInterviews}</span>
         </div>
         
         <div className="flex items-center justify-between">
