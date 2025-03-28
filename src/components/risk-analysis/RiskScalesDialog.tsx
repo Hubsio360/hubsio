@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Plus } from 'lucide-react';
 import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
+import { RiskScaleType } from '@/types';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -42,22 +43,27 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     refreshData
   } = useRiskScalesManager(companyId);
 
+  // Helper function to get scaleTypeId regardless of naming convention
+  const getScaleTypeId = (scale: any): string => {
+    return scale.scaleTypeId || scale.scale_type_id || '';
+  };
+
   // Filter risk scale types that haven't been added to the company yet
   const availableScaleTypes = riskScaleTypes.filter(
-    (type) => !companyRiskScales.some((scale) => scale.scale_type_id === type.id)
+    (type) => !companyRiskScales.some((scale) => getScaleTypeId(scale) === type.id)
   );
 
   // Group company risk scales by type
   const impactScales = companyRiskScales.filter(
     (scale) => {
-      const scaleType = riskScaleTypes.find(type => type.id === scale.scale_type_id);
+      const scaleType = getScaleType(getScaleTypeId(scale));
       return scaleType && !scaleType.name.includes('likelihood');
     }
   );
   
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
-      const scaleType = riskScaleTypes.find(type => type.id === scale.scale_type_id);
+      const scaleType = getScaleType(getScaleTypeId(scale));
       return scaleType && scaleType.name.includes('likelihood');
     }
   );
@@ -71,7 +77,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   };
 
   // Get scale type details
-  const getScaleType = (scaleTypeId: string) => {
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
     return riskScaleTypes.find(type => type.id === scaleTypeId) || {
       id: '',
       name: 'Type inconnu',
@@ -139,7 +145,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                     <RiskScaleCard
                       key={scale.id}
                       companyScale={scale}
-                      scaleType={getScaleType(scale.scale_type_id)}
+                      scaleType={getScaleType(getScaleTypeId(scale))}
                       levels={getLevelsForScale(scale.id)}
                       isLoading={isLoading}
                       onToggleActive={toggleActive}
@@ -163,7 +169,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                     <RiskScaleCard
                       key={scale.id}
                       companyScale={scale}
-                      scaleType={getScaleType(scale.scale_type_id)}
+                      scaleType={getScaleType(getScaleTypeId(scale))}
                       levels={getLevelsForScale(scale.id)}
                       isLoading={isLoading}
                       onToggleActive={toggleActive}

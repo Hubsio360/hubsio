@@ -55,9 +55,19 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
   // Get color for risk level
   const getLevelColor = (level: RiskScaleLevel) => {
     return level.color || 
-      (level.level_value === 1 ? "#4CAF50" : 
-       level.level_value === 2 ? "#FFA726" : 
-       level.level_value === 3 ? "#9C27B0" : "#F44336");
+      (getLevelValue(level) === 1 ? "#4CAF50" : 
+       getLevelValue(level) === 2 ? "#FFA726" : 
+       getLevelValue(level) === 3 ? "#9C27B0" : "#F44336");
+  };
+
+  // Helper function to get the level value regardless of naming convention
+  const getLevelValue = (level: RiskScaleLevel): number => {
+    return level.levelValue !== undefined ? level.levelValue : (level.level_value || 0);
+  };
+
+  // Helper function to get isActive status regardless of naming convention
+  const getIsActive = (scale: CompanyRiskScale): boolean => {
+    return scale.isActive !== undefined ? scale.isActive : (scale.is_active || false);
   };
 
   if (isLoading) {
@@ -92,14 +102,14 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
         <CardTitle className="flex justify-between items-center">
           <span>{scaleType.name}</span>
           <Switch 
-            checked={companyScale.is_active} 
-            onCheckedChange={() => onToggleActive(companyScale.id, companyScale.is_active)}
+            checked={getIsActive(companyScale)} 
+            onCheckedChange={() => onToggleActive(companyScale.id, getIsActive(companyScale))}
           />
         </CardTitle>
         <CardDescription>{scaleType.description}</CardDescription>
       </CardHeader>
       <CardContent>
-        {levels.sort((a, b) => a.level_value - b.level_value).map((level) => (
+        {levels.sort((a, b) => getLevelValue(a) - getLevelValue(b)).map((level) => (
           <div key={level.id} className="mb-4 border-b pb-3 last:border-b-0">
             <div className="flex items-center gap-2 mb-2">
               <div 

@@ -70,6 +70,16 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales]);
 
+  // Helper function to get companyId regardless of naming convention
+  const getCompanyId = (scale: CompanyRiskScale): string => {
+    return scale.companyId || scale.company_id || '';
+  };
+
+  // Helper function to get scaleTypeId regardless of naming convention
+  const getScaleTypeId = (scale: CompanyRiskScale): string => {
+    return scale.scaleTypeId || scale.scale_type_id || '';
+  };
+
   // Handle scale creation with error handling for duplicate entries
   const handleAddScale = useCallback(async (scaleTypeId: string) => {
     if (!companyId) return;
@@ -77,7 +87,7 @@ export const useRiskScalesManager = (companyId: string) => {
     try {
       // Check if this combination already exists to prevent duplicate key error
       const existingScale = companyRiskScales.find(
-        (scale) => scale.company_id === companyId && scale.scale_type_id === scaleTypeId
+        (scale) => getCompanyId(scale) === companyId && getScaleTypeId(scale) === scaleTypeId
       );
       
       if (existingScale) {
@@ -89,11 +99,8 @@ export const useRiskScalesManager = (companyId: string) => {
         return;
       }
       
-      await addCompanyRiskScale({
-        companyId,
-        scaleTypeId,
-        isActive: true
-      });
+      // Use an empty array for levels since they will be created by the backend
+      await addCompanyRiskScale(companyId, scaleTypeId, []);
       
       await refreshData();
       
@@ -116,7 +123,11 @@ export const useRiskScalesManager = (companyId: string) => {
     try {
       // Optimistic update for UI responsiveness
       const updatedScales = companyRiskScales.map(scale => 
-        scale.id === scaleId ? { ...scale, is_active: !isActive } : scale
+        scale.id === scaleId ? { 
+          ...scale, 
+          isActive: !isActive,
+          is_active: !isActive  // Update both property formats
+        } : scale
       );
       setCachedScales(updatedScales);
       
@@ -157,16 +168,16 @@ export const useRiskScalesManager = (companyId: string) => {
 
   // Update cache when data changes
   useEffect(() => {
-    if (!loading.companyRiskScales && !loading.scaleTypes) {
+    if (!loading.companyRiskScales && !loading.riskScaleTypes) {
       setCachedScales(companyRiskScales);
       setCachedTypes(riskScaleTypes);
     }
-  }, [companyRiskScales, riskScaleTypes, loading.companyRiskScales, loading.scaleTypes]);
+  }, [companyRiskScales, riskScaleTypes, loading.companyRiskScales, loading.riskScaleTypes]);
 
   return {
     riskScaleTypes: cachedTypes,
     companyRiskScales: cachedScales,
-    isLoading: isInitialLoading || loading.companyRiskScales || loading.scaleTypes,
+    isLoading: isInitialLoading || loading.companyRiskScales || loading.riskScaleTypes,
     isRefreshing,
     error,
     addScale: handleAddScale,
