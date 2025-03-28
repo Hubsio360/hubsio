@@ -114,7 +114,7 @@ export function CompanyInfoStep({
         </Button>
         <Button 
           onClick={onNext}
-          disabled={!companyInfo.description || !companyInfo.activities}
+          disabled={!companyInfo.description}
         >
           Suivant
           <ArrowRight className="ml-2 h-4 w-4" />
