@@ -34,31 +34,48 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   const [templates, setTemplates] = useState<RiskScenarioTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const loadTemplates = async () => {
-      setIsLoading(true);
-      try {
-        const data = await fetchRiskScenarioTemplates();
-        setTemplates(data as RiskScenarioTemplate[] || []);
-      } catch (error) {
-        console.error('Error loading scenario templates:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Use a stable reference for the loadTemplates function
+  const loadTemplates = async () => {
+    if (!isLoading && templates.length > 0) return; // Avoid unnecessary fetches
     
-    loadTemplates();
-  }, [fetchRiskScenarioTemplates]);
+    setIsLoading(true);
+    try {
+      const data = await fetchRiskScenarioTemplates();
+      // Ensure we have an array of templates with the correct type
+      if (Array.isArray(data)) {
+        setTemplates(data as RiskScenarioTemplate[]);
+        console.log('Templates loaded successfully:', data.length);
+      } else {
+        console.error('Unexpected data format for templates:', data);
+        setTemplates([]);
+      }
+    } catch (error) {
+      console.error('Error loading scenario templates:', error);
+      setTemplates([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Only fetch templates once on mount
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  // Memoize filtered templates to prevent unnecessary recalculations
   const filteredTemplates = useMemo(() => {
+    if (!templates.length) return [];
+    
     return templates.filter(template => 
-      template.scenario_description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      template.domain.toLowerCase().includes(searchTerm.toLowerCase())
+      template.scenario_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      template.domain?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [templates, searchTerm]);
 
-  // Group templates by domain, sorted alphabetically
+  // Group templates by domain, sorted alphabetically - also memoized
   const groupedTemplates = useMemo(() => {
+    if (!filteredTemplates.length) return [];
+    
     const groups = filteredTemplates.reduce((acc, template) => {
       if (!acc[template.domain]) {
         acc[template.domain] = [];
@@ -78,8 +95,19 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     onSelect(template);
   };
 
+  // Show a skeleton while loading, with a key to prevent flickering
   if (isLoading) {
-    return <Skeleton className="h-10 w-full" />;
+    return (
+      <Card key="loading-skeleton">
+        <CardHeader>
+          <Skeleton className="h-6 w-3/4 mb-2" />
+          <Skeleton className="h-4 w-5/6" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
