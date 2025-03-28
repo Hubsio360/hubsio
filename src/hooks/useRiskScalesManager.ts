@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -160,21 +161,25 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, addRiskScaleType, addCompanyRiskScale, refreshData, toast]);
 
-  const handleDeleteScale = useCallback(async (scaleId: string) => {
+  const handleDeleteScale = useCallback(async (scaleId: string): Promise<boolean> => {
     try {
       console.log("Deleting scale:", scaleId);
       
+      // Optimistically update UI
       setCachedScales(prev => prev.filter(scale => scale.id !== scaleId));
       
+      // Actual API call
       const result = await deleteRiskScale(scaleId);
       console.log("Delete result from API:", result);
       
+      // Refresh data regardless of result to ensure consistency
       await refreshData();
       
       return true;
     } catch (err) {
       console.error('Error deleting risk scale:', err);
-      refreshData();
+      // Refresh to restore state in case of error
+      await refreshData();
       return false;
     }
   }, [deleteRiskScale, refreshData]);

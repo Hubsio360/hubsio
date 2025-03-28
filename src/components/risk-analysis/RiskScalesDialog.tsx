@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -6,16 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -240,7 +231,10 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                           variant="destructive"
                           size="sm"
                           className="absolute top-3 right-3 z-10"
-                          onClick={() => handleDeleteScale(scale.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteScale(scale.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -273,7 +267,10 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                           variant="destructive"
                           size="sm"
                           className="absolute top-3 right-3 z-10"
-                          onClick={() => handleDeleteScale(scale.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteScale(scale.id);
+                          }}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -389,38 +386,46 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </SheetContent>
       </Sheet>
 
-      <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${deleteDialogOpen ? '' : 'hidden'}`}>
-        <div className="bg-background rounded-lg p-6 w-full max-w-md" onClick={stopPropagation}>
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Confirmer la suppression</h2>
-            <p className="text-sm text-muted-foreground">
-              Êtes-vous sûr de vouloir supprimer cette échelle de risque ? 
-              Cette action est irréversible.
-            </p>
-            
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setScaleToDelete(null);
-                  setDeleteDialogOpen(false);
-                }}
-                disabled={isDeleting}
-                className="mt-2 sm:mt-0"
-              >
-                Annuler
-              </Button>
-              <Button 
-                variant="destructive"
-                onClick={confirmDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
-              </Button>
+      {/* Custom deletion confirmation dialog that won't close unexpectedly */}
+      {deleteDialogOpen && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => {
+          if (!isDeleting) {
+            setDeleteDialogOpen(false);
+            setScaleToDelete(null);
+          }
+        }}>
+          <div className="bg-background rounded-lg p-6 w-full max-w-md" onClick={stopPropagation}>
+            <div className="space-y-4">
+              <h2 className="text-lg font-semibold">Confirmer la suppression</h2>
+              <p className="text-sm text-muted-foreground">
+                Êtes-vous sûr de vouloir supprimer cette échelle de risque ? 
+                Cette action est irréversible.
+              </p>
+              
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setScaleToDelete(null);
+                    setDeleteDialogOpen(false);
+                  }}
+                  disabled={isDeleting}
+                  className="mt-2 sm:mt-0"
+                >
+                  Annuler
+                </Button>
+                <Button 
+                  variant="destructive"
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </>
   );
 };
