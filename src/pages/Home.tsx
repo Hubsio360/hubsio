@@ -34,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Home = () => {
-  const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId, loading: companiesLoading } = useData();
+  const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId, loading: dataLoading } = useData();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,8 +52,8 @@ const Home = () => {
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Fix the type issue by ensuring isLoading is always a boolean
-  const isLoading = authLoading || (typeof companiesLoading === 'boolean' ? companiesLoading : false);
+  // Assurez-vous que isLoading est toujours un booléen
+  const isLoading = authLoading || (typeof dataLoading === 'object' ? dataLoading.companies : false);
 
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,6 +180,8 @@ const Home = () => {
       </div>
     );
   };
+
+  console.log("Companies on page:", companies);
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 animate-fade-in">

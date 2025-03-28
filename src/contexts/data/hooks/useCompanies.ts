@@ -11,62 +11,65 @@ export const useCompanies = () => {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  // Récupération des entreprises uniquement lorsque l'authentification change
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        // Ne pas essayer de récupérer les données si l'utilisateur n'est pas authentifié
-        if (!isAuthenticated) {
-          console.log('Utilisateur non authentifié, report de la récupération des entreprises');
-          setCompanies([]);
-          setLoading(false);
-          return;
-        }
-        
-        setLoading(true);
-        console.log('Utilisateur authentifié, récupération des entreprises...');
-        
-        const { data, error } = await supabase
-          .from('companies')
-          .select('*');
-        
-        if (error) {
-          console.error('Error fetching companies:', error);
-          toast({
-            title: "Erreur",
-            description: "Impossible de charger les entreprises: " + error.message,
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
-
-        console.log('Companies fetched successfully:', data);
-        const formattedCompanies: Company[] = data.map(item => ({
-          id: item.id,
-          name: item.name,
-          activity: item.activity || '',
-          creationYear: item.creation_year,
-          parentCompany: item.parent_company,
-          marketScope: item.market_scope,
-          lastAuditDate: item.last_audit_date,
-        }));
-        
-        setCompanies(formattedCompanies);
-      } catch (error) {
-        console.error('Error in fetchCompanies:', error);
+  // Fonction pour récupérer les entreprises
+  const fetchCompanies = useCallback(async () => {
+    try {
+      // Ne pas essayer de récupérer les données si l'utilisateur n'est pas authentifié
+      if (!isAuthenticated) {
+        console.log('Utilisateur non authentifié, report de la récupération des entreprises');
+        setCompanies([]);
+        setLoading(false);
+        return [];
+      }
+      
+      setLoading(true);
+      console.log('Utilisateur authentifié, récupération des entreprises...');
+      
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*');
+      
+      if (error) {
+        console.error('Error fetching companies:', error);
         toast({
           title: "Erreur",
-          description: "Une erreur est survenue lors du chargement des entreprises",
+          description: "Impossible de charger les entreprises: " + error.message,
           variant: "destructive",
         });
-      } finally {
         setLoading(false);
+        return [];
       }
-    };
 
-    fetchCompanies();
+      console.log('Companies fetched successfully:', data);
+      const formattedCompanies: Company[] = data.map(item => ({
+        id: item.id,
+        name: item.name,
+        activity: item.activity || '',
+        creationYear: item.creation_year,
+        parentCompany: item.parent_company,
+        marketScope: item.market_scope,
+        lastAuditDate: item.last_audit_date,
+      }));
+      
+      setCompanies(formattedCompanies);
+      return formattedCompanies;
+    } catch (error) {
+      console.error('Error in fetchCompanies:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du chargement des entreprises",
+        variant: "destructive",
+      });
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, [isAuthenticated, toast]);
+
+  // Récupération des entreprises lorsque l'authentification change
+  useEffect(() => {
+    fetchCompanies();
+  }, [isAuthenticated, fetchCompanies]);
 
   const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
     try {
@@ -92,9 +95,7 @@ export const useCompanies = () => {
       console.log('Prepared data for insertion:', companyData);
       console.log('Current auth session:', session);
       
-      // Tenter d'insérer avec un délai (pour s'assurer que la session est bien établie)
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      // Insérer la nouvelle entreprise
       const { data, error } = await supabase
         .from('companies')
         .insert(companyData)
@@ -117,7 +118,12 @@ export const useCompanies = () => {
         lastAuditDate: data.last_audit_date,
       };
 
+      // Mettre à jour le state avec la nouvelle entreprise
       setCompanies(prev => [...prev, newCompany]);
+      
+      // Rafraîchir la liste complète pour s'assurer de la cohérence des données
+      fetchCompanies();
+      
       return newCompany;
     } catch (error) {
       console.error('Error in addCompany:', error);
@@ -148,10 +154,30 @@ export const useCompanies = () => {
             ...enrichedData,
           };
 
-          const newCompanies = [...companies];
-          newCompanies[companyIndex] = enrichedCompany;
-          setCompanies(newCompanies);
-          resolve(enrichedCompany);
+          // Mise à jour dans la base de données
+          supabase
+            .from('companies')
+            .update({
+              activity: enrichedData.activity,
+              creation_year: enrichedData.creationYear,
+              market_scope: enrichedData.marketScope
+            })
+            .eq('id', companyId)
+            .then(() => {
+              // Mise à jour du state local
+              const newCompanies = [...companies];
+              newCompanies[companyIndex] = enrichedCompany;
+              setCompanies(newCompanies);
+              
+              // Rafraîchir la liste complète
+              fetchCompanies();
+              
+              resolve(enrichedCompany);
+            })
+            .catch(error => {
+              console.error('Error updating enriched company data:', error);
+              reject(error);
+            });
         }, 1000);
       });
     } catch (error) {
@@ -167,6 +193,7 @@ export const useCompanies = () => {
   return {
     companies,
     loading,
+    fetchCompanies,
     addCompany,
     enrichCompanyData,
     getCompanyById,

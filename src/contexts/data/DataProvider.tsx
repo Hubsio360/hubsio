@@ -29,6 +29,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [loadingConsultingProjects, setLoadingConsultingProjects] = useState(false);
   const [loadingRssiServices, setLoadingRssiServices] = useState(false);
 
+  const companiesHook = useCompanies();
   const auditsHook = useAudits();
   const findingsHook = useFindings();
   const auditStepsHook = useAuditSteps();
@@ -128,92 +129,15 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     setRssiServices(initialRssiServices);
   }, []);
 
-  const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
-    const newCompany: Company = {
-      ...company,
-      id: uuidv4(),
-    };
-    setCompanies([...companies, newCompany]);
-    return newCompany;
-  };
-
-  const enrichCompanyData = async (companyId: string): Promise<Company> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    const updatedCompany = {
-      ...getCompanyById(companyId),
-      enriched: true,
-    };
-    setCompanies(companies.map(c => c.id === companyId ? updatedCompany : c));
-    return updatedCompany;
-  };
-
-  const getCompanyById = (id: string): Company | undefined => {
-    return companies.find(company => company.id === id);
-  };
-
-  const addService = async (service: Omit<Service, 'id'>): Promise<Service> => {
-    const newService: Service = {
-      ...service,
-      id: uuidv4(),
-    };
-    setServices([...services, newService]);
-    return newService;
-  };
-
-  const addConsultingProject = async (project: Omit<ConsultingProject, 'id'>): Promise<ConsultingProject> => {
-    const newProject: ConsultingProject = {
-      ...project,
-      id: uuidv4(),
-    };
-    setConsultingProjects([...consultingProjects, newProject]);
-    return newProject;
-  };
-
-  const addRssiService = async (rssiService: Omit<RssiService, 'id'>): Promise<RssiService> => {
-    const newRssiService: RssiService = {
-      ...rssiService,
-      id: uuidv4(),
-    };
-    setRssiServices([...rssiServices, newRssiService]);
-    return newRssiService;
-  };
-
-  const getServicesByCompanyId = (companyId: string): Service[] => {
-    return services.filter(service => service.companyId === companyId);
-  };
-
-  const getConsultingProjectsByServiceId = (serviceId: string): ConsultingProject[] => {
-    return consultingProjects.filter(project => project.serviceId === serviceId);
-  };
-
-  const getRssiServicesByServiceId = (serviceId: string): RssiService | undefined => {
-    return rssiServices.find(rssiService => rssiService.serviceId === serviceId);
-  };
-
-  const fetchServices = async () => {
-    setLoadingServices(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setLoadingServices(false);
-  };
-
-  const fetchConsultingProjects = async () => {
-    setLoadingConsultingProjects(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setLoadingConsultingProjects(false);
-  };
-
-  const fetchRssiServices = async () => {
-    setLoadingRssiServices(true);
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setLoadingRssiServices(false);
-  };
-
   const handleRefresh = async () => {
-    await frameworksHook.fetchFrameworks();
+    await Promise.all([
+      companiesHook.fetchCompanies(),
+      frameworksHook.fetchFrameworks()
+    ]);
   };
 
   const contextValue: DataContextProps = {
-    companies,
+    companies: companiesHook.companies,
     audits: auditsHook.audits,
     frameworks: frameworksHook.frameworks,
     controls: controlsHook.controls,
@@ -224,18 +148,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     interviews: interviewsHook.interviews,
     standardClauses: clausesHook.standardClauses,
     users: usersHook.users,
-    addCompany,
+    addCompany: companiesHook.addCompany,
     addAudit: auditsHook.addAudit,
     updateAudit: auditsHook.updateAudit,
     deleteAudit: auditsHook.deleteAudit,
     fetchAudits: auditsHook.fetchAudits,
     addFinding: findingsHook.addFinding,
     updateFinding: findingsHook.updateFinding,
-    enrichCompanyData,
+    enrichCompanyData: companiesHook.enrichCompanyData,
     getAuditsByCompanyId: auditsHook.getAuditsByCompanyId,
     getFindingsByAuditStepId: findingsHook.getFindingsByAuditStepId,
     getAuditStepsByAuditId: auditStepsHook.getAuditStepsByAuditId,
-    getCompanyById,
+    getCompanyById: companiesHook.getCompanyById,
     getAuditById: auditsHook.getAuditById,
     getFrameworkById: frameworksHook.getFrameworkById,
     getControlById: controlsHook.getControlById,
@@ -271,7 +195,8 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     fetchUsers: usersHook.fetchUsers,
     getUserById: usersHook.getUserById,
     getUsersByRole: usersHook.getUsersByRole,
-    fetchThemesByFrameworkId: themesHook.fetchThemesByFrameworkId,
+    fetchThemesByFrameworkId: interviewsHook.fetchThemesByFrameworkId,
+    
     services,
     consultingProjects,
     rssiServices,
@@ -315,6 +240,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
     loading: {
+      companies: companiesHook.loading,
       frameworks: frameworksHook.loading,
       controls: controlsHook.loading,
       topics: topicsHook.loading,
