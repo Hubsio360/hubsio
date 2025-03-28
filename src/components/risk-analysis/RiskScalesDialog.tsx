@@ -29,6 +29,7 @@ import {
   Shield,
   ClipboardList,
   Loader2,
+  Clock
 } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -43,15 +44,28 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   onOpenChange, 
   companyId 
 }) => {
-  const { fetchCompanyRiskScales, companyRiskScales, loading, toggleRiskScaleActive, updateRiskScaleLevel } = useData();
+  const { fetchCompanyRiskScales, companyRiskScales, loading, toggleRiskScaleActive, updateRiskScaleLevel, setupLikelihoodScale } = useData();
   const [activeTab, setActiveTab] = useState<string>('financial_impact');
   
   // Load company risk scales when the dialog opens
   useEffect(() => {
     if (open && companyId) {
-      fetchCompanyRiskScales(companyId);
+      const loadScales = async () => {
+        await fetchCompanyRiskScales(companyId);
+        // Ensure the likelihood scale is set up
+        await setupLikelihoodScale(companyId);
+      };
+      
+      loadScales();
     }
-  }, [open, companyId, fetchCompanyRiskScales]);
+  }, [open, companyId, fetchCompanyRiskScales, setupLikelihoodScale]);
+
+  useEffect(() => {
+    // Set the first scale as active tab when scales are loaded
+    if (companyRiskScales && companyRiskScales.length > 0 && !activeTab) {
+      setActiveTab(companyRiskScales[0].scaleType.name);
+    }
+  }, [companyRiskScales, activeTab]);
 
   const handleToggleScale = async (scaleId: string, currentActive: boolean) => {
     await toggleRiskScaleActive(scaleId, !currentActive);
@@ -74,6 +88,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         return <Shield className="h-4 w-4" />;
       case 'productivity_impact':
         return <ClipboardList className="h-4 w-4" />;
+      case 'likelihood':
+        return <Clock className="h-4 w-4" />;
       default:
         return <BarChart3 className="h-4 w-4" />;
     }
@@ -110,7 +126,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
             className="flex-1 flex flex-col"
           >
             <div className="border rounded-md p-1 mb-4">
-              <TabsList className="w-full grid grid-cols-5">
+              <TabsList className="w-full grid grid-cols-6">
                 {companyRiskScales.map((scale) => (
                   <TabsTrigger
                     key={scale.id}

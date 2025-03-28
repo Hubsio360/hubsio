@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -237,6 +236,186 @@ export const useRiskScales = () => {
     }
   }, [toast]);
 
+  // Create a new scale type
+  const addRiskScaleType = useCallback(async (name: string, description: string): Promise<RiskScaleType | null> => {
+    try {
+      // Check if scale type already exists
+      const { data: existingTypes, error: checkError } = await supabase
+        .from('risk_scale_types')
+        .select('*')
+        .eq('name', name);
+      
+      if (checkError) {
+        console.error('Error checking existing scale types:', checkError);
+        return null;
+      }
+      
+      // If the scale type already exists, just return it
+      if (existingTypes && existingTypes.length > 0) {
+        return mapDbScaleTypeToRiskScaleType(existingTypes[0]);
+      }
+      
+      // If not, create a new one
+      const { data, error } = await supabase
+        .from('risk_scale_types')
+        .insert([{ name, description }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error adding risk scale type:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible d'ajouter le type d'échelle",
+          variant: "destructive",
+        });
+        return null;
+      }
+      
+      const newScaleType = mapDbScaleTypeToRiskScaleType(data);
+      setRiskScaleTypes(prev => [...prev, newScaleType]);
+      
+      toast({
+        title: "Succès",
+        description: "Type d'échelle ajouté avec succès",
+      });
+      
+      return newScaleType;
+    } catch (error) {
+      console.error('Error adding risk scale type:', error);
+      return null;
+    }
+  }, [toast]);
+
+  // Add a new scale with levels for a company
+  const addCompanyRiskScale = useCallback(async (
+    companyId: string, 
+    scaleTypeId: string, 
+    levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<RiskScaleWithLevels | null> => {
+    try {
+      // Check if company already has this scale type
+      const { data: existingScales, error: checkError } = await supabase
+        .from('company_risk_scales')
+        .select('*')
+        .eq('company_id', companyId)
+        .eq('scale_type_id', scaleTypeId);
+      
+      if (checkError) {
+        console.error('Error checking existing company scales:', checkError);
+        return null;
+      }
+      
+      // If the scale already exists, return null or update it
+      if (existingScales && existingScales.length > 0) {
+        return null; // Or implement update logic
+      }
+      
+      // Create the new scale
+      const { data: scaleData, error: scaleError } = await supabase
+        .from('company_risk_scales')
+        .insert([{ 
+          company_id: companyId, 
+          scale_type_id: scaleTypeId,
+          is_active: true
+        }])
+        .select()
+        .single();
+      
+      if (scaleError) {
+        console.error('Error adding company risk scale:', scaleError);
+        return null;
+      }
+      
+      // Create the levels for this scale
+      const levelsToInsert = levels.map(level => ({
+        company_risk_scale_id: scaleData.id,
+        level_value: level.levelValue,
+        name: level.name,
+        description: level.description,
+        color: level.color
+      }));
+      
+      const { data: levelsData, error: levelsError } = await supabase
+        .from('risk_scale_levels')
+        .insert(levelsToInsert)
+        .select();
+      
+      if (levelsError) {
+        console.error('Error adding risk scale levels:', levelsError);
+        // Consider rolling back the scale creation here
+        return null;
+      }
+      
+      // Fetch the complete scale with its type and levels
+      const createdScale = await fetchCompanyRiskScales(companyId).then(
+        scales => scales.find(s => s.id === scaleData.id)
+      );
+      
+      return createdScale || null;
+    } catch (error) {
+      console.error('Error adding company risk scale:', error);
+      return null;
+    }
+  }, [fetchCompanyRiskScales]);
+
+  // Function to setup a likelihood scale for a company if it doesn't exist
+  const setupLikelihoodScale = useCallback(async (companyId: string): Promise<boolean> => {
+    try {
+      // First, check if we already have the likelihood scale type
+      let likelihoodScaleType = riskScaleTypes.find(scale => scale.name === 'likelihood');
+      
+      // If not in state, try to fetch from DB or create it
+      if (!likelihoodScaleType) {
+        likelihoodScaleType = await addRiskScaleType('likelihood', 'Échelle de probabilité');
+        if (!likelihoodScaleType) return false;
+      }
+      
+      // Check if company already has this scale
+      const existingScale = companyRiskScales.find(
+        scale => scale.companyId === companyId && scale.scaleType.name === 'likelihood'
+      );
+      
+      if (existingScale) return true; // Already exists
+      
+      // Define the likelihood levels
+      const likelihoodLevels = [
+        {
+          levelValue: 1,
+          name: 'Peu probable',
+          description: 'L\'évènement n\'a que très peu de chances moyennes de se produire sur la période (1 fois tous les 10 ans)',
+          color: '#4CAF50'
+        },
+        {
+          levelValue: 2,
+          name: 'Relativement probable',
+          description: 'L\'évènement a des chances moyennes de se produire sur la période (1 fois tous les 5 ans)',
+          color: '#FFA726'
+        },
+        {
+          levelValue: 3,
+          name: 'Hautement probable',
+          description: 'L\'évènement a de très grandes chances de se produire sur la période (1 fois tous les 2 ans)',
+          color: '#9C27B0'
+        },
+        {
+          levelValue: 4,
+          name: 'Certain',
+          description: 'L\'évènement a de très grandes chances de se produire sur la période (1 fois par an)',
+          color: '#F44336'
+        }
+      ];
+      
+      // Create the scale with levels
+      const result = await addCompanyRiskScale(companyId, likelihoodScaleType.id, likelihoodLevels);
+      
+      return result !== null;
+    } catch (error) {
+      console.error('Error setting up likelihood scale:', error);
+      return false;
+    }
+  }, [riskScaleTypes, companyRiskScales, addRiskScaleType, addCompanyRiskScale]);
+
   return {
     riskScaleTypes,
     companyRiskScales,
@@ -244,6 +423,9 @@ export const useRiskScales = () => {
     fetchRiskScaleTypes,
     fetchCompanyRiskScales,
     updateRiskScaleLevel,
-    toggleRiskScaleActive
+    toggleRiskScaleActive,
+    addRiskScaleType,
+    addCompanyRiskScale,
+    setupLikelihoodScale
   };
 };
