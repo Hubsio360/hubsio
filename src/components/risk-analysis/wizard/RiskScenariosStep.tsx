@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, CheckCircle } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
+import { useToast } from '@/hooks/use-toast';
 
 interface SuggestedScenario {
   id: string;
@@ -37,7 +38,27 @@ export function RiskScenariosStep({
   onComplete,
   onPrevious
 }: RiskScenariosStepProps) {
+  const { toast } = useToast();
   const selectedCount = suggestedScenarios.filter(s => s.selected).length;
+
+  const handleComplete = () => {
+    if (selectedCount === 0) {
+      toast({
+        title: "Attention",
+        description: "Veuillez sélectionner au moins un scénario de risque",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    onComplete();
+    
+    // Afficher un toast de succès
+    toast({
+      title: "Succès",
+      description: `${selectedCount} scénarios de risque ont été créés avec succès`,
+    });
+  };
 
   return (
     <>
@@ -104,8 +125,8 @@ export function RiskScenariosStep({
           Retour
         </Button>
         <Button 
-          onClick={onComplete}
-          disabled={loading || suggestedScenarios.filter(s => s.selected).length === 0}
+          onClick={handleComplete}
+          disabled={loading || selectedCount === 0}
         >
           {loading ? (
             <>
