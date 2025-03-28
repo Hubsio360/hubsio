@@ -165,15 +165,20 @@ export const useCompanies = () => {
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
-              // Fix: Use proper Promise handling with try/catch
-              Promise.resolve(fetchCompanies())
-                .then(() => {
-                  resolve(enrichedCompany);
-                })
-                .catch((error) => {
-                  console.error('Error refreshing companies after enrich:', error);
-                  reject(error);
-                });
+              // Fix: Use proper Promise handling with try/catch wrapped in a Promise
+              try {
+                Promise.resolve(fetchCompanies())
+                  .then(() => {
+                    resolve(enrichedCompany);
+                  })
+                  .catch((error) => {
+                    console.error('Error refreshing companies after enrich:', error);
+                    reject(error);
+                  });
+              } catch (error) {
+                console.error('Error in Promise handling:', error);
+                reject(error);
+              }
             })
             .catch(error => {
               console.error('Error updating enriched company data:', error);
