@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { Finding } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useFindings = () => {
   const [findings, setFindings] = useState<Finding[]>([]);
