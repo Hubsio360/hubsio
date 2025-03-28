@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,8 +45,51 @@
     --sidebar-ring: 43 100% 37%;  /* #BB9007 */
   }
 
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 43 100% 37%;  /* #BB9007 - keeping the gold color */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 43 80% 15%;  /* Darker gold accent for dark mode */
+    --accent-foreground: 43 100% 80%;  /* Lighter gold for text on accent */
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 43 100% 37%;  /* #BB9007 */
+
+    --sidebar-background: 240 10% 8%;
+    --sidebar-foreground: 240 5% 84.9%;
+    --sidebar-primary: 43 100% 37%;  /* #BB9007 */
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 3.7% 20%;
+    --sidebar-ring: 43 100% 37%;  /* #BB9007 */
+  }
+
   .glass {
     @apply backdrop-blur-lg bg-white/70 border border-white/20 shadow-sm;
+  }
+
+  .dark .glass {
+    @apply backdrop-blur-lg bg-black/70 border border-white/10 shadow-sm;
   }
 
   .neo-button {

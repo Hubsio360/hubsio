@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -81,6 +82,8 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center">
+          <ThemeToggle className="mr-2" />
+          
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -132,13 +135,16 @@ const Navbar = () => {
       >
         <div className="p-4 flex justify-between items-center">
           <div className="text-primary font-bold">Hubsio</div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <X className="h-6 w-6" />
-          </Button>
+          <div className="flex items-center">
+            <ThemeToggle className="mr-2" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <X className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
         <Separator />
         <div className="flex flex-col p-4">
