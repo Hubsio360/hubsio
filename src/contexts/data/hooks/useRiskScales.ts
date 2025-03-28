@@ -359,7 +359,7 @@ export const useRiskScales = () => {
         .select()
         .single();
       
-      if (scaleError) {
+      if (scaleError || !scaleData) {
         console.error('Error adding company risk scale:', scaleError);
         return null;
       }
@@ -455,7 +455,7 @@ export const useRiskScales = () => {
         .select()
         .single();
       
-      if (error) {
+      if (error || !data) {
         console.error('Error updating risk scale level:', error);
         return null;
       }
