@@ -163,26 +163,49 @@ export const useRiskScalesManager = (companyId: string) => {
 
   const handleDeleteScale = useCallback(async (scaleId: string): Promise<boolean> => {
     try {
-      console.log("Deleting scale:", scaleId);
+      console.log("Début de la suppression de l'échelle:", scaleId);
       
       // Optimistically update UI
       setCachedScales(prev => prev.filter(scale => scale.id !== scaleId));
       
       // Actual API call
       const result = await deleteRiskScale(scaleId);
-      console.log("Delete result from API:", result);
+      console.log("Résultat de la suppression de l'API:", result);
       
-      // Refresh data regardless of result to ensure consistency
-      await refreshData();
-      
-      return true;
+      if (result) {
+        toast({
+          title: "Suppression réussie",
+          description: "L'échelle de risque a été supprimée avec succès",
+        });
+        
+        // Refresh data to ensure consistency
+        await refreshData();
+        return true;
+      } else {
+        console.error("La suppression a échoué côté serveur");
+        toast({
+          variant: "destructive",
+          title: "Échec de la suppression",
+          description: "La suppression de l'échelle a échoué. Veuillez réessayer.",
+        });
+        
+        // Restore the cached scales since deletion failed
+        await refreshData();
+        return false;
+      }
     } catch (err) {
-      console.error('Error deleting risk scale:', err);
+      console.error('Erreur lors de la suppression de l\'échelle de risque:', err);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la suppression de l'échelle",
+      });
+      
       // Refresh to restore state in case of error
       await refreshData();
       return false;
     }
-  }, [deleteRiskScale, refreshData]);
+  }, [deleteRiskScale, refreshData, toast]);
 
   const handleAddScale = useCallback(async (scaleTypeId: string) => {
     if (!companyId) return;

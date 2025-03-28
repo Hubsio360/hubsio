@@ -133,9 +133,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     
     setIsDeleting(true);
     try {
-      console.log("Attempting to delete scale:", scaleToDelete);
+      console.log("Tentative de suppression de l'échelle:", scaleToDelete);
       const success = await deleteScale(scaleToDelete);
-      console.log("Delete result:", success);
+      console.log("Résultat de la suppression:", success);
       
       if (success) {
         toast({
@@ -144,6 +144,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         });
         setScaleToDelete(null);
         setDeleteDialogOpen(false);
+        await refreshData();
       } else {
         toast({
           variant: "destructive",
@@ -164,7 +165,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   };
 
   const handleDeleteScale = (scaleId: string) => {
-    console.log("Opening delete dialog for scale:", scaleId);
+    console.log("Ouverture de la boîte de dialogue de suppression pour l'échelle:", scaleId);
     setScaleToDelete(scaleId);
     setDeleteDialogOpen(true);
   };
@@ -386,15 +387,21 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </SheetContent>
       </Sheet>
 
-      {/* Custom deletion confirmation dialog that won't close unexpectedly */}
+      {/* Boîte de dialogue de confirmation de suppression améliorée */}
       {deleteDialogOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => {
-          if (!isDeleting) {
-            setDeleteDialogOpen(false);
-            setScaleToDelete(null);
-          }
-        }}>
-          <div className="bg-background rounded-lg p-6 w-full max-w-md" onClick={stopPropagation}>
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" 
+          onClick={(e) => {
+            if (!isDeleting) {
+              setDeleteDialogOpen(false);
+              setScaleToDelete(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-background rounded-lg p-6 w-full max-w-md shadow-lg transform transition-all" 
+            onClick={stopPropagation}
+          >
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Confirmer la suppression</h2>
               <p className="text-sm text-muted-foreground">
@@ -419,7 +426,14 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                   onClick={confirmDelete}
                   disabled={isDeleting}
                 >
-                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                  {isDeleting ? (
+                    <>
+                      <span className="animate-spin mr-2">⌛</span>
+                      Suppression...
+                    </>
+                  ) : (
+                    'Supprimer'
+                  )}
                 </Button>
               </div>
             </div>
