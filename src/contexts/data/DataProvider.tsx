@@ -149,7 +149,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
     loading: {
-      companies: companiesHook.loading,
+      companies: companiesHook.loading, // Added 'companies' property to loading object
       frameworks: frameworksHook.loading,
       controls: controlsHook.loading,
       topics: topicsHook.loading,

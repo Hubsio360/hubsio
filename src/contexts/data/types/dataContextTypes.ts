@@ -51,6 +51,7 @@ export interface DataContextProps {
   riskTreatments: RiskTreatment[];
   
   loading: {
+    companies: boolean; // Added 'companies' property to the loading object
     frameworks: boolean;
     controls: boolean;
     topics: boolean;

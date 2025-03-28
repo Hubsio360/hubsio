@@ -122,7 +122,11 @@ export const useCompanies = () => {
       setCompanies(prev => [...prev, newCompany]);
       
       // Rafraîchir la liste complète pour s'assurer de la cohérence des données
-      fetchCompanies();
+      // Fixed: Converting PromiseLike to Promise with Promise.resolve()
+      await Promise.resolve(fetchCompanies())
+        .catch(error => {
+          console.error('Error refreshing companies after add:', error);
+        });
       
       return newCompany;
     } catch (error) {
@@ -170,11 +174,15 @@ export const useCompanies = () => {
               setCompanies(newCompanies);
               
               // Rafraîchir la liste complète
-              fetchCompanies().then(() => {
-                resolve(enrichedCompany);
-              }).catch(error => {
-                reject(error);
-              });
+              // Fixed: Using Promise.resolve() to ensure it's a full Promise
+              Promise.resolve(fetchCompanies())
+                .then(() => {
+                  resolve(enrichedCompany);
+                })
+                .catch(error => {
+                  console.error('Error refreshing companies after enrich:', error);
+                  reject(error);
+                });
             })
             .catch(error => {
               console.error('Error updating enriched company data:', error);
