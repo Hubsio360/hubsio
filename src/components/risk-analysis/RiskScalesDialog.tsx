@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,15 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [selectedScaleType, setSelectedScaleType] = useState<string>('');
   const [activeTab, setActiveTab] = useState('impact');
   
+  // Get scale type details - defined BEFORE it's used
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
+    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: ''
+    };
+  };
+  
   const {
     riskScaleTypes,
     companyRiskScales,
@@ -46,15 +55,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   // Helper function to get scaleTypeId regardless of naming convention
   const getScaleTypeId = (scale: any): string => {
     return scale.scaleTypeId || scale.scale_type_id || '';
-  };
-
-  // Get scale type details - defined BEFORE it's used
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: ''
-    };
   };
 
   // Group company risk scales by type

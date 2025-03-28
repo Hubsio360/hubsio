@@ -36,7 +36,7 @@ export const useRiskScalesManager = (companyId: string) => {
     return {
       ...scale,
       levels: scale.levels || [],
-      scaleType: scale.scaleType || scaleType
+      scaleType
     };
   };
 
@@ -115,7 +115,7 @@ export const useRiskScalesManager = (companyId: string) => {
         return;
       }
       
-      // Use an empty array for levels since they will be created by the backend
+      // Pass empty array as the third parameter
       await addCompanyRiskScale(companyId, scaleTypeId, []);
       
       await refreshData();
@@ -185,7 +185,7 @@ export const useRiskScalesManager = (companyId: string) => {
 
   // Update cache when data changes
   useEffect(() => {
-    if (!loading.companyRiskScales && !loading.riskScaleTypes) {
+    if (!loading.riskScaleTypes && !loading.companyRiskScales) {
       setCachedScales(companyRiskScales.map(ensureWithLevels));
       setCachedTypes(riskScaleTypes);
     }
