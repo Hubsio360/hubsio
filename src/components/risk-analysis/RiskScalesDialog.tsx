@@ -9,7 +9,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Plus } from 'lucide-react';
@@ -28,17 +27,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   onOpenChange,
   companyId,
 }) => {
-  const [selectedScaleType, setSelectedScaleType] = useState<string>('');
   const [activeTab, setActiveTab] = useState('impact');
-  
-  // Get scale type details - defined BEFORE it's used
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: ''
-    };
-  };
   
   const {
     riskScaleTypes,
@@ -46,11 +35,20 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     isLoading,
     isRefreshing,
     error,
-    addScale,
+    addCustomScale,
     toggleActive,
     updateLevel,
     refreshData
   } = useRiskScalesManager(companyId);
+
+  // Get scale type details
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
+    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: ''
+    };
+  };
 
   // Helper function to get scaleTypeId regardless of naming convention
   const getScaleTypeId = (scale: any): string => {
@@ -72,17 +70,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   );
 
-  // Filter risk scale types that haven't been added to the company yet
-  const availableScaleTypes = riskScaleTypes.filter(
-    (type) => !companyRiskScales.some((scale) => getScaleTypeId(scale) === type.id)
-  );
-
-  // Handle adding a new scale type to the company
-  const handleAddScale = async () => {
-    if (selectedScaleType) {
-      await addScale(selectedScaleType);
-      setSelectedScaleType('');
-    }
+  // Handle adding a new custom scale
+  const handleAddCustomScale = async () => {
+    await addCustomScale();
   };
 
   // Get levels for a scale
@@ -109,21 +99,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         )}
 
         <div className="flex items-center gap-2 mb-4">
-          <Select value={selectedScaleType} onValueChange={setSelectedScaleType}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Sélectionner une échelle à ajouter" />
-            </SelectTrigger>
-            <SelectContent>
-              {availableScaleTypes.map((type) => (
-                <SelectItem key={type.id} value={type.id}>
-                  {type.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button onClick={handleAddScale} disabled={!selectedScaleType || isLoading}>
+          <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
             <Plus className="h-4 w-4 mr-1" />
-            Ajouter
+            Ajouter une nouvelle échelle
           </Button>
         </div>
 
@@ -138,7 +116,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               <div className="pr-4 space-y-4">
                 {impactScales.length === 0 && !isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Aucune échelle d'impact configurée. Ajoutez-en une depuis le menu ci-dessus.
+                    Aucune échelle d'impact configurée. Ajoutez-en une depuis le bouton ci-dessus.
                   </div>
                 ) : (
                   impactScales.map((scale) => (
@@ -162,7 +140,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               <div className="pr-4 space-y-4">
                 {likelihoodScales.length === 0 && !isLoading ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    Aucune échelle de probabilité configurée. Ajoutez-en une depuis le menu ci-dessus.
+                    Aucune échelle de probabilité configurée. Ajoutez-en une depuis le bouton ci-dessus.
                   </div>
                 ) : (
                   likelihoodScales.map((scale) => (

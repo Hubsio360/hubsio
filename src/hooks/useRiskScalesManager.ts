@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useRiskScalesManager = (companyId: string) => {
   const { 
@@ -95,6 +96,40 @@ export const useRiskScalesManager = (companyId: string) => {
   const getScaleTypeId = (scale: CompanyRiskScale): string => {
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
+
+  // Handle adding a custom scale
+  const handleAddCustomScale = useCallback(async () => {
+    if (!companyId) return;
+    
+    try {
+      // First, create a new custom scale type
+      const customScaleName = `custom-scale-${uuidv4().slice(0, 8)}`;
+      const customScaleDescription = `Échelle personnalisée`;
+      
+      const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription);
+      
+      if (!newScaleType) {
+        throw new Error('Erreur lors de la création du type d\'échelle');
+      }
+      
+      // Then create the company risk scale with default levels
+      await addCompanyRiskScale(companyId, newScaleType.id, []);
+      
+      await refreshData();
+      
+      toast({
+        title: 'Succès',
+        description: 'Nouvelle échelle de risque créée avec succès',
+      });
+    } catch (err) {
+      console.error('Error adding custom risk scale:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Erreur lors de la création de l\'échelle de risque personnalisée',
+      });
+    }
+  }, [companyId, addRiskScaleType, addCompanyRiskScale, refreshData, toast]);
 
   // Handle scale creation with error handling for duplicate entries
   const handleAddScale = useCallback(async (scaleTypeId: string) => {
@@ -198,6 +233,7 @@ export const useRiskScalesManager = (companyId: string) => {
     isRefreshing,
     error,
     addScale: handleAddScale,
+    addCustomScale: handleAddCustomScale,
     toggleActive: handleToggleActive,
     updateLevel: handleUpdateLevel,
     refreshData
