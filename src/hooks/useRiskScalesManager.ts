@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -28,7 +27,6 @@ export const useRiskScalesManager = (companyId: string) => {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Helper function to ensure a CompanyRiskScale has the required fields to be a RiskScaleWithLevels
   const ensureWithLevels = (scale: CompanyRiskScale): RiskScaleWithLevels => {
     const scaleTypeId = scale.scaleTypeId || scale.scale_type_id || '';
     const scaleType = riskScaleTypes.find(type => type.id === scaleTypeId) || {
@@ -45,7 +43,6 @@ export const useRiskScalesManager = (companyId: string) => {
     };
   };
 
-  // Initial data loading
   const loadData = useCallback(async () => {
     if (!companyId) return;
     
@@ -53,7 +50,6 @@ export const useRiskScalesManager = (companyId: string) => {
     setError(null);
     
     try {
-      // Use Promise.all to fetch both data sets concurrently
       await Promise.all([
         fetchRiskScaleTypes(),
         fetchCompanyRiskScales(companyId)
@@ -71,7 +67,6 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
 
-  // Refresh data with loading indicator for subsequent refreshes
   const refreshData = useCallback(async () => {
     if (!companyId) return;
     
@@ -91,17 +86,14 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales]);
 
-  // Helper function to get companyId regardless of naming convention
   const getCompanyId = (scale: CompanyRiskScale): string => {
     return scale.companyId || scale.company_id || '';
   };
 
-  // Helper function to get scaleTypeId regardless of naming convention
   const getScaleTypeId = (scale: CompanyRiskScale): string => {
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
 
-  // Handle updating a risk scale type
   const handleUpdateScaleType = useCallback(async (
     scaleTypeId: string, 
     name: string, 
@@ -134,23 +126,19 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, updateRiskScaleType, refreshData, toast]);
 
-  // Handle adding a custom scale with category
   const handleAddCustomScale = useCallback(async (category: 'impact' | 'likelihood' = 'impact') => {
     if (!companyId) return null;
     
     try {
-      // First, create a new custom scale type
       const customScaleName = `Échelle personnalisée`;
       const customScaleDescription = `Échelle personnalisée`;
       
-      // Only pass name and description without category
       const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription);
       
       if (!newScaleType) {
         throw new Error('Erreur lors de la création du type d\'échelle');
       }
       
-      // Then create the company risk scale with default levels
       await addCompanyRiskScale(companyId, newScaleType.id, []);
       
       await refreshData();
@@ -172,40 +160,29 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, addRiskScaleType, addCompanyRiskScale, refreshData, toast]);
 
-  // Handle deleting a risk scale
   const handleDeleteScale = useCallback(async (scaleId: string) => {
     try {
-      // Optimistic update
+      console.log("Deleting scale:", scaleId);
+      
       setCachedScales(prev => prev.filter(scale => scale.id !== scaleId));
       
-      await deleteRiskScale(scaleId);
-      await refreshData();
+      const result = await deleteRiskScale(scaleId);
+      console.log("Delete result from API:", result);
       
-      toast({
-        title: 'Succès',
-        description: 'Échelle de risque supprimée avec succès',
-      });
+      await refreshData();
       
       return true;
     } catch (err) {
       console.error('Error deleting risk scale:', err);
-      // Revert on error
       refreshData();
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Erreur lors de la suppression de l\'échelle de risque',
-      });
       return false;
     }
-  }, [deleteRiskScale, refreshData, toast]);
+  }, [deleteRiskScale, refreshData]);
 
-  // Handle scale creation with error handling for duplicate entries
   const handleAddScale = useCallback(async (scaleTypeId: string) => {
     if (!companyId) return;
     
     try {
-      // Check if this combination already exists to prevent duplicate key error
       const existingScale = companyRiskScales.find(
         (scale) => getCompanyId(scale) === companyId && getScaleTypeId(scale) === scaleTypeId
       );
@@ -219,7 +196,6 @@ export const useRiskScalesManager = (companyId: string) => {
         return;
       }
       
-      // Pass empty array as the third parameter
       await addCompanyRiskScale(companyId, scaleTypeId, []);
       
       await refreshData();
@@ -238,15 +214,13 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, companyRiskScales, addCompanyRiskScale, refreshData, toast]);
 
-  // Toggle scale with optimistic UI update
   const handleToggleActive = useCallback(async (scaleId: string, isActive: boolean) => {
     try {
-      // Optimistic update for UI responsiveness
       const updatedScales = companyRiskScales.map(scale => 
         scale.id === scaleId ? { 
           ...scale, 
           isActive: !isActive,
-          is_active: !isActive  // Update both property formats
+          is_active: !isActive 
         } : scale
       ).map(ensureWithLevels);
       
@@ -256,7 +230,7 @@ export const useRiskScalesManager = (companyId: string) => {
       await refreshData();
     } catch (err) {
       console.error('Error toggling risk scale:', err);
-      setCachedScales(companyRiskScales.map(ensureWithLevels)); // Revert on error
+      setCachedScales(companyRiskScales.map(ensureWithLevels));
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -265,11 +239,9 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyRiskScales, toggleRiskScaleActive, refreshData, toast]);
 
-  // Update risk scale level with error handling
   const handleUpdateLevel = useCallback(async (levelId: string, updatedData: Partial<RiskScaleLevel>) => {
     try {
       await updateRiskScaleLevel(levelId, updatedData);
-      // No need to refresh entire data set for level updates
     } catch (err) {
       console.error('Error updating risk scale level:', err);
       toast({
@@ -280,14 +252,12 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [updateRiskScaleLevel, toast]);
 
-  // Initial data load on component mount
   useEffect(() => {
     if (companyId) {
       loadData();
     }
   }, [companyId, loadData]);
 
-  // Update cache when data changes
   useEffect(() => {
     if (!loading.riskScaleTypes && !loading.companyRiskScales) {
       setCachedScales(companyRiskScales.map(ensureWithLevels));

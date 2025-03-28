@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Dialog,
@@ -82,7 +81,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   });
 
-  // Get scale type details
   const getScaleType = (scaleTypeId: string): RiskScaleType => {
     return riskScaleTypes.find(type => type.id === scaleTypeId) || {
       id: '',
@@ -92,12 +90,10 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     };
   };
 
-  // Helper function to get scaleTypeId regardless of naming convention
   const getScaleTypeId = (scale: any): string => {
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
 
-  // Group company risk scales by category
   const impactScales = companyRiskScales.filter(
     (scale) => {
       const scaleType = getScaleType(getScaleTypeId(scale));
@@ -112,7 +108,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   );
 
-  // Handle adding a new custom scale
   const handleAddCustomScale = async () => {
     const category = activeTab as 'impact' | 'likelihood';
     const newType = await addCustomScale(category);
@@ -125,7 +120,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   };
 
-  // Handle saving the scale type details
   const onSubmitScaleForm = async (values: ScaleFormValues) => {
     if (newScaleType) {
       setIsFormSubmitting(true);
@@ -134,7 +128,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         setEditSheetOpen(false);
         setNewScaleType(null);
         form.reset();
-        // Refresh the data to reflect the changes
         await refreshData();
       } catch (error) {
         console.error("Error updating scale type:", error);
@@ -144,19 +137,20 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   };
 
-  // Handle delete confirmation
   const confirmDelete = async () => {
     if (!scaleToDelete) return;
     
     setIsDeleting(true);
     try {
+      console.log("Attempting to delete scale:", scaleToDelete);
       const success = await deleteScale(scaleToDelete);
+      console.log("Delete result:", success);
+      
       if (success) {
         toast({
           title: "Échelle supprimée",
           description: "L'échelle de risque a été supprimée avec succès",
         });
-        // Only close the dialog after successful deletion
         setScaleToDelete(null);
         setDeleteDialogOpen(false);
       } else {
@@ -178,19 +172,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   };
 
-  // Open delete confirmation dialog
   const handleDeleteScale = (scaleId: string) => {
+    console.log("Opening delete dialog for scale:", scaleId);
     setScaleToDelete(scaleId);
     setDeleteDialogOpen(true);
   };
 
-  // Get levels for a scale
   const getLevelsForScale = (scaleId: string) => {
     const scale = companyRiskScales.find(s => s.id === scaleId);
     return scale?.levels || [];
   };
 
-  // Stop event propagation to prevent dialog from closing
   const stopPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -301,9 +293,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* Remplacé le dialog par un Sheet pour une meilleure expérience */}
       <Sheet open={editSheetOpen} onOpenChange={(open) => {
-        // Ne pas fermer si le formulaire est en cours de soumission
         if (!open && isFormSubmitting) return;
         setEditSheetOpen(open);
         if (!open) {
@@ -399,42 +389,38 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
         </SheetContent>
       </Sheet>
 
-      {/* Dialogue de confirmation de suppression - avec correction pour éviter la fermeture automatique */}
-      <AlertDialog 
-        open={deleteDialogOpen}
-      >
-        <AlertDialogContent onClick={stopPropagation}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
+      <div className={`fixed inset-0 bg-black/50 z-50 flex items-center justify-center ${deleteDialogOpen ? '' : 'hidden'}`}>
+        <div className="bg-background rounded-lg p-6 w-full max-w-md" onClick={stopPropagation}>
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold">Confirmer la suppression</h2>
+            <p className="text-sm text-muted-foreground">
               Êtes-vous sûr de vouloir supprimer cette échelle de risque ? 
               Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel 
-              onClick={(e) => {
-                e.stopPropagation();
-                setScaleToDelete(null);
-                setDeleteDialogOpen(false);
-              }}
-              disabled={isDeleting}
-            >
-              Annuler
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={(e) => {
-                e.stopPropagation();
-                confirmDelete();
-              }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Suppression...' : 'Supprimer'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </p>
+            
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setScaleToDelete(null);
+                  setDeleteDialogOpen(false);
+                }}
+                disabled={isDeleting}
+                className="mt-2 sm:mt-0"
+              >
+                Annuler
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 };
