@@ -10,7 +10,7 @@ import { Check, ChevronsUpDown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ScenarioTemplateSelectProps {
-  onSelect: (template: any) => void;
+  onSelect: (template: RiskScenarioTemplate) => void;
 }
 
 // Define a type for the risk scenario template
@@ -39,7 +39,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       setIsLoading(true);
       try {
         const data = await fetchRiskScenarioTemplates();
-        setTemplates(data || []);
+        setTemplates(data as RiskScenarioTemplate[] || []);
       } catch (error) {
         console.error('Error loading scenario templates:', error);
       } finally {

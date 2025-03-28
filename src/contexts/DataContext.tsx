@@ -1,4 +1,4 @@
 
-import { DataProvider, useData } from './data/DataProvider';
+import { DataProvider, useData } from './DataProvider';
 
 export { DataProvider, useData };
