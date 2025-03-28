@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
@@ -113,6 +114,7 @@ export const useCompanies = () => {
 
       setCompanies(prev => [...prev, newCompany]);
       
+      // Fixed this block - wrap in try/catch and use await to ensure proper Promise handling
       try {
         await Promise.resolve(fetchCompanies());
       } catch (error) {
@@ -162,11 +164,10 @@ export const useCompanies = () => {
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
-              // Fix: Convert fetchCompanies to a proper Promise with then/catch
-              // First create a wrapper promise that will return a full Promise object
+              // Fix: Convert fetchCompanies to a proper Promise with try/catch
               const refreshPromise = async () => {
                 try {
-                  await fetchCompanies();
+                  await Promise.resolve(fetchCompanies());
                   return;
                 } catch (error) {
                   throw error;
