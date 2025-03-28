@@ -1,5 +1,5 @@
 
-import { addMinutes, addDays, setHours, setMinutes, isWeekend, parseISO, eachDayOfInterval } from 'date-fns';
+import { addMinutes, addDays, setHours, setMinutes, isWeekend, parseISO, eachDayOfInterval, isBefore, isAfter } from 'date-fns';
 import { AuditInterview } from '@/types';
 
 // Constantes pour les horaires et pauses
@@ -33,8 +33,16 @@ export const isDuringLunch = (time: Date): boolean => {
 export const isDuringBreak = (time: Date): boolean => {
   const hour = time.getHours();
   const minute = time.getMinutes();
-  return (hour === MORNING_BREAK_TIME && minute === 0) || 
-         (hour === AFTERNOON_BREAK_TIME && minute === 0);
+  return (hour === MORNING_BREAK_TIME && minute < BREAK_DURATION) || 
+         (hour === AFTERNOON_BREAK_TIME && minute < BREAK_DURATION);
+};
+
+/**
+ * Vérifie si un horaire est en dehors des heures de travail
+ */
+export const isOutsideWorkingHours = (time: Date): boolean => {
+  const hour = time.getHours();
+  return hour < WORKING_DAY_START || hour >= WORKING_DAY_END;
 };
 
 /**
@@ -52,12 +60,18 @@ export const getNextTimeSlot = (
   let newDayIndex = currentDayIndex;
   let newMinutesScheduled = minutesScheduledToday;
   
+  // S'assurer que nous commençons pas avant les heures de bureau
+  if (nextTime.getHours() < WORKING_DAY_START) {
+    setHours(nextTime, WORKING_DAY_START);
+    setMinutes(nextTime, 0);
+  }
+  
   // Ajouter la durée de l'entretien
   nextTime = addMinutes(nextTime, durationMinutes);
   newMinutesScheduled += durationMinutes;
   
   // Si nous sommes maintenant dans la pause de 10h
-  if (nextTime.getHours() === MORNING_BREAK_TIME && nextTime.getMinutes() <= BREAK_DURATION) {
+  if (nextTime.getHours() === MORNING_BREAK_TIME && nextTime.getMinutes() < BREAK_DURATION) {
     nextTime = new Date(nextTime);
     setHours(nextTime, MORNING_BREAK_TIME);
     setMinutes(nextTime, BREAK_DURATION);
@@ -76,7 +90,7 @@ export const getNextTimeSlot = (
   }
   
   // Si nous sommes maintenant dans la pause de 16h
-  if (nextTime.getHours() === AFTERNOON_BREAK_TIME && nextTime.getMinutes() <= BREAK_DURATION) {
+  if (nextTime.getHours() === AFTERNOON_BREAK_TIME && nextTime.getMinutes() < BREAK_DURATION) {
     nextTime = new Date(nextTime);
     setHours(nextTime, AFTERNOON_BREAK_TIME);
     setMinutes(nextTime, BREAK_DURATION);
@@ -338,6 +352,12 @@ export const generatePreviewInterviews = (
         minutesScheduledToday = 0;
       }
       
+      // S'assurer que nous ne commençons pas avant les heures de bureau
+      if (currentTime.getHours() < WORKING_DAY_START) {
+        setHours(currentTime, WORKING_DAY_START);
+        setMinutes(currentTime, 0);
+      }
+      
       // Créer l'entretien
       interviewsToPreview.push({
         themeId: topicId,
@@ -406,8 +426,57 @@ export const generatePreviewInterviews = (
       });
     }
     
+    // Vérification finale: s'assurer qu'aucun interview ne commence avant 9h ou après 18h
+    const fixedInterviews = interviewsToPreview.map(interview => {
+      if (!interview.startTime) return interview;
+      
+      const startTime = new Date(interview.startTime);
+      
+      // Si l'interview commence avant 9h, le déplacer à 9h
+      if (startTime.getHours() < WORKING_DAY_START) {
+        const fixedTime = new Date(startTime);
+        setHours(fixedTime, WORKING_DAY_START);
+        setMinutes(fixedTime, 0);
+        return {
+          ...interview,
+          startTime: fixedTime.toISOString()
+        };
+      }
+      
+      // Si l'interview finit après 18h, l'adapter
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + (interview.durationMinutes || 60));
+      
+      if (endTime.getHours() >= WORKING_DAY_END || 
+          (endTime.getHours() === WORKING_DAY_END && endTime.getMinutes() > 0)) {
+        // Si possible, réduire la durée pour qu'il finisse à 18h
+        const newDuration = (WORKING_DAY_END - startTime.getHours()) * 60 - startTime.getMinutes();
+        if (newDuration >= 30) { // Minimum 30 minutes pour un entretien
+          return {
+            ...interview,
+            durationMinutes: newDuration,
+            description: `${interview.description} (Durée ajustée pour respecter les heures de bureau)`
+          };
+        }
+        // Sinon, le déplacer au jour suivant à 9h (pour la prévisualisation)
+        else {
+          const nextDay = new Date(startTime);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setHours(nextDay, WORKING_DAY_START);
+          setMinutes(nextDay, 0);
+          return {
+            ...interview,
+            startTime: nextDay.toISOString(),
+            description: `${interview.description} (Déplacé au jour suivant pour respecter les heures de bureau)`
+          };
+        }
+      }
+      
+      return interview;
+    });
+    
     // Trier les entretiens chronologiquement
-    return interviewsToPreview.sort((a, b) => {
+    return fixedInterviews.sort((a, b) => {
       return new Date(a.startTime || '').getTime() - new Date(b.startTime || '').getTime();
     });
   } catch (error) {
@@ -415,4 +484,3 @@ export const generatePreviewInterviews = (
     return [];
   }
 };
-
