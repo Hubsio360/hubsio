@@ -28,6 +28,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   
   const [activeTab, setActiveTab] = useState('generate');
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
+  const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -97,7 +98,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
           // If interviews exist, update the active tab if it's on generate
           if (realInterviews.length > 0 && activeTab === 'generate') {
             console.log('Setting active tab to "steps" as interviews exist');
-            setActiveTab('steps');
+            setActiveTab('calendar');
           }
         } else {
           console.warn('No valid interviews data returned');
@@ -184,7 +185,7 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
             setActiveTab(targetTab);
           } else if (activeTab === 'generate') {
             console.log('Setting active tab to "steps" as interviews exist');
-            setActiveTab('steps');
+            setActiveTab('calendar');
           }
         }
       } else {
