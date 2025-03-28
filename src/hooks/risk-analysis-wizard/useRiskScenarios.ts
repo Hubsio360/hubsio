@@ -170,11 +170,6 @@ export function useRiskScenarios(companyId: string) {
           residualRiskLevel: 'low'
         });
       }
-
-      toast({
-        title: "Succès",
-        description: `${selectedScenarios.length} scénarios de risque ont été créés avec succès`,
-      });
       
       setLoading(false);
       return true;

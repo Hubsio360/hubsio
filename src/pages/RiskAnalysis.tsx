@@ -11,7 +11,6 @@ import { OrganizationContextDialog } from '@/components/risk-analysis/Organizati
 import RiskScalesDialog from '@/components/risk-analysis/RiskScalesDialog';
 import { AnalysisWizard } from '@/components/risk-analysis/AnalysisWizard';
 
-// Import the component files
 import RiskSummaryCards from '@/components/risk-analysis/RiskSummaryCards';
 import OverviewTab from '@/components/risk-analysis/OverviewTab';
 import ScenariosTab from '@/components/risk-analysis/ScenariosTab';
@@ -240,10 +239,6 @@ const RiskAnalysis = () => {
         companyName={company.name}
         onComplete={() => {
           refreshData();
-          toast({
-            title: "Analyse terminée",
-            description: "Les scénarios de risque ont été créés avec succès",
-          });
         }}
       />
     </div>

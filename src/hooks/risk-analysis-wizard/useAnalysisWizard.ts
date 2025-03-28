@@ -81,10 +81,12 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     }
     
     if (step === 3) {
-      // At the last step, save scenarios
+      // At the last step, save scenarios and close the wizard
       const success = await saveScenarios();
-      if (success && onComplete) {
-        onComplete();
+      if (success) {
+        if (onComplete) {
+          onComplete();
+        }
         resetAndClose();
       }
       return;

@@ -52,12 +52,6 @@ export function RiskScenariosStep({
     }
     
     onComplete();
-    
-    // Afficher un toast de succès
-    toast({
-      title: "Succès",
-      description: `${selectedCount} scénarios de risque ont été créés avec succès`,
-    });
   };
 
   return (
