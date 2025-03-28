@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { OrganizationContextDialog } from '@/components/risk-analysis/OrganizationContextDialog';
 import RiskScalesDialog from '@/components/risk-analysis/RiskScalesDialog';
+import { AnalysisWizard } from '@/components/risk-analysis/AnalysisWizard';
 
 // Import the component files
 import RiskSummaryCards from '@/components/risk-analysis/RiskSummaryCards';
@@ -37,6 +39,7 @@ const RiskAnalysis = () => {
   const { toast } = useToast();
   const [openContextDialog, setOpenContextDialog] = useState(false);
   const [openScalesDialog, setOpenScalesDialog] = useState(false);
+  const [openAnalysisWizard, setOpenAnalysisWizard] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -53,6 +56,15 @@ const RiskAnalysis = () => {
       });
     }
   }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId, fetchCompanyRiskScales]);
+
+  const refreshData = () => {
+    if (id) {
+      Promise.all([
+        fetchRiskScenariosByCompanyId(id),
+        fetchRiskAssetsByCompanyId(id),
+      ]);
+    }
+  };
 
   if (!id) {
     return (
@@ -117,7 +129,7 @@ const RiskAnalysis = () => {
             <Settings className="mr-2 h-4 w-4" />
             Échelles de risque
           </Button>
-          <Button onClick={() => setOpenContextDialog(true)}>
+          <Button onClick={() => setOpenAnalysisWizard(true)}>
             <Sparkles className="mr-2 h-4 w-4" />
             Commencer l'analyse
           </Button>
@@ -218,6 +230,20 @@ const RiskAnalysis = () => {
           companyId={id}
         />
       )}
+
+      <AnalysisWizard 
+        open={openAnalysisWizard}
+        onOpenChange={setOpenAnalysisWizard}
+        companyId={id}
+        companyName={company.name}
+        onComplete={() => {
+          refreshData();
+          toast({
+            title: "Analyse terminée",
+            description: "Les scénarios de risque ont été créés avec succès",
+          });
+        }}
+      />
     </div>
   );
 };
