@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
@@ -162,14 +163,22 @@ export const useCompanies = () => {
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
-              fetchCompanies()
-                .then(() => {
-                  resolve(enrichedCompany);
-                })
-                .catch(error => {
-                  console.error('Error refreshing companies after enrich:', error);
-                  reject(error);
-                });
+              // Fix: Use a proper async/await pattern wrapped in try/catch to handle the Promise
+              // Instead of directly chaining .then() and .catch() to fetchCompanies()
+              try {
+                // Call fetchCompanies and handle resolution
+                fetchCompanies()
+                  .then(() => {
+                    resolve(enrichedCompany);
+                  })
+                  .catch((error) => {
+                    console.error('Error refreshing companies after enrich:', error);
+                    reject(error);
+                  });
+              } catch (error) {
+                console.error('Error in try/catch block:', error);
+                reject(error);
+              }
             })
             .catch(error => {
               console.error('Error updating enriched company data:', error);
