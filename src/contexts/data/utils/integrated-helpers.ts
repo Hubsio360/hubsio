@@ -21,10 +21,18 @@ export const fetchThemesByFrameworkId = async (
     
     if (error) {
       console.error('Error fetching themes:', error);
-      return [];
+      // Si une erreur se produit, essayons de créer des thèmes par défaut
+      console.log('Trying to create default themes after fetch error');
+      return createDefaultThemes();
     }
     
     console.log(`Found ${data?.length || 0} themes`);
+    
+    // Si aucun thème n'est trouvé, créons des thèmes par défaut
+    if (!data || data.length === 0) {
+      console.log('No themes found, creating default themes');
+      return createDefaultThemes();
+    }
     
     // Map to the expected format and ensure description is always a string
     return (data || []).map(theme => ({
@@ -34,7 +42,9 @@ export const fetchThemesByFrameworkId = async (
     }));
   } catch (error) {
     console.error('Error in fetchThemesByFrameworkId:', error);
-    return [];
+    // En cas d'erreur, essayons de créer des thèmes par défaut
+    console.log('Trying to create default themes after exception');
+    return createDefaultThemes();
   }
 };
 
@@ -53,6 +63,34 @@ export const createDefaultThemes = async (): Promise<AuditTheme[]> => {
   ];
   
   try {
+    // Vérifions d'abord s'il existe déjà des thèmes
+    const { data: existingThemes, error: checkError } = await supabase
+      .from('audit_themes')
+      .select('id')
+      .limit(1);
+      
+    if (checkError) {
+      console.error('Error checking for existing themes:', checkError);
+    } else if (existingThemes && existingThemes.length > 0) {
+      console.log('Themes already exist, fetching them instead of creating defaults');
+      const { data, error } = await supabase
+        .from('audit_themes')
+        .select('*')
+        .order('name');
+        
+      if (error) {
+        console.error('Error fetching existing themes:', error);
+        return [];
+      }
+      
+      return (data || []).map(theme => ({
+        id: theme.id,
+        name: theme.name,
+        description: theme.description || ''
+      }));
+    }
+    
+    // Si aucun thème n'existe, créons les thèmes par défaut
     const { data, error } = await supabase
       .from('audit_themes')
       .insert(defaultThemes)

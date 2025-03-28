@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { AuditTheme } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { createDefaultThemes } from '../utils/integrated-helpers';
 
 export const useThemes = () => {
   const [themes, setThemes] = useState<AuditTheme[]>([]);
@@ -18,11 +20,19 @@ export const useThemes = () => {
       
       if (error) {
         console.error('Error fetching audit themes:', error);
-        return [];
+        
+        // Try to create default themes
+        console.log("No themes found, attempting to create default themes");
+        const defaultThemes = await createDefaultThemes();
+        setThemes(defaultThemes);
+        return defaultThemes;
       }
       
       if (!data || data.length === 0) {
-        console.log("No audit themes found in database");
+        console.log("No audit themes found in database, creating default themes");
+        const defaultThemes = await createDefaultThemes();
+        setThemes(defaultThemes);
+        return defaultThemes;
       } else {
         console.log(`Found ${data.length} audit themes`);
       }
@@ -37,6 +47,14 @@ export const useThemes = () => {
       return fetchedThemes;
     } catch (error) {
       console.error('Error fetching audit themes:', error);
+      
+      // En cas d'erreur catastrophique, renvoyons un tableau vide mais affichons un toast
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les thématiques d'audit",
+      });
+      
       return [];
     } finally {
       setLoading(false);
@@ -50,6 +68,11 @@ export const useThemes = () => {
       // Verify the theme has a name
       if (!theme.name || theme.name.trim() === '') {
         console.error('Theme name is required');
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Le nom de la thématique est requis",
+        });
         return null;
       }
       
@@ -66,11 +89,21 @@ export const useThemes = () => {
       
       if (error) {
         console.error('Error adding audit theme:', error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible d'ajouter la thématique",
+        });
         return null;
       }
       
       if (!data || data.length === 0) {
         console.error('No data returned from insert operation');
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Aucune donnée retournée lors de l'ajout de la thématique",
+        });
         return null;
       }
       
@@ -83,9 +116,20 @@ export const useThemes = () => {
       };
       
       setThemes(prev => [...prev, newTheme]);
+      
+      toast({
+        title: "Thématique ajoutée",
+        description: `La thématique "${newTheme.name}" a été ajoutée avec succès`,
+      });
+      
       return newTheme;
     } catch (error) {
       console.error('Error adding audit theme:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout de la thématique",
+      });
       return null;
     }
   };
@@ -152,6 +196,37 @@ export const useThemes = () => {
       return false;
     }
   };
+  
+  const checkOrCreateThemes = async (): Promise<boolean> => {
+    try {
+      console.log("Checking if themes exist, creating if needed");
+      
+      const { data, error } = await supabase
+        .from('audit_themes')
+        .select('id')
+        .limit(1);
+        
+      if (error) {
+        console.error("Error checking for themes:", error);
+        return false;
+      }
+      
+      if (data && data.length > 0) {
+        console.log("Themes already exist");
+        return true;
+      }
+      
+      // No themes exist, create defaults
+      console.log("No themes found, creating defaults");
+      const defaultThemes = await createDefaultThemes();
+      setThemes(defaultThemes);
+      return defaultThemes.length > 0;
+      
+    } catch (error) {
+      console.error("Error in checkOrCreateThemes:", error);
+      return false;
+    }
+  };
 
   return {
     themes,
@@ -159,6 +234,7 @@ export const useThemes = () => {
     fetchThemes,
     addTheme,
     updateTheme,
-    deleteTheme
+    deleteTheme,
+    checkOrCreateThemes
   };
 };

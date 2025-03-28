@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { AuditTheme } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ThemeSelectorProps {
   auditId: string;
@@ -25,14 +26,14 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   onSelectionChange,
   excludedThemeNames = ['ADMIN', 'Cloture']
 }) => {
-  const { fetchThemes, themes: allThemes, loading: globalLoading, addTheme } = useData();
+  const { fetchThemes, themes: allThemes, loading: globalLoading, addTheme, fetchThemesByFrameworkId } = useData();
   const [frameworkThemes, setFrameworkThemes] = useState<AuditTheme[]>([]);
   const [loadingThemes, setLoadingThemes] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Load themes directly from the data context
+  // Load themes - first try framework specific themes if frameworkId provided, otherwise use all themes
   const loadThemes = async () => {
     if (!auditId) {
       console.log("No audit ID provided for theme loading");
@@ -45,25 +46,62 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     try {
       console.log(`Attempt ${attemptCount + 1}: Loading themes...`);
       
-      // Simply use fetchThemes from context which will update the themes state
-      const themes = await fetchThemes();
-      console.log("Themes loaded:", themes);
+      let themes: AuditTheme[] = [];
       
+      // Si un frameworkId est fourni, essayons d'abord de charger les thèmes spécifiques
+      if (frameworkId) {
+        console.log(`Loading themes for framework ${frameworkId}`);
+        themes = await fetchThemesByFrameworkId(frameworkId);
+        console.log("Framework specific themes loaded:", themes);
+      }
+      
+      // Si nous n'avons pas de thèmes spécifiques au framework ou qu'ils sont vides, utilisons tous les thèmes
+      if (!themes || themes.length === 0) {
+        console.log("No framework specific themes found, loading all themes");
+        themes = await fetchThemes();
+        console.log("All themes loaded:", themes);
+      }
+      
+      // Vérifions si nous avons des thèmes
       if (themes && Array.isArray(themes) && themes.length > 0) {
         // Filter out excluded theme names
         const filteredThemes = themes.filter(theme => 
           !excludedThemeNames.includes(theme.name)
         );
         
+        console.log("Filtered themes:", filteredThemes);
         setFrameworkThemes(filteredThemes);
-        console.log("Themes set in local state:", filteredThemes);
       } else {
         console.error("No themes found or returned");
-        setError("No themes were found. Please add themes or try again.");
+        // Si nous n'avons toujours pas de thèmes, vérifions directement dans la base de données
+        const { data, error } = await supabase
+          .from('audit_themes')
+          .select('*')
+          .order('name');
+          
+        if (error) {
+          console.error("Error checking themes directly:", error);
+          setError("Aucune thématique trouvée. Veuillez ajouter des thématiques ou réessayer.");
+        } else if (data && data.length > 0) {
+          console.log("Found themes directly from database:", data);
+          const directThemes = data.map(theme => ({
+            id: theme.id,
+            name: theme.name,
+            description: theme.description || ''
+          }));
+          
+          const filteredThemes = directThemes.filter(theme => 
+            !excludedThemeNames.includes(theme.name)
+          );
+          
+          setFrameworkThemes(filteredThemes);
+        } else {
+          setError("Aucune thématique trouvée. Veuillez ajouter des thématiques ou réessayer.");
+        }
       }
     } catch (error) {
       console.error("Complete error while loading themes:", error);
-      setError("Could not load themes. Please try again.");
+      setError("Impossible de charger les thématiques. Veuillez réessayer.");
     } finally {
       setLoadingThemes(false);
     }
@@ -72,7 +110,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   // Initial theme loading
   useEffect(() => {
     loadThemes();
-  }, [auditId, fetchThemes, attemptCount]);
+  }, [auditId, frameworkId, fetchThemes, fetchThemesByFrameworkId, attemptCount]);
 
   // Automatic retry mechanism on failure
   useEffect(() => {
@@ -96,10 +134,10 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
 
   // Function to add a new theme
   const handleAddTheme = async () => {
-    const themeName = prompt("New theme name:");
+    const themeName = prompt("Nom de la nouvelle thématique:");
     if (!themeName || themeName.trim() === '') return;
     
-    const description = prompt("Description (optional):");
+    const description = prompt("Description (optionnel):");
     
     try {
       const newTheme = await addTheme({
@@ -109,8 +147,8 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       
       if (newTheme) {
         toast({
-          title: "Theme added",
-          description: `The theme "${newTheme.name}" has been successfully added.`,
+          title: "Thématique ajoutée",
+          description: `La thématique "${newTheme.name}" a été ajoutée avec succès.`,
         });
         
         // Reload themes
@@ -118,16 +156,16 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
-          description: "Could not add the theme.",
+          title: "Erreur",
+          description: "Impossible d'ajouter la thématique.",
         });
       }
     } catch (error) {
       console.error("Error adding theme:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "An error occurred while adding the theme.",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout de la thématique.",
       });
     }
   };
@@ -147,9 +185,9 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <div>
-          <CardTitle className="text-lg">Interview Themes</CardTitle>
+          <CardTitle className="text-lg">Thématiques d'entretien</CardTitle>
           <CardDescription>
-            Select the themes to include in your audit plan
+            Sélectionnez les thématiques à inclure dans votre plan d'audit
           </CardDescription>
         </div>
         <Button 
@@ -159,7 +197,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           className="ml-auto"
         >
           <PlusCircle className="h-4 w-4 mr-2" />
-          New theme
+          Nouvelle thématique
         </Button>
       </CardHeader>
       <CardContent>
@@ -181,7 +219,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Retry
+                Réessayer
               </Button>
               <Button 
                 onClick={handleAddTheme}
@@ -189,7 +227,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                 size="sm"
               >
                 <PlusCircle className="h-4 w-4 mr-2" />
-                Add a theme
+                Ajouter une thématique
               </Button>
             </div>
           </div>
