@@ -6,7 +6,7 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 1
+const TOAST_LIMIT = 5 // Increased from 1 to 5 to allow multiple toasts
 const TOAST_REMOVE_DELAY = 3000
 
 type ToasterToast = ToastProps & {
@@ -91,8 +91,7 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // ! Side effects ! - This could be extracted into a dismissToast() action,
-      // but I'll keep it here for simplicity
+      // Only dismiss the specified toast or all toasts if toastId is undefined
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -148,6 +147,8 @@ function toast({ ...props }: Toast) {
       type: "UPDATE_TOAST",
       toast: { ...props, id },
     })
+  
+  // Only dismiss this specific toast
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
@@ -185,6 +186,7 @@ function useToast() {
   return {
     ...state,
     toast,
+    // Only dismiss the specified toast
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }

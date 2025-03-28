@@ -57,10 +57,38 @@ export function RiskScenariosStep({
     onComplete();
   };
 
+  const handleValidate = () => {
+    if (selectedCount === 0) {
+      toast({
+        title: "Attention",
+        description: "Veuillez sélectionner au moins un scénario de risque",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Succès",
+      description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
+    });
+    
+    onComplete();
+  };
+
   const handleGenerateMore = async () => {
     setGeneratingMore(true);
     try {
       await onGenerateMoreScenarios();
+      toast({
+        title: "Nouveaux scénarios",
+        description: "De nouveaux scénarios ont été générés",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer de nouveaux scénarios",
+        variant: "destructive",
+      });
     } finally {
       setGeneratingMore(false);
     }
@@ -151,14 +179,14 @@ export function RiskScenariosStep({
         <div className="space-x-2">
           <Button 
             variant="secondary"
-            onClick={handleComplete}
+            onClick={handleValidate}
             disabled={loading || selectedCount === 0}
           >
             <Save className="mr-2 h-4 w-4" />
             Valider
           </Button>
           <Button 
-            onClick={onComplete}
+            onClick={handleComplete}
             disabled={loading || selectedCount === 0}
           >
             Terminer
