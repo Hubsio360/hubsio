@@ -60,14 +60,14 @@ const checkTopicExists = async (topicId: string): Promise<boolean> => {
  */
 const createTemporaryTopic = async (auditId: string, themeId: string): Promise<string | null> => {
   try {
-    console.log(`Création d'un topic temporaire pour auditId=${auditId}, themeId=${themeId}`);
+    console.log(`Création d'un topic temporaire pour thème ${themeId}`);
     
+    // Corrigé : Inclure uniquement les propriétés valides pour la table audit_topics
+    // Ne pas inclure audit_id car cette colonne n'existe pas dans la table
     const { data, error } = await supabase
       .from('audit_topics')
       .insert({
-        audit_id: auditId,
-        theme_id: themeId,
-        title: `Topic temporaire pour thème ${themeId}`,
+        name: `Topic temporaire pour thème ${themeId}`,
         description: "Topic créé automatiquement lors de la génération du plan"
       })
       .select('id')
@@ -431,3 +431,4 @@ export const checkAuditHasPlan = async (auditId: string): Promise<boolean> => {
     return false;
   }
 };
+
