@@ -142,9 +142,10 @@ export const useCompanies = () => {
 
             const company = companies[companyIndex];
             
-            // Données enrichies
+            // Simulation d'une analyse par IA
+            // Dans un cas réel, cela appellerait une fonction d'edge qui utiliserait l'API OpenAI
             const enrichedData = {
-              activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions de cybersécurité avancées.`,
+              activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions avancées pour les entreprises. Ses principaux processus métier incluent la consultance en sécurité, l'audit de systèmes d'information et la formation des équipes à la cybersécurité.`,
               creationYear: company.creationYear || 2018,
               marketScope: company.marketScope || 'National',
             };

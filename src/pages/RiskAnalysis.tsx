@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -33,7 +32,8 @@ import {
   Layers, 
   Wrench, 
   UserX,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -51,6 +51,9 @@ import {
   RiskScope, 
   RiskTreatmentStrategy 
 } from '@/types';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { OrganizationContextDialog } from '@/components/risk-analysis/OrganizationContextDialog';
 
 const RiskAnalysis = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,9 +68,12 @@ const RiskAnalysis = () => {
     fetchRiskAssetsByCompanyId,
     fetchRiskThreatsByCompanyId,
     fetchRiskVulnerabilitiesByCompanyId,
-    fetchRiskScenariosByCompanyId
+    fetchRiskScenariosByCompanyId,
+    enrichCompanyData
   } = useData();
   const [activeTab, setActiveTab] = useState('overview');
+  const { toast } = useToast();
+  const [openContextDialog, setOpenContextDialog] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -170,7 +176,6 @@ const RiskAnalysis = () => {
 
   const isLoading = loading.riskAssets || loading.riskThreats || loading.riskVulnerabilities || loading.riskScenarios || loading.riskTreatments;
 
-  // Calculate risk metrics
   const totalScenarios = riskScenarios.length;
   const criticalScenarios = riskScenarios.filter(scenario => scenario.riskLevel === 'critical').length;
   const highScenarios = riskScenarios.filter(scenario => scenario.riskLevel === 'high').length;
@@ -203,11 +208,9 @@ const RiskAnalysis = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button asChild>
-            <Link to={`/risk-analysis/new-scenario/${company.id}`}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau scénario de risque
-            </Link>
+          <Button onClick={() => setOpenContextDialog(true)}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Commencer l'analyse
           </Button>
         </div>
       </div>
@@ -471,10 +474,10 @@ const RiskAnalysis = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Form fields would go here */}
-                      <p className="text-sm text-muted-foreground">
-                        Formulaire d'ajout d'actif à implémenter.
-                      </p>
+                      <Textarea className="w-full" placeholder="Nom de l'actif" />
+                      <Textarea className="w-full" placeholder="Catégorie de l'actif" />
+                      <Textarea className="w-full" placeholder="Valeur de l'actif" />
+                      <Textarea className="w-full" placeholder="Propriétaire de l'actif" />
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -507,10 +510,10 @@ const RiskAnalysis = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          {/* Form fields would go here */}
-                          <p className="text-sm text-muted-foreground">
-                            Formulaire d'ajout d'actif à implémenter.
-                          </p>
+                          <Textarea className="w-full" placeholder="Nom de l'actif" />
+                          <Textarea className="w-full" placeholder="Catégorie de l'actif" />
+                          <Textarea className="w-full" placeholder="Valeur de l'actif" />
+                          <Textarea className="w-full" placeholder="Propriétaire de l'actif" />
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
@@ -583,10 +586,9 @@ const RiskAnalysis = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Form fields would go here */}
-                      <p className="text-sm text-muted-foreground">
-                        Formulaire d'ajout de menace à implémenter.
-                      </p>
+                      <Textarea className="w-full" placeholder="Nom de la menace" />
+                      <Textarea className="w-full" placeholder="Catégorie de la menace" />
+                      <Textarea className="w-full" placeholder="Source de la menace" />
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -619,10 +621,9 @@ const RiskAnalysis = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          {/* Form fields would go here */}
-                          <p className="text-sm text-muted-foreground">
-                            Formulaire d'ajout de menace à implémenter.
-                          </p>
+                          <Textarea className="w-full" placeholder="Nom de la menace" />
+                          <Textarea className="w-full" placeholder="Catégorie de la menace" />
+                          <Textarea className="w-full" placeholder="Source de la menace" />
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
@@ -693,10 +694,8 @@ const RiskAnalysis = () => {
                       </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Form fields would go here */}
-                      <p className="text-sm text-muted-foreground">
-                        Formulaire d'ajout de vulnérabilité à implémenter.
-                      </p>
+                      <Textarea className="w-full" placeholder="Nom de la vulnérabilité" />
+                      <Textarea className="w-full" placeholder="Catégorie de la vulnérabilité" />
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -729,10 +728,8 @@ const RiskAnalysis = () => {
                           </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
-                          {/* Form fields would go here */}
-                          <p className="text-sm text-muted-foreground">
-                            Formulaire d'ajout de vulnérabilité à implémenter.
-                          </p>
+                          <Textarea className="w-full" placeholder="Nom de la vulnérabilité" />
+                          <Textarea className="w-full" placeholder="Catégorie de la vulnérabilité" />
                         </div>
                         <DialogFooter>
                           <DialogClose asChild>
@@ -772,6 +769,20 @@ const RiskAnalysis = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      <OrganizationContextDialog 
+        open={openContextDialog}
+        onOpenChange={setOpenContextDialog}
+        companyId={id}
+        companyName={company.name}
+        onEnrichSuccess={() => {
+          toast({
+            title: "Succès",
+            description: "Le contexte de l'organisation a été enrichi avec succès",
+            variant: "default",
+          });
+        }}
+      />
     </div>
   );
 };
