@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -29,6 +28,8 @@ serve(async (req) => {
         return await getCompanyInfo(data.companyName);
       case 'generateRiskScenarios':
         return await generateRiskScenarios(data.companyName, data.businessProcesses);
+      case 'generateAdditionalScenarios': 
+        return await generateAdditionalScenarios(data.existingScenarios);
       default:
         throw new Error(`Action non reconnue: ${action}`);
     }
@@ -263,6 +264,116 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
     }
   } catch (error) {
     console.error('Error generating risk scenarios from OpenAI:', error);
+    throw error;
+  }
+}
+
+// Nouvelle fonction pour générer des scénarios de risque additionnels
+async function generateAdditionalScenarios(existingScenarios: string[]) {
+  console.log(`Generating additional risk scenarios to complement existing ones:`, existingScenarios);
+
+  const existingNamesText = existingScenarios.map(s => `- ${s}`).join('\n');
+  
+  const prompt = `
+    En tant qu'expert en analyse de risques, génère au moins 5 scénarios de risque ADDITIONNELS et DIFFÉRENTS 
+    des scénarios existants listés ci-dessous:
+    
+    ${existingNamesText}
+    
+    Pour chaque nouveau scénario:
+    1. Donne un titre court et descriptif (5-10 mots maximum)
+    2. Fournis une description détaillée qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
+    3. Assure-toi que les scénarios couvrent un large éventail de risques: technologiques, opérationnels, humains, liés à la sécurité de l'information, etc.
+    4. Chaque scénario doit être réaliste et spécifique au contexte de l'entreprise
+    5. Évite absolument toute ressemblance avec les scénarios existants
+    
+    Réponds au format JSON strict avec une liste d'objets, chacun ayant:
+    - "id": un identifiant unique (format "scenario-X" où X est un nombre)
+    - "name": le titre court du scénario
+    - "description": la description détaillée
+    - "selected": false (les nouveaux scénarios ne sont pas présélectionnés)
+    
+    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre.
+  `;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en JSON valide sans aucun texte supplémentaire.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.8,
+        response_format: { type: "json_object" },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const responseData = await response.json();
+    console.log('OpenAI additional risk scenarios received successfully');
+    
+    // Extraire et formater la réponse
+    const content = responseData.choices[0].message.content;
+    
+    // Tenter de parser la réponse en JSON
+    try {
+      // Essayer d'abord de parser directement le contenu
+      const parsedContent = JSON.parse(content);
+      // S'assurer que nous avons un tableau de scénarios
+      const scenarios = parsedContent.scenarios || parsedContent;
+      
+      // Vérifier si scenarios est bien un tableau
+      if (Array.isArray(scenarios)) {
+        return new Response(
+          JSON.stringify(scenarios),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } else {
+        // Si c'est un objet mais pas un tableau, chercher un tableau dedans
+        for (const key in parsedContent) {
+          if (Array.isArray(parsedContent[key])) {
+            return new Response(
+              JSON.stringify(parsedContent[key]),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+        throw new Error('Le format de réponse n\'est pas un tableau de scénarios');
+      }
+    } catch (parseError) {
+      // Si le parsing direct échoue, essayer de nettoyer le contenu
+      console.warn('Could not parse OpenAI response as JSON directly, trying to clean the content:', parseError);
+      
+      try {
+        // Rechercher un tableau JSON valide dans la chaîne de caractères
+        const jsonMatch = content.match(/(\[[\s\S]*\])/);
+        if (jsonMatch && jsonMatch[0]) {
+          const jsonContent = jsonMatch[0];
+          const scenarios = JSON.parse(jsonContent);
+          return new Response(
+            JSON.stringify(scenarios),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (cleaningError) {
+        console.warn('Failed to extract JSON from content after cleaning:', cleaningError);
+      }
+      
+      throw new Error('Le format de réponse d\'OpenAI n\'est pas valide. Veuillez réessayer.');
+    }
+  } catch (error) {
+    console.error('Error generating additional risk scenarios from OpenAI:', error);
     throw error;
   }
 }

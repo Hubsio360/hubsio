@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -42,7 +42,7 @@ export function RiskScenariosStep({
 }: RiskScenariosStepProps) {
   const { toast } = useToast();
   const selectedCount = suggestedScenarios.filter(s => s.selected).length;
-  const [generatingMore, setGeneratingMore] = React.useState(false);
+  const [generatingMore, setGeneratingMore] = useState(false);
 
   const handleComplete = () => {
     if (selectedCount === 0) {
