@@ -5,7 +5,7 @@ export interface RiskScaleType {
   id: string;
   name: string;
   description: string;
-  category?: 'impact' | 'likelihood';
+  category?: 'impact' | 'likelihood' | string;
   createdAt?: string;
   updatedAt?: string;
   // Database field mappings

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from '@/types';
@@ -27,7 +26,13 @@ export const useRiskScales = () => {
         return [];
       }
       
-      const fetchedTypes = data as RiskScaleType[];
+      // Ensure the data is properly typed
+      const fetchedTypes = data.map(type => ({
+        ...type,
+        // Normalize category to one of the expected values or default to 'impact'
+        category: type.category === 'likelihood' ? 'likelihood' : 'impact'
+      })) as RiskScaleType[];
+      
       setRiskScaleTypes(fetchedTypes);
       return fetchedTypes;
     } catch (error) {
@@ -73,28 +78,20 @@ export const useRiskScales = () => {
           
           if (levelsError) {
             console.error('Error fetching risk scale levels:', levelsError);
-            return {
-              ...scale,
-              levels: [],
-              scaleType: scale.risk_scale_types || {
-                id: '',
-                name: 'Type inconnu',
-                description: '',
-                category: 'impact'
-              }
-            };
-          }
-          
-          return {
-            ...scale,
-            levels: levels || [],
-            scaleType: scale.risk_scale_types || {
+            return mapToRiskScaleWithLevels(scale, [], scale.risk_scale_types || {
               id: '',
               name: 'Type inconnu',
               description: '',
               category: 'impact'
-            }
-          };
+            });
+          }
+          
+          return mapToRiskScaleWithLevels(scale, levels || [], scale.risk_scale_types || {
+            id: '',
+            name: 'Type inconnu',
+            description: '',
+            category: 'impact'
+          });
         })
       );
       
@@ -106,7 +103,20 @@ export const useRiskScales = () => {
     } finally {
       setLoading(prev => ({ ...prev, companyRiskScales: false }));
     }
-  }, [fetchRiskScaleTypes, riskScaleTypes.length]);
+  }, [fetchRiskScaleTypes, riskScaleTypes.length, mapToRiskScaleWithLevels]);
+
+  // Convert database response to properly typed RiskScaleWithLevels
+  const mapToRiskScaleWithLevels = useCallback((scale: any, levels: any[], scaleType: RiskScaleType): RiskScaleWithLevels => {
+    return {
+      ...scale,
+      levels: levels || [],
+      scaleType: {
+        ...scaleType,
+        // Normalize category to one of the expected values or default to 'impact'
+        category: scaleType.category === 'likelihood' ? 'likelihood' : 'impact'
+      }
+    };
+  }, []);
 
   // Ensure default risk scales exist for a company
   const ensureDefaultScalesExist = useCallback(async (companyId: string): Promise<boolean> => {
@@ -300,7 +310,12 @@ export const useRiskScales = () => {
         return null;
       }
       
-      const newType = data as RiskScaleType;
+      // Normalize the category
+      const newType: RiskScaleType = {
+        ...data as RiskScaleType,
+        category: data.category === 'likelihood' ? 'likelihood' : 'impact'
+      };
+      
       setRiskScaleTypes(prev => [...prev, newType]);
       return newType;
     } catch (error) {
@@ -331,7 +346,8 @@ export const useRiskScales = () => {
         return null;
       }
       
-      const updatedType = data as RiskScaleType;
+      const updatedType = normalizeRiskScaleType(data);
+      
       setRiskScaleTypes(prev => 
         prev.map(type => type.id === scaleTypeId ? updatedType : type)
       );
@@ -568,7 +584,7 @@ export const useRiskScales = () => {
       }
       
       if (existingTypes && existingTypes.length > 0) {
-        likelihoodType = existingTypes[0];
+        likelihoodType = normalizeRiskScaleType(existingTypes[0]);
       } else {
         // Create a new likelihood scale type
         const { data, error } = await supabase
@@ -586,7 +602,7 @@ export const useRiskScales = () => {
           return false;
         }
         
-        likelihoodType = data;
+        likelihoodType = normalizeRiskScaleType(data);
       }
       
       // Check if the company already has this scale
@@ -698,6 +714,14 @@ export const useRiskScales = () => {
       console.error('Error creating likelihood levels:', error);
       return false;
     }
+  };
+
+  // Helper function to normalize risk scale type data
+  const normalizeRiskScaleType = (data: any): RiskScaleType => {
+    return {
+      ...data,
+      category: data.category === 'likelihood' ? 'likelihood' : 'impact'
+    };
   };
 
   return {
