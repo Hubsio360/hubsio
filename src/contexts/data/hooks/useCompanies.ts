@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
@@ -11,10 +10,8 @@ export const useCompanies = () => {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
-  // Fonction pour récupérer les entreprises
   const fetchCompanies = useCallback(async () => {
     try {
-      // Ne pas essayer de récupérer les données si l'utilisateur n'est pas authentifié
       if (!isAuthenticated) {
         console.log('Utilisateur non authentifié, report de la récupération des entreprises');
         setCompanies([]);
@@ -66,7 +63,6 @@ export const useCompanies = () => {
     }
   }, [isAuthenticated, toast]);
 
-  // Récupération des entreprises lorsque l'authentification change
   useEffect(() => {
     fetchCompanies();
   }, [isAuthenticated, fetchCompanies]);
@@ -75,14 +71,12 @@ export const useCompanies = () => {
     try {
       console.log('Adding new company:', company);
       
-      // Vérifier que l'utilisateur est authentifié
       const session = await checkAuth();
       if (!session) {
         console.error('Tentative d\'ajout d\'entreprise sans authentification');
         throw new Error("Vous devez être connecté pour ajouter une entreprise");
       }
       
-      // Préparer les données pour l'insertion
       const companyData = {
         name: company.name,
         activity: company.activity || null,
@@ -95,7 +89,6 @@ export const useCompanies = () => {
       console.log('Prepared data for insertion:', companyData);
       console.log('Current auth session:', session);
       
-      // Insérer la nouvelle entreprise
       const { data, error } = await supabase
         .from('companies')
         .insert(companyData)
@@ -118,11 +111,8 @@ export const useCompanies = () => {
         lastAuditDate: data.last_audit_date,
       };
 
-      // Mettre à jour le state avec la nouvelle entreprise
       setCompanies(prev => [...prev, newCompany]);
       
-      // Rafraîchir la liste complète pour s'assurer de la cohérence des données
-      // Fixed: Converting PromiseLike to Promise with Promise.resolve()
       await Promise.resolve(fetchCompanies())
         .catch(error => {
           console.error('Error refreshing companies after add:', error);
@@ -158,7 +148,6 @@ export const useCompanies = () => {
             ...enrichedData,
           };
 
-          // Mise à jour dans la base de données
           supabase
             .from('companies')
             .update({
@@ -168,17 +157,11 @@ export const useCompanies = () => {
             })
             .eq('id', companyId)
             .then(() => {
-              // Mise à jour du state local
               const newCompanies = [...companies];
               newCompanies[companyIndex] = enrichedCompany;
               setCompanies(newCompanies);
               
-              // Rafraîchir la liste complète
-              // Fix: Properly convert PromiseLike to an actual Promise with .catch support
-              const fetchPromise = fetchCompanies();
-              
-              // Proper Promise handling with Promise.resolve()
-              Promise.resolve(fetchPromise)
+              Promise.resolve(fetchCompanies())
                 .then(() => {
                   resolve(enrichedCompany);
                 })
