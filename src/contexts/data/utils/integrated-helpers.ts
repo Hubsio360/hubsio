@@ -26,11 +26,11 @@ export const fetchThemesByFrameworkId = async (
     
     console.log(`Found ${data?.length || 0} themes`);
     
-    // Map to the expected format
+    // Map to the expected format and ensure description is always a string
     return (data || []).map(theme => ({
       id: theme.id,
       name: theme.name,
-      description: theme.description || ''
+      description: theme.description || ''  // Ensure description is always a string, never undefined
     }));
   } catch (error) {
     console.error('Error in fetchThemesByFrameworkId:', error);
@@ -65,10 +65,11 @@ export const createDefaultThemes = async (): Promise<AuditTheme[]> => {
     
     console.log(`Created ${data?.length || 0} default themes`);
     
+    // Return data with description always as string
     return (data || []).map(theme => ({
       id: theme.id,
       name: theme.name,
-      description: theme.description || ''
+      description: theme.description || ''  // Ensure description is always a string
     }));
   } catch (error) {
     console.error('Error in createDefaultThemes:', error);

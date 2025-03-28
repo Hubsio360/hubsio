@@ -1,4 +1,3 @@
-
 import {
   Company,
   Audit,
@@ -41,8 +40,11 @@ export interface DataContextProps {
     standardClauses: boolean;
     audits: boolean;
     users: boolean;
-    services: boolean; // Ajout de la propriété services
+    services: boolean; 
+    consultingProjects: boolean;
+    rssiServices: boolean;
   };
+  
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
   updateAudit: (id: string, updates: Partial<Audit>) => Promise<Audit>;
@@ -100,7 +102,7 @@ export interface DataContextProps {
   getUserById: (id: string) => User | undefined;
   getUsersByRole: (roles: ('admin' | 'auditor' | 'viewer')[]) => User[];
   
-  fetchThemesByFrameworkId: (frameworkId: string) => Promise<{id: string, name: string, description: string}[]>;
+  fetchThemesByFrameworkId: (frameworkId: string) => Promise<AuditTheme[]>;
   
   services: Service[];
   consultingProjects: ConsultingProject[];

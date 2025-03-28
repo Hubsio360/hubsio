@@ -15,6 +15,7 @@ import { importStandardAuditPlan } from './utils/auditPlanUtils';
 import { DataContextProps } from './types/dataContextTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchThemesByFrameworkId as fetchThemesByFrameworkIdHelper } from './utils/integrated-helpers';
+import { AuditTheme } from '@/types';
 
 const DataContext = createContext<DataContextProps | undefined>(undefined);
 
@@ -118,7 +119,7 @@ export const DataProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const fetchThemesByFrameworkId = async (frameworkId: string) => {
+  const fetchThemesByFrameworkId = async (frameworkId: string): Promise<AuditTheme[]> => {
     console.log('DataProvider: Delegating fetchThemesByFrameworkId to helper function');
     return fetchThemesByFrameworkIdHelper(frameworkId);
   };

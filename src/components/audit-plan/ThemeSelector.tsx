@@ -8,6 +8,7 @@ import { AlertCircle, RefreshCw, PlusCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { AuditTheme } from '@/types';
 
 interface ThemeSelectorProps {
   auditId: string;
@@ -25,7 +26,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   excludedThemeNames = ['ADMIN', 'Cloture']
 }) => {
   const { fetchThemes, themes: allThemes, loading: globalLoading, addTheme } = useData();
-  const [frameworkThemes, setFrameworkThemes] = useState<{id: string, name: string, description: string}[]>([]);
+  const [frameworkThemes, setFrameworkThemes] = useState<AuditTheme[]>([]);
   const [loadingThemes, setLoadingThemes] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attemptCount, setAttemptCount] = useState(0);
