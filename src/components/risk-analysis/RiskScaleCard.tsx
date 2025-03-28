@@ -52,17 +52,17 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
     setEditingLevelId(null);
   };
 
+  // Helper function to get the level value regardless of naming convention
+  const getLevelValue = (level: RiskScaleLevel): number => {
+    return level.levelValue !== undefined ? level.levelValue : (level.level_value || 0);
+  };
+
   // Get color for risk level
   const getLevelColor = (level: RiskScaleLevel) => {
     return level.color || 
       (getLevelValue(level) === 1 ? "#4CAF50" : 
        getLevelValue(level) === 2 ? "#FFA726" : 
        getLevelValue(level) === 3 ? "#9C27B0" : "#F44336");
-  };
-
-  // Helper function to get the level value regardless of naming convention
-  const getLevelValue = (level: RiskScaleLevel): number => {
-    return level.levelValue !== undefined ? level.levelValue : (level.level_value || 0);
   };
 
   // Helper function to get isActive status regardless of naming convention

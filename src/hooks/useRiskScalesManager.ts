@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
-import { CompanyRiskScale, RiskScaleLevel, RiskScaleType } from '@/types';
+import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
 
 export const useRiskScalesManager = (companyId: string) => {
   const { 
@@ -19,10 +19,26 @@ export const useRiskScalesManager = (companyId: string) => {
 
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cachedScales, setCachedScales] = useState<CompanyRiskScale[]>([]);
+  const [cachedScales, setCachedScales] = useState<RiskScaleWithLevels[]>([]);
   const [cachedTypes, setCachedTypes] = useState<RiskScaleType[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Helper function to ensure a CompanyRiskScale has the required fields to be a RiskScaleWithLevels
+  const ensureWithLevels = (scale: CompanyRiskScale): RiskScaleWithLevels => {
+    const scaleTypeId = scale.scaleTypeId || scale.scale_type_id || '';
+    const scaleType = riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: ''
+    };
+    
+    return {
+      ...scale,
+      levels: scale.levels || [],
+      scaleType: scale.scaleType || scaleType
+    };
+  };
 
   // Initial data loading
   const loadData = useCallback(async () => {
@@ -128,14 +144,15 @@ export const useRiskScalesManager = (companyId: string) => {
           isActive: !isActive,
           is_active: !isActive  // Update both property formats
         } : scale
-      );
+      ).map(ensureWithLevels);
+      
       setCachedScales(updatedScales);
       
       await toggleRiskScaleActive(scaleId, !isActive);
       await refreshData();
     } catch (err) {
       console.error('Error toggling risk scale:', err);
-      setCachedScales(companyRiskScales); // Revert on error
+      setCachedScales(companyRiskScales.map(ensureWithLevels)); // Revert on error
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -169,7 +186,7 @@ export const useRiskScalesManager = (companyId: string) => {
   // Update cache when data changes
   useEffect(() => {
     if (!loading.companyRiskScales && !loading.riskScaleTypes) {
-      setCachedScales(companyRiskScales);
+      setCachedScales(companyRiskScales.map(ensureWithLevels));
       setCachedTypes(riskScaleTypes);
     }
   }, [companyRiskScales, riskScaleTypes, loading.companyRiskScales, loading.riskScaleTypes]);

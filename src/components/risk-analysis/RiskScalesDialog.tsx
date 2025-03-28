@@ -48,10 +48,14 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return scale.scaleTypeId || scale.scale_type_id || '';
   };
 
-  // Filter risk scale types that haven't been added to the company yet
-  const availableScaleTypes = riskScaleTypes.filter(
-    (type) => !companyRiskScales.some((scale) => getScaleTypeId(scale) === type.id)
-  );
+  // Get scale type details - defined BEFORE it's used
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
+    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: ''
+    };
+  };
 
   // Group company risk scales by type
   const impactScales = companyRiskScales.filter(
@@ -68,21 +72,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   );
 
+  // Filter risk scale types that haven't been added to the company yet
+  const availableScaleTypes = riskScaleTypes.filter(
+    (type) => !companyRiskScales.some((scale) => getScaleTypeId(scale) === type.id)
+  );
+
   // Handle adding a new scale type to the company
   const handleAddScale = async () => {
     if (selectedScaleType) {
       await addScale(selectedScaleType);
       setSelectedScaleType('');
     }
-  };
-
-  // Get scale type details
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: ''
-    };
   };
 
   // Get levels for a scale
