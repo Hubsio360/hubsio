@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
