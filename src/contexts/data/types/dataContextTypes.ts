@@ -1,4 +1,10 @@
+
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService, RiskAsset, RiskThreat, RiskVulnerability, RiskScenario, RiskTreatment, RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels } from '@/types';
+
+// Add missing type definitions
+type UserRole = 'admin' | 'auditor' | 'client';
+type FrameworkImport = any; // Replace with proper type if available
+type FrameworkImportResult = any; // Replace with proper type if available
 
 export interface DataContextProps {
   companies: Company[];
@@ -143,8 +149,6 @@ export interface DataContextProps {
   removeRiskScenarioAssetAssociation: (scenarioId: string, assetId: string) => Promise<boolean>;
   getRiskScenarioAssets: (scenarioId: string) => Promise<RiskAsset[]>;
   
-  riskScaleTypes: RiskScaleType[];
-  companyRiskScales: RiskScaleWithLevels[];
   fetchRiskScaleTypes: () => Promise<RiskScaleType[]>;
   fetchCompanyRiskScales: (companyId: string) => Promise<RiskScaleWithLevels[]>;
   ensureDefaultScalesExist: (companyId: string) => Promise<boolean>;
@@ -155,26 +159,4 @@ export interface DataContextProps {
   toggleRiskScaleActive: (scaleId: string, isActive: boolean) => Promise<boolean>;
   deleteRiskScale: (scaleId: string) => Promise<boolean>;
   setupLikelihoodScale: (companyId: string) => Promise<boolean>;
-
-  loading: {
-    companies: boolean;
-    frameworks: boolean;
-    controls: boolean;
-    topics: boolean;
-    interviews: boolean;
-    themes: boolean;
-    standardClauses: boolean;
-    audits: boolean;
-    users: boolean;
-    services: boolean; 
-    consultingProjects: boolean;
-    rssiServices: boolean;
-    riskAssets: boolean;
-    riskThreats: boolean;
-    riskVulnerabilities: boolean;
-    riskScenarios: boolean;
-    riskTreatments: boolean;
-    riskScaleTypes: boolean;
-    companyRiskScales: boolean;
-  };
 }

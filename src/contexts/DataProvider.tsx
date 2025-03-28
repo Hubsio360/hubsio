@@ -155,6 +155,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     companyRiskScales: riskScalesHook.companyRiskScales,
     fetchRiskScaleTypes: riskScalesHook.fetchRiskScaleTypes,
     fetchCompanyRiskScales: riskScalesHook.fetchCompanyRiskScales,
+    ensureDefaultScalesExist: riskScalesHook.ensureDefaultScalesExist,
     addRiskScaleType: riskScalesHook.addRiskScaleType,
     addCompanyRiskScale: riskScalesHook.addCompanyRiskScale,
     updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
