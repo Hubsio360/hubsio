@@ -47,9 +47,12 @@ export function AnalysisWizard({
     saveScenarios
   } = useAnalysisWizard(companyId, companyName, onComplete);
 
-  // If any modal closes, close all modals
   const handleModalClose = () => {
-    handleClose(false);
+    if (step > 1) {
+      setConfirmDialogOpen(true);
+    } else {
+      onOpenChange(false);
+    }
   };
 
   return (
