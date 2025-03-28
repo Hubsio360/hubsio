@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { 
   RiskAsset, 
@@ -378,6 +377,9 @@ export const useRiskAnalysis = () => {
       throw error;
     }
   }, []);
+
+  // Function alias for consistency with other context functions
+  const createRiskScenario = addRiskScenario;
 
   // Add a risk treatment
   const addRiskTreatment = useCallback(async (treatment: Omit<RiskTreatment, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskTreatment> => {
@@ -763,6 +765,7 @@ export const useRiskAnalysis = () => {
     addRiskThreat,
     addRiskVulnerability,
     addRiskScenario,
+    createRiskScenario,
     addRiskTreatment,
     updateRiskAsset,
     updateRiskThreat,

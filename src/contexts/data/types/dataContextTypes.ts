@@ -1,4 +1,3 @@
-
 import {
   Company,
   Audit,
@@ -51,7 +50,7 @@ export interface DataContextProps {
   riskTreatments: RiskTreatment[];
   
   loading: {
-    companies: boolean; // Added 'companies' property to the loading object
+    companies: boolean;
     frameworks: boolean;
     controls: boolean;
     topics: boolean;
@@ -149,6 +148,7 @@ export interface DataContextProps {
   addRiskThreat: (threat: Omit<RiskThreat, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskThreat>;
   addRiskVulnerability: (vulnerability: Omit<RiskVulnerability, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskVulnerability>;
   addRiskScenario: (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskScenario>;
+  createRiskScenario: (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskScenario>;
   addRiskTreatment: (treatment: Omit<RiskTreatment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<RiskTreatment>;
   
   updateRiskAsset: (id: string, asset: Partial<RiskAsset>) => Promise<RiskAsset>;

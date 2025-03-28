@@ -133,6 +133,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     addRiskThreat: riskAnalysisHook.addRiskThreat,
     addRiskVulnerability: riskAnalysisHook.addRiskVulnerability,
     addRiskScenario: riskAnalysisHook.addRiskScenario,
+    createRiskScenario: riskAnalysisHook.createRiskScenario, // Add the alias to the context value
     addRiskTreatment: riskAnalysisHook.addRiskTreatment,
     updateRiskAsset: riskAnalysisHook.updateRiskAsset,
     updateRiskThreat: riskAnalysisHook.updateRiskThreat,
