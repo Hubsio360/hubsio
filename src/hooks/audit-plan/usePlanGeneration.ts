@@ -120,7 +120,8 @@ export const usePlanGeneration = (
         });
 
         if (onPlanGenerated) {
-          onPlanGenerated('calendar');
+          // Rediriger vers l'onglet steps (étapes) au lieu de calendar
+          onPlanGenerated('steps');
         }
       } else {
         throw new Error("La génération du plan n'a pas abouti");

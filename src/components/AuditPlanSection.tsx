@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, Plus, Layers, RefreshCw } from 'lucide-react';
 import AuditPlanCalendar from './AuditPlanCalendar';
-import AuditPlanGenerator from './AuditPlanGenerator'; // Fixed import
+import AuditPlanGenerator from './AuditPlanGenerator';
 import EditInterviewDrawer from './EditInterviewDrawer';
 import { useToast } from '@/hooks/use-toast';
 

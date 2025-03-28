@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Clock, Users, Trash2 } from 'lucide-react';
+import { CalendarIcon, Clock, Users, Trash2, Mail, Plus, Send } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format, parseISO, setHours, setMinutes } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,6 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 interface TimeOption {
   value: string;
@@ -43,7 +44,7 @@ const generateTimeOptions = (): TimeOption[] => {
 };
 
 const timeOptions = generateTimeOptions();
-const durationOptions = [15, 30, 45, 60, 90, 120, 180, 240].map(duration => ({
+const durationOptions = [15, 30, 45, 60, 75, 90, 120, 150, 180, 210, 240].map(duration => ({
   value: duration.toString(),
   label: `${duration} minutes`,
 }));
@@ -86,6 +87,9 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [participants, setParticipants] = useState<any[]>([]);
+  const [newParticipantEmail, setNewParticipantEmail] = useState('');
+  const [newParticipantRole, setNewParticipantRole] = useState('Participant');
+  const [isSendingInvitations, setIsSendingInvitations] = useState(false);
   
   // Charger les thématiques si nécessaire
   useEffect(() => {
@@ -233,6 +237,85 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
     setMeetingLink(`https://meet.google.com/${meetCode}`);
   };
 
+  // Ajouter un participant
+  const handleAddParticipant = async () => {
+    if (!interview) return;
+    
+    if (!newParticipantEmail || !newParticipantEmail.includes('@')) {
+      toast({
+        title: "Format d'email invalide",
+        description: "Veuillez entrer une adresse email valide",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Simuler l'ajout d'un participant (dans un vrai cas, il faudrait récupérer ou créer l'utilisateur)
+      const dummyUserId = `user-${Math.random().toString(36).substring(2, 10)}`;
+      
+      const success = await addParticipant({
+        interviewId: interview.id,
+        userId: dummyUserId,
+        role: newParticipantRole
+      });
+      
+      if (success) {
+        // Rafraîchir la liste des participants
+        const updatedParticipants = await getParticipantsByInterviewId(interview.id);
+        setParticipants(updatedParticipants);
+        
+        toast({
+          title: "Participant ajouté",
+          description: `${newParticipantEmail} a été ajouté comme ${newParticipantRole}`,
+        });
+        
+        // Réinitialiser le formulaire
+        setNewParticipantEmail('');
+        setNewParticipantRole('Participant');
+      } else {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'ajouter le participant",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding participant:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'ajout du participant",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Envoyer des invitations aux participants
+  const handleSendInvitations = async () => {
+    if (!interview || participants.length === 0) return;
+    
+    setIsSendingInvitations(true);
+    
+    try {
+      // Simuler l'envoi d'invitations
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Invitations envoyées",
+        description: `${participants.length} invitation(s) ont été envoyées aux participants`,
+      });
+    } catch (error) {
+      console.error('Error sending invitations:', error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'envoi des invitations",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingInvitations(false);
+    }
+  };
+
   return (
     <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DrawerContent className="max-h-[90vh]">
@@ -378,13 +461,48 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
             
             <Separator className="my-4" />
             
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label className="flex items-center">
                   <Users className="h-4 w-4 mr-2" />
                   Participants
                 </Label>
                 <Badge variant="outline">{participants.length} participant(s)</Badge>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Input
+                    type="email"
+                    placeholder="Email du participant"
+                    value={newParticipantEmail}
+                    onChange={(e) => setNewParticipantEmail(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select
+                    value={newParticipantRole}
+                    onValueChange={setNewParticipantRole}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Rôle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Auditeur">Auditeur</SelectItem>
+                      <SelectItem value="Audité">Audité</SelectItem>
+                      <SelectItem value="Participant">Participant</SelectItem>
+                      <SelectItem value="Observateur">Observateur</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button
+                    type="button"
+                    size="icon"
+                    onClick={handleAddParticipant}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               
               {participants.length > 0 ? (
@@ -412,14 +530,23 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
                       </Button>
                     </div>
                   ))}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-2"
+                    onClick={handleSendInvitations}
+                    disabled={isSendingInvitations || participants.length === 0}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    {isSendingInvitations ? "Envoi en cours..." : "Envoyer les invitations"}
+                  </Button>
                 </div>
               ) : (
                 <div className="text-center p-4 border rounded-md">
                   <p className="text-muted-foreground">Aucun participant</p>
                 </div>
               )}
-              
-              {/* Possibilité d'ajouter des participants ultérieurement */}
             </div>
           </div>
         </ScrollArea>
