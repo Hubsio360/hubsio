@@ -18,6 +18,7 @@ import ServiceDetail from "@/pages/ServiceDetail";
 import Frameworks from "@/pages/frameworks";
 import Profile from "@/pages/Profile";
 import RiskAnalysis from "@/pages/RiskAnalysis";
+import RiskScenarioDetail from "@/pages/RiskScenarioDetail";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 
@@ -102,6 +103,12 @@ const AppRoutes = () => {
       <Route path="/risk-analysis/:id" element={
         <ProtectedRoute>
           <RiskAnalysis />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/risk-analysis/scenario/:id" element={
+        <ProtectedRoute>
+          <RiskScenarioDetail />
         </ProtectedRoute>
       } />
       
