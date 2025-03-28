@@ -169,7 +169,7 @@ export const useRiskScales = () => {
       // Récupérer les types d'échelles existants
       const { data: existingTypes, error: typesError } = await supabase
         .from('risk_scale_types')
-        .select('id, name');
+        .select('id, name, category');
       
       if (typesError) {
         console.error('Error checking existing scale types:', typesError);
@@ -178,6 +178,8 @@ export const useRiskScales = () => {
       
       // Créer les types d'échelles manquants
       for (const requiredType of requiredScaleTypes) {
+        if (!existingTypes) continue;
+        
         const typeExists = existingTypes.some(t => t.name === requiredType.name);
         if (!typeExists) {
           console.log(`Creating missing scale type: ${requiredType.name}`);
@@ -196,7 +198,7 @@ export const useRiskScales = () => {
         .from('risk_scale_types')
         .select('id, name, category');
       
-      if (allTypesError) {
+      if (allTypesError || !allTypes) {
         console.error('Error fetching all scale types:', allTypesError);
         return false;
       }
@@ -577,7 +579,7 @@ export const useRiskScales = () => {
           .select()
           .single();
         
-        if (error) {
+        if (error || !data) {
           console.error('Error creating likelihood scale type:', error);
           return false;
         }
