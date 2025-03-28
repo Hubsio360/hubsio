@@ -4,7 +4,7 @@ import { AuditInterview } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Plus, Layers, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, Plus, RefreshCw } from 'lucide-react';
 import AuditPlanCalendar from './AuditPlanCalendar';
 import AuditPlanGenerator from './AuditPlanGenerator';
 import EditInterviewDrawer from './EditInterviewDrawer';
@@ -26,14 +26,13 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
   const { fetchInterviewsByAuditId, fetchTopics } = useData();
   const { toast } = useToast();
   
-  const [activeTab, setActiveTab] = useState('calendar');
+  const [activeTab, setActiveTab] = useState('generate');
   const [interviews, setInterviews] = useState<AuditInterview[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedInterview, setSelectedInterview] = useState<AuditInterview | null>(null);
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
-  const [interviewsByTheme, setInterviewsByTheme] = useState<Record<string, AuditInterview[]>>({});
   const [dataLoaded, setDataLoaded] = useState(false);
   const [planExists, setPlanExists] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(false);
@@ -242,22 +241,18 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex justify-between items-center mb-4">
             <TabsList>
-              <TabsTrigger value="calendar" className="flex items-center" disabled={!planExists}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Calendrier
-              </TabsTrigger>
-              <TabsTrigger value="steps" className="flex items-center" disabled={!planExists}>
-                <Layers className="h-4 w-4 mr-2" />
-                Étapes d'audit
-              </TabsTrigger>
               <TabsTrigger value="generate" className="flex items-center">
                 <Clock className="h-4 w-4 mr-2" />
                 Générer un plan
               </TabsTrigger>
+              <TabsTrigger value="calendar" className="flex items-center" disabled={!planExists}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Calendrier
+              </TabsTrigger>
             </TabsList>
             
             <div className="flex gap-2">
-              {planExists && (activeTab === 'calendar' || activeTab === 'steps') && (
+              {planExists && (activeTab === 'calendar') && (
                 <>
                   <Button
                     size="sm"
@@ -283,6 +278,16 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
               )}
             </div>
           </div>
+          
+          <TabsContent value="generate" className="mt-0">
+            <AuditPlanGenerator
+              auditId={auditId}
+              frameworkId={frameworkId}
+              startDate={startDate}
+              endDate={endDate}
+              onPlanGenerated={refreshInterviews}
+            />
+          </TabsContent>
           
           <TabsContent value="calendar" className="mt-0">
             {initialLoading ? (
@@ -323,92 +328,6 @@ const AuditPlanSection: React.FC<AuditPlanSectionProps> = ({
                 </Button>
               </div>
             )}
-          </TabsContent>
-          
-          <TabsContent value="steps" className="mt-0">
-            {initialLoading ? (
-              <div className="py-8 text-center">
-                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Chargement des étapes d'audit...</p>
-              </div>
-            ) : loadError ? (
-              <div className="py-8 text-center border rounded-lg">
-                <p className="text-muted-foreground">{loadError}</p>
-                <Button 
-                  variant="outline" 
-                  className="mt-4" 
-                  onClick={() => {
-                    setDataLoaded(false);
-                    setForceRefresh(true);
-                  }}
-                >
-                  Réessayer
-                </Button>
-              </div>
-            ) : planExists && Object.keys(interviewsByTheme).length > 0 ? (
-              <div className="space-y-6">
-                {Object.entries(interviewsByTheme).map(([theme, themeInterviews]) => (
-                  <Card key={theme} className="overflow-hidden">
-                    <div className="bg-primary h-1"></div>
-                    <CardContent className="p-4">
-                      <h3 className="text-lg font-semibold mb-3">Thématique {theme.substring(0, 8)}...</h3>
-                      <div className="space-y-3">
-                        {themeInterviews.map(interview => (
-                          <div 
-                            key={interview.id} 
-                            className="p-3 border rounded-md hover:bg-muted/50 cursor-pointer"
-                            onClick={() => handleEditInterview(interview)}
-                          >
-                            <div className="flex justify-between">
-                              <div className="font-medium">{interview.title}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {new Date(interview.startTime).toLocaleDateString()} - {interview.durationMinutes} min
-                              </div>
-                            </div>
-                            {interview.description && (
-                              <div className="text-sm text-muted-foreground mt-1">
-                                {interview.description.substring(0, 100)}{interview.description.length > 100 ? '...' : ''}
-                              </div>
-                            )}
-                            {interview.controlRefs && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Clause/Contrôle: {interview.controlRefs}
-                              </div>
-                            )}
-                            {interview.meetingLink && (
-                              <div className="text-xs text-primary mt-1">
-                                Lien de réunion disponible
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="py-16 text-center border rounded-lg">
-                <Layers className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-                <h3 className="text-xl font-medium mb-2">Aucune étape d'audit définie</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mb-6">
-                  Aucune étape d'audit n'a encore été définie. Vous pouvez générer un plan automatiquement ou ajouter des interviews manuellement.
-                </p>
-                <Button onClick={() => setActiveTab('generate')}>
-                  Générer un plan d'audit
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="generate" className="mt-0">
-            <AuditPlanGenerator
-              auditId={auditId}
-              frameworkId={frameworkId}
-              startDate={startDate}
-              endDate={endDate}
-              onPlanGenerated={refreshInterviews}
-            />
           </TabsContent>
         </Tabs>
         
