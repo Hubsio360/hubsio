@@ -11,10 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Search, AlertCircle, ChevronsUpDown } from 'lucide-react';
 import { EnhancedTemplate, GroupedTemplate } from '@/hooks/useScenarioTemplates';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 
@@ -48,6 +46,7 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
   setActiveTab
 }) => {
   const [localSelectedTemplate, setLocalSelectedTemplate] = useState<EnhancedTemplate | null>(null);
+  const [filteredGroups, setFilteredGroups] = useState<GroupedTemplate[]>(groupedTemplates);
 
   // Reset the local selection when dialog opens/closes
   useEffect(() => {
@@ -63,8 +62,32 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
     }
   }, [groupedTemplates, activeTab, setActiveTab]);
 
+  // Filter templates based on search
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredGroups(groupedTemplates);
+      return;
+    }
+
+    const lowercaseSearch = searchTerm.toLowerCase();
+    const filtered = groupedTemplates.map(group => {
+      const filteredTemplates = group.templates.filter(template => 
+        template.name.toLowerCase().includes(lowercaseSearch) || 
+        template.shortDescription.toLowerCase().includes(lowercaseSearch) ||
+        template.domain.toLowerCase().includes(lowercaseSearch)
+      );
+      return { ...group, templates: filteredTemplates };
+    }).filter(group => group.templates.length > 0);
+
+    setFilteredGroups(filtered);
+  }, [searchTerm, groupedTemplates]);
+
   const handleTemplateClick = (template: EnhancedTemplate) => {
     setLocalSelectedTemplate(template);
+  };
+
+  const handleDomainClick = (domain: string) => {
+    setActiveTab(domain);
   };
 
   const handleConfirm = () => {
@@ -76,7 +99,7 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] h-[80vh] flex flex-col">
+      <DialogContent className="max-w-4xl max-h-[90vh] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Sélectionner un modèle de scénario</DialogTitle>
           <DialogDescription>
@@ -112,7 +135,7 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
               </Button>
             </div>
           </div>
-        ) : groupedTemplates.length === 0 ? (
+        ) : filteredGroups.length === 0 ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
@@ -124,64 +147,51 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex-1 flex flex-col">
-            <Tabs 
-              value={activeTab || (groupedTemplates[0]?.domain ?? "")} 
-              onValueChange={setActiveTab}
-              className="flex-1 flex flex-col"
-            >
-              <div className="bg-muted rounded-md p-1 mb-4">
-                <ScrollArea className="max-w-full">
-                  <div className="flex">
-                    <TabsList className="inline-flex h-9 whitespace-nowrap">
-                      {groupedTemplates.map((group) => (
-                        <TabsTrigger
-                          key={`tab-${group.domain}`}
-                          value={group.domain}
-                          className="px-3"
-                        >
-                          {group.domain}
-                          <Badge variant="secondary" className="ml-2">
-                            {group.templates.length}
-                          </Badge>
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </div>
-                </ScrollArea>
-              </div>
-
-              <div className="flex-1 overflow-hidden">
-                {groupedTemplates.map((group) => (
-                  <TabsContent 
-                    key={`content-${group.domain}`} 
-                    value={group.domain}
-                    className="h-full data-[state=active]:flex data-[state=active]:flex-col"
-                  >
-                    <ScrollArea className="flex-1">
-                      <div className="space-y-3 pr-3">
-                        {group.templates.map((template) => (
-                          <div
-                            key={`template-${template.id}`}
-                            className={`border rounded-md p-3 cursor-pointer hover:bg-accent transition-colors ${
-                              localSelectedTemplate?.id === template.id
-                                ? "border-primary bg-accent"
-                                : "border-border"
-                            }`}
-                            onClick={() => handleTemplateClick(template)}
-                          >
-                            <h4 className="font-medium mb-1">{template.name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              {template.shortDescription}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </TabsContent>
-                ))}
-              </div>
-            </Tabs>
+          <div className="flex-1 flex overflow-hidden">
+            {/* Left sidebar with domains */}
+            <div className="w-1/3 border-r pr-2 overflow-hidden">
+              <ScrollArea className="h-full pr-3">
+                <div className="space-y-1">
+                  {filteredGroups.map((group) => (
+                    <Button
+                      key={`domain-${group.domain}`}
+                      variant={activeTab === group.domain ? "secondary" : "ghost"}
+                      className="w-full justify-between text-left"
+                      onClick={() => handleDomainClick(group.domain)}
+                    >
+                      <span className="truncate">{group.domain}</span>
+                      <Badge variant="outline" className="ml-2">
+                        {group.templates.length}
+                      </Badge>
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+            
+            {/* Right content with templates */}
+            <div className="flex-1 overflow-hidden pl-3">
+              <ScrollArea className="h-full">
+                <div className="space-y-3 pr-3">
+                  {activeTab && filteredGroups.find(g => g.domain === activeTab)?.templates.map((template) => (
+                    <div
+                      key={`template-${template.id}`}
+                      className={`border rounded-md p-3 cursor-pointer hover:bg-accent transition-colors ${
+                        localSelectedTemplate?.id === template.id
+                          ? "border-primary bg-accent"
+                          : "border-border"
+                      }`}
+                      onClick={() => handleTemplateClick(template)}
+                    >
+                      <h4 className="font-medium mb-1">{template.name}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {template.shortDescription}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         )}
 
