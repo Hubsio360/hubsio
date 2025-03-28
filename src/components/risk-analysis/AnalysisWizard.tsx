@@ -91,7 +91,7 @@ export function AnalysisWizard({
     onOpenChange(false);
   };
 
-  // Fonction pour rechercher les informations de l'entreprise
+  // Fonction pour rechercher les informations de l'entreprise via OpenAI
   const fetchCompanyInfo = async () => {
     if (!companyInfo.name.trim()) {
       toast({
@@ -104,48 +104,53 @@ export function AnalysisWizard({
 
     setLoading(true);
     try {
-      // Simuler un appel à l'API OpenAI - dans un cas réel, cela appellerait une fonction d'edge
-      setTimeout(() => {
-        // Données fictives pour la démonstration
-        const mockDescription = `${companyInfo.name} est une entreprise spécialisée dans le développement de solutions de cybersécurité pour les entreprises. Fondée en 2015, elle a rapidement développé une expertise reconnue dans le domaine de la sécurité informatique et la protection des données sensibles.`;
-        
-        const mockActivities = `Les processus clés identifiés pour ${companyInfo.name} incluent:
-- Développement de logiciels de sécurité
-- Services de conseil en cybersécurité
-- Audits de sécurité et tests d'intrusion
-- Formation et sensibilisation à la sécurité
-- Support et maintenance des solutions de sécurité`;
+      console.log('Appel de la fonction Edge pour obtenir les infos de l\'entreprise');
+      const { data, error } = await supabase.functions.invoke('ai-risk-analysis', {
+        body: {
+          action: 'getCompanyInfo',
+          data: { companyName: companyInfo.name.trim() }
+        }
+      });
 
-        setCompanyInfo(prev => ({
-          ...prev, 
-          description: mockDescription,
-          activities: mockActivities
-        }));
+      if (error) {
+        console.error('Erreur lors de l\'appel à la fonction Edge:', error);
+        throw new Error(`Erreur lors de la récupération des données: ${error.message}`);
+      }
 
-        // Créer automatiquement les processus métier à partir des activités
-        const processLines = mockActivities.split('\n')
-          .filter(line => line.trim().startsWith('-'))
-          .map(line => line.trim().substring(1).trim());
-        
+      console.log('Données reçues de la fonction Edge:', data);
+      
+      // Mise à jour des informations de l'entreprise
+      setCompanyInfo(prev => ({
+        ...prev, 
+        description: data.description || '',
+        activities: data.activities || ''
+      }));
+
+      // Extraire et créer automatiquement les processus métier à partir des activités
+      const processLines = (data.activities || '').split('\n')
+        .filter(line => line.trim().startsWith('-'))
+        .map(line => line.trim().substring(1).trim());
+      
+      if (processLines.length > 0) {
         setBusinessProcesses(
           processLines.map((process, index) => ({
-            id: `process-${index}`,
+            id: `process-${Date.now()}-${index}`,
             name: process
           }))
         );
+      }
 
-        setLoading(false);
-        toast({
-          title: "Succès",
-          description: "Informations sur l'entreprise récupérées avec succès",
-        });
-      }, 2000);
+      setLoading(false);
+      toast({
+        title: "Succès",
+        description: "Informations sur l'entreprise récupérées avec succès",
+      });
     } catch (error) {
       console.error("Erreur lors de la récupération des informations:", error);
       setLoading(false);
       toast({
         title: "Erreur",
-        description: "Impossible de récupérer les informations de l'entreprise",
+        description: error instanceof Error ? error.message : "Impossible de récupérer les informations de l'entreprise",
         variant: "destructive",
       });
     }
@@ -169,7 +174,7 @@ export function AnalysisWizard({
     setBusinessProcesses(businessProcesses.filter(process => process.id !== id));
   };
 
-  // Générer des scénarios de risque basés sur les processus métier
+  // Générer des scénarios de risque basés sur les processus métier via OpenAI
   const generateRiskScenarios = async () => {
     if (businessProcesses.length === 0) {
       toast({
@@ -182,49 +187,43 @@ export function AnalysisWizard({
 
     setLoading(true);
     try {
-      // Simuler un appel à l'API OpenAI pour générer des scénarios
-      setTimeout(() => {
-        // Exemples de scénarios pour la démonstration
-        const mockScenarios: SuggestedScenario[] = [
-          {
-            id: "scenario-1",
-            name: "Fuite de données clients",
-            description: "Divulgation non autorisée de données sensibles des clients suite à une faille de sécurité.",
-            selected: true
-          },
-          {
-            id: "scenario-2",
-            name: "Attaque par déni de service",
-            description: "Indisponibilité des services en ligne suite à une attaque DDoS ciblant l'infrastructure.",
-            selected: true
-          },
-          {
-            id: "scenario-3",
-            name: "Vol de propriété intellectuelle",
-            description: "Vol de code source ou d'algorithmes propriétaires par un acteur malveillant externe ou interne.",
-            selected: false
-          },
-          {
-            id: "scenario-4",
-            name: "Défaillance de sauvegarde critique",
-            description: "Perte de données critiques due à une défaillance des systèmes de sauvegarde.",
-            selected: false
+      console.log('Appel de la fonction Edge pour générer des scénarios');
+      const { data, error } = await supabase.functions.invoke('ai-risk-analysis', {
+        body: {
+          action: 'generateRiskScenarios',
+          data: { 
+            companyName: companyInfo.name,
+            businessProcesses: businessProcesses.map(bp => bp.name)
           }
-        ];
+        }
+      });
 
-        setSuggestedScenarios(mockScenarios);
-        setLoading(false);
-        toast({
-          title: "Succès",
-          description: "Scénarios de risque générés avec succès",
-        });
-      }, 2000);
+      if (error) {
+        console.error('Erreur lors de l\'appel à la fonction Edge:', error);
+        throw new Error(`Erreur lors de la génération des scénarios: ${error.message}`);
+      }
+
+      console.log('Scénarios reçus de la fonction Edge:', data);
+      
+      // Si data est un array, l'utiliser directement, sinon vérifier s'il y a une propriété pour les scénarios
+      const scenarios = Array.isArray(data) ? data : (data.scenarios || []);
+      
+      if (scenarios.length === 0) {
+        throw new Error('Aucun scénario n\'a été généré. Veuillez réessayer ou affiner les processus métier.');
+      }
+
+      setSuggestedScenarios(scenarios);
+      setLoading(false);
+      toast({
+        title: "Succès",
+        description: `${scenarios.length} scénarios de risque générés avec succès`,
+      });
     } catch (error) {
       console.error("Erreur lors de la génération des scénarios:", error);
       setLoading(false);
       toast({
         title: "Erreur",
-        description: "Impossible de générer les scénarios de risque",
+        description: error instanceof Error ? error.message : "Impossible de générer les scénarios de risque",
         variant: "destructive",
       });
     }

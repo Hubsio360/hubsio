@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -129,7 +128,10 @@ const RiskAnalysis = () => {
             <Settings className="mr-2 h-4 w-4" />
             Échelles de risque
           </Button>
-          <Button onClick={() => setOpenAnalysisWizard(true)}>
+          <Button 
+            onClick={() => setOpenAnalysisWizard(true)}
+            className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md transition-all duration-300"
+          >
             <Sparkles className="mr-2 h-4 w-4" />
             Commencer l'analyse
           </Button>
