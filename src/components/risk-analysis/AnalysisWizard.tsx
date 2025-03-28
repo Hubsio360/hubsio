@@ -6,6 +6,7 @@ import { CompanyInfoStep } from './wizard/CompanyInfoStep';
 import { BusinessProcessStep } from './wizard/BusinessProcessStep';
 import { RiskScenariosStep } from './wizard/RiskScenariosStep';
 import { ConfirmDialog } from './wizard/ConfirmDialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface AnalysisWizardProps {
   open: boolean;
