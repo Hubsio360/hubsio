@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -165,10 +166,11 @@ export interface Service {
   id: string;
   companyId: string;
   type: ServiceType;
+  name?: string; // Added this field
   startDate: string;
   endDate?: string;
   status: string;
-  description?: string;
+  description?: string; // Added this field
   createdAt?: string;
   updatedAt?: string;
 }
@@ -179,6 +181,9 @@ export interface ConsultingProject {
   name: string;
   scope?: string;
   status: string;
+  description?: string; // Added this field
+  startDate?: string; // Added this field
+  endDate?: string; // Added this field 
   frameworkId?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -189,7 +194,8 @@ export interface RssiService {
   serviceId: string;
   allocationTime: number;
   mainContactName?: string;
-  status: string;
+  status?: string;
+  tasks?: string; // Added this field
   slaDetails?: string;
   createdAt?: string;
   updatedAt?: string;

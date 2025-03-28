@@ -1,3 +1,4 @@
+
 import {
   Company,
   Audit,
@@ -40,6 +41,15 @@ export interface DataContextProps {
   interviews: AuditInterview[];
   standardClauses: StandardClause[];
   users: User[];
+  services: Service[];
+  consultingProjects: ConsultingProject[];
+  rssiServices: RssiService[];
+  riskAssets: RiskAsset[];
+  riskThreats: RiskThreat[];
+  riskVulnerabilities: RiskVulnerability[];
+  riskScenarios: RiskScenario[];
+  riskTreatments: RiskTreatment[];
+  
   loading: {
     frameworks: boolean;
     controls: boolean;
@@ -114,13 +124,10 @@ export interface DataContextProps {
   
   fetchUsers: () => Promise<User[]>;
   getUserById: (id: string) => User | undefined;
-  getUsersByRole: (roles: ('admin' | 'auditor' | 'viewer')[]) => User[];
+  getUsersByRole: (roles: UserRole[]) => User[];
   
   fetchThemesByFrameworkId: (frameworkId: string) => Promise<AuditTheme[]>;
   
-  services: Service[];
-  consultingProjects: ConsultingProject[];
-  rssiServices: RssiService[];
   addService: (service: Omit<Service, 'id'>) => Promise<Service>;
   addConsultingProject: (project: Omit<ConsultingProject, 'id'>) => Promise<ConsultingProject>;
   addRssiService: (rssiService: Omit<RssiService, 'id'>) => Promise<RssiService>;
@@ -130,30 +137,6 @@ export interface DataContextProps {
   fetchServices: () => Promise<void>;
   fetchConsultingProjects: () => Promise<void>;
   fetchRssiServices: () => Promise<void>;
-  
-  riskAssets: RiskAsset[];
-  riskThreats: RiskThreat[];
-  riskVulnerabilities: RiskVulnerability[];
-  riskScenarios: RiskScenario[];
-  riskTreatments: RiskTreatment[];
-  loading: {
-    frameworks: boolean;
-    controls: boolean;
-    topics: boolean;
-    interviews: boolean;
-    themes: boolean;
-    standardClauses: boolean;
-    audits: boolean;
-    users: boolean;
-    services: boolean; 
-    consultingProjects: boolean;
-    rssiServices: boolean;
-    riskAssets: boolean;
-    riskThreats: boolean;
-    riskVulnerabilities: boolean;
-    riskScenarios: boolean;
-    riskTreatments: boolean;
-  };
   
   fetchRiskAssetsByCompanyId: (companyId: string) => Promise<RiskAsset[]>;
   fetchRiskThreatsByCompanyId: (companyId: string) => Promise<RiskThreat[]>;
