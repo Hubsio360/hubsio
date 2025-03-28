@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { AuditTheme } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -228,6 +227,23 @@ export const useThemes = () => {
     }
   };
 
+  const fetchThemesByFrameworkId = async (frameworkId: string): Promise<AuditTheme[]> => {
+    setLoading(true);
+    try {
+      console.log(`Fetching themes for framework ${frameworkId}`);
+      
+      // Since we don't have a direct link between themes and frameworks in the current model,
+      // we'll just return all themes for now
+      const allThemes = await fetchThemes();
+      return allThemes;
+    } catch (error) {
+      console.error(`Error fetching themes for framework ${frameworkId}:`, error);
+      return [];
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     themes,
     loading,
@@ -235,6 +251,7 @@ export const useThemes = () => {
     addTheme,
     updateTheme,
     deleteTheme,
-    checkOrCreateThemes
+    checkOrCreateThemes,
+    fetchThemesByFrameworkId
   };
 };

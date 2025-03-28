@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Framework, FrameworkImport, FrameworkImportResult } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +47,10 @@ export const useFrameworks = () => {
   useEffect(() => {
     fetchFrameworks();
   }, [toast]);
+
+  const refreshFrameworks = async () => {
+    return await fetchFrameworks();
+  };
 
   const importFramework = async (inputFramework: FrameworkImport): Promise<FrameworkImportResult> => {
     try {
@@ -192,6 +195,7 @@ export const useFrameworks = () => {
     updateFramework,
     deleteFramework,
     getFrameworkById,
-    fetchFrameworks
+    fetchFrameworks,
+    refreshFrameworks
   };
 };

@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -30,7 +29,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const [loadingConsultingProjects, setLoadingConsultingProjects] = useState(false);
   const [loadingRssiServices, setLoadingRssiServices] = useState(false);
 
-  // Import hooks
   const auditsHook = useAudits();
   const findingsHook = useFindings();
   const auditStepsHook = useAuditSteps();
@@ -45,7 +43,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const riskAnalysisHook = useRiskAnalysis();
 
   useEffect(() => {
-    // Fetch initial data here, e.g., companies
     const initialCompanies: Company[] = [
       {
         id: '1',
@@ -141,7 +138,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const enrichCompanyData = async (companyId: string): Promise<Company> => {
-    // Simulate API call to enrich company data
     await new Promise(resolve => setTimeout(resolve, 1000));
     const updatedCompany = {
       ...getCompanyById(companyId),
@@ -196,23 +192,24 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchServices = async () => {
     setLoadingServices(true);
-    // Simulate API call to fetch services
     await new Promise(resolve => setTimeout(resolve, 500));
     setLoadingServices(false);
   };
 
   const fetchConsultingProjects = async () => {
     setLoadingConsultingProjects(true);
-    // Simulate API call to fetch consulting projects
     await new Promise(resolve => setTimeout(resolve, 500));
     setLoadingConsultingProjects(false);
   };
 
   const fetchRssiServices = async () => {
     setLoadingRssiServices(true);
-    // Simulate API call to fetch rssi services
     await new Promise(resolve => setTimeout(resolve, 500));
     setLoadingRssiServices(false);
+  };
+
+  const handleRefresh = async () => {
+    await frameworksHook.fetchFrameworks();
   };
 
   const contextValue: DataContextProps = {
@@ -247,7 +244,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     deleteFramework: frameworksHook.deleteFramework,
     updateControl: controlsHook.updateControl,
     addControl: controlsHook.addControl,
-    refreshFrameworks: frameworksHook.refreshFrameworks,
+    refreshFrameworks: frameworksHook.fetchFrameworks,
     assignAuditors: auditsHook.assignAuditors,
     getAuditAuditors: auditsHook.getAuditAuditors,
     fetchTopics: topicsHook.fetchTopics,
@@ -288,7 +285,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     fetchConsultingProjects,
     fetchRssiServices,
     
-    // Risk Analysis
     riskAssets: riskAnalysisHook.riskAssets,
     riskThreats: riskAnalysisHook.riskThreats,
     riskVulnerabilities: riskAnalysisHook.riskVulnerabilities,
