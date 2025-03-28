@@ -181,8 +181,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,
       riskScenarios: riskAnalysisHook.loading.riskScenarios,
       riskTreatments: riskAnalysisHook.loading.riskTreatments,
-      riskScaleTypes: riskScalesHook.loading.scaleTypes,
-      companyRiskScales: riskScalesHook.loading.companyScales
+      riskScaleTypes: riskScalesHook.loading.riskScaleTypes,
+      companyRiskScales: riskScalesHook.loading.companyRiskScales
     }
   };
 
