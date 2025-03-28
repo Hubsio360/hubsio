@@ -61,9 +61,8 @@ async function getCompanyInfo(companyName: string) {
        • Formule le nom de chaque processus de manière concise (2-5 mots)
        • Utilise des verbes d'action (gestion, traitement, développement, etc.)
     
-    Réponds au format JSON avec deux champs :
-    - "description": une description détaillée de l'entreprise en 3-4 phrases
-    - "activities": une liste à puces des processus métier clés (chaque élément commençant par un tiret "-")
+    Réponds au format JSON strict avec deux champs seulement:
+    {"description": "description détaillée de l'entreprise en 3-4 phrases", "activities": "liste à puces des processus métier clés (chaque élément commençant par un tiret \"-\")"}
   `;
 
   try {
@@ -97,14 +96,33 @@ async function getCompanyInfo(companyName: string) {
     
     // Tenter de parser la réponse en JSON
     try {
+      // Essayer d'abord de parser directement le contenu
       const result = JSON.parse(content);
       return new Response(
         JSON.stringify(result),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (parseError) {
-      // Si le JSON parsing échoue, retourner le contenu brut structuré manuellement
-      console.warn('Could not parse OpenAI response as JSON, formatting manually:', parseError);
+      // Si le parsing direct échoue, essayer de nettoyer le contenu
+      console.warn('Could not parse OpenAI response as JSON directly, trying to clean the content:', parseError);
+      
+      try {
+        // Rechercher un objet JSON valide dans la chaîne de caractères
+        const jsonMatch = content.match(/(\{[\s\S]*\})/);
+        if (jsonMatch && jsonMatch[0]) {
+          const jsonContent = jsonMatch[0];
+          const result = JSON.parse(jsonContent);
+          return new Response(
+            JSON.stringify(result),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (cleaningError) {
+        console.warn('Failed to extract JSON from content after cleaning:', cleaningError);
+      }
+      
+      // Extraction manuelle basée sur le texte si tout échoue
+      console.warn('Falling back to manual text extraction');
       
       let description = '';
       let activities = '';
@@ -183,13 +201,31 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
     
     // Tenter de parser la réponse en JSON
     try {
+      // Essayer d'abord de parser directement le contenu
       const scenarios = JSON.parse(content);
       return new Response(
         JSON.stringify(scenarios),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (parseError) {
-      console.warn('Could not parse OpenAI response as JSON, returning error:', parseError);
+      // Si le parsing direct échoue, essayer de nettoyer le contenu
+      console.warn('Could not parse OpenAI response as JSON directly, trying to clean the content:', parseError);
+      
+      try {
+        // Rechercher un tableau JSON valide dans la chaîne de caractères
+        const jsonMatch = content.match(/(\[[\s\S]*\])/);
+        if (jsonMatch && jsonMatch[0]) {
+          const jsonContent = jsonMatch[0];
+          const scenarios = JSON.parse(jsonContent);
+          return new Response(
+            JSON.stringify(scenarios),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (cleaningError) {
+        console.warn('Failed to extract JSON from content after cleaning:', cleaningError);
+      }
+      
       throw new Error('Le format de réponse d\'OpenAI n\'est pas valide. Veuillez réessayer.');
     }
   } catch (error) {

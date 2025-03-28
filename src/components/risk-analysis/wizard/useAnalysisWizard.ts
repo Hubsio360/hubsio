@@ -96,12 +96,15 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
         .map(line => line.trim().substring(1).trim());
       
       if (processLines.length > 0) {
-        setBusinessProcesses(
-          processLines.map((process, index) => ({
-            id: `process-${Date.now()}-${index}`,
-            name: process
-          }))
-        );
+        const newProcesses = processLines.map((process, index) => ({
+          id: `process-${Date.now()}-${index}`,
+          name: process
+        }));
+        
+        setBusinessProcesses(newProcesses);
+        console.log(`${newProcesses.length} processus métier extraits et ajoutés automatiquement:`, newProcesses);
+      } else {
+        console.log('Aucun processus métier n\'a pu être extrait des données reçues');
       }
 
       setLoading(false);
