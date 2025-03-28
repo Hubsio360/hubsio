@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -15,20 +16,13 @@ import { useStandardClauses } from './hooks/useStandardClauses';
 import { useUsers } from './hooks/useUsers';
 import { useAuth } from './hooks/useAuth';
 import { useRiskAnalysis } from './hooks/useRiskAnalysis';
+import { useServices } from './hooks/useServices';
 
 export const DataContext = createContext<DataContextProps>({} as DataContextProps);
 
 export const useData = () => useContext(DataContext);
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [consultingProjects, setConsultingProjects] = useState<ConsultingProject[]>([]);
-  const [rssiServices, setRssiServices] = useState<RssiService[]>([]);
-  const [loadingServices, setLoadingServices] = useState(false);
-  const [loadingConsultingProjects, setLoadingConsultingProjects] = useState(false);
-  const [loadingRssiServices, setLoadingRssiServices] = useState(false);
-
   const companiesHook = useCompanies();
   const auditsHook = useAudits();
   const findingsHook = useFindings();
@@ -42,92 +36,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const usersHook = useUsers();
   const authHook = useAuth();
   const riskAnalysisHook = useRiskAnalysis();
-
-  useEffect(() => {
-    const initialCompanies: Company[] = [
-      {
-        id: '1',
-        name: 'Kollègue',
-        activity: 'ESN',
-        creationYear: 2018,
-        parentCompany: 'Inetum',
-        marketScope: 'France',
-        lastAuditDate: '2023-01-01',
-      },
-      {
-        id: '2',
-        name: 'La Poste',
-        activity: 'Courrier',
-        creationYear: 1500,
-        marketScope: 'France',
-        lastAuditDate: '2023-06-01',
-      },
-    ];
-    setCompanies(initialCompanies);
-
-    const initialServices: Service[] = [
-      {
-        id: '1',
-        companyId: '1',
-        name: 'Audit de sécurité',
-        description: 'Audit de sécurité du SI',
-        type: 'audit',
-        status: 'actif',
-        startDate: '2023-01-01',
-        endDate: '2023-12-31',
-        createdAt: '2023-01-01',
-      },
-      {
-        id: '2',
-        companyId: '1',
-        name: 'RSSI as a Service',
-        description: 'RSSI as a Service',
-        type: 'rssi_as_service',
-        status: 'actif',
-        startDate: '2023-01-01',
-        endDate: '2023-12-31',
-        createdAt: '2023-01-01',
-      },
-      {
-        id: '3',
-        companyId: '2',
-        name: 'Accompagnement ISO 27001',
-        description: 'Accompagnement ISO 27001',
-        type: 'conseil',
-        status: 'actif',
-        startDate: '2023-01-01',
-        endDate: '2023-12-31',
-        createdAt: '2023-01-01',
-      }
-    ];
-    setServices(initialServices);
-
-    const initialConsultingProjects: ConsultingProject[] = [
-      {
-        id: '1',
-        serviceId: '3',
-        name: 'Préparation à la certification ISO 27001',
-        description: 'Préparation à la certification ISO 27001',
-        status: 'actif',
-        startDate: '2023-01-01',
-        endDate: '2023-12-31',
-        frameworkId: '1',
-        createdAt: '2023-01-01',
-      }
-    ];
-    setConsultingProjects(initialConsultingProjects);
-
-    const initialRssiServices: RssiService[] = [
-      {
-        id: '1',
-        serviceId: '2',
-        allocationTime: 40,
-        tasks: 'Pilotage de la sécurité, gestion des risques, gestion des incidents',
-        createdAt: '2023-01-01',
-      }
-    ];
-    setRssiServices(initialRssiServices);
-  }, []);
+  const servicesHook = useServices();
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -197,18 +106,18 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     getUsersByRole: usersHook.getUsersByRole,
     fetchThemesByFrameworkId: interviewsHook.fetchThemesByFrameworkId,
     
-    services,
-    consultingProjects,
-    rssiServices,
-    addService,
-    addConsultingProject,
-    addRssiService,
-    getServicesByCompanyId,
-    getConsultingProjectsByServiceId,
-    getRssiServicesByServiceId,
-    fetchServices,
-    fetchConsultingProjects,
-    fetchRssiServices,
+    services: servicesHook.services,
+    consultingProjects: servicesHook.consultingProjects,
+    rssiServices: servicesHook.rssiServices,
+    addService: servicesHook.addService,
+    addConsultingProject: servicesHook.addConsultingProject,
+    addRssiService: servicesHook.addRssiService,
+    getServicesByCompanyId: servicesHook.getServicesByCompanyId,
+    getConsultingProjectsByServiceId: servicesHook.getConsultingProjectsByServiceId,
+    getRssiServicesByServiceId: servicesHook.getRssiServicesByServiceId,
+    fetchServices: servicesHook.fetchServices,
+    fetchConsultingProjects: servicesHook.fetchConsultingProjects,
+    fetchRssiServices: servicesHook.fetchRssiServices,
     
     riskAssets: riskAnalysisHook.riskAssets,
     riskThreats: riskAnalysisHook.riskThreats,
@@ -249,9 +158,9 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       standardClauses: clausesHook.loading,
       audits: auditsHook.loading,
       users: usersHook.loading,
-      services: loadingServices,
-      consultingProjects: loadingConsultingProjects,
-      rssiServices: loadingRssiServices,
+      services: servicesHook.loading.services,
+      consultingProjects: servicesHook.loading.consultingProjects,
+      rssiServices: servicesHook.loading.rssiServices,
       riskAssets: riskAnalysisHook.loading.riskAssets,
       riskThreats: riskAnalysisHook.loading.riskThreats,
       riskVulnerabilities: riskAnalysisHook.loading.riskVulnerabilities,

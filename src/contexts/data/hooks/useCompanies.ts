@@ -170,9 +170,11 @@ export const useCompanies = () => {
               setCompanies(newCompanies);
               
               // Rafraîchir la liste complète
-              fetchCompanies();
-              
-              resolve(enrichedCompany);
+              fetchCompanies().then(() => {
+                resolve(enrichedCompany);
+              }).catch(error => {
+                reject(error);
+              });
             })
             .catch(error => {
               console.error('Error updating enriched company data:', error);
