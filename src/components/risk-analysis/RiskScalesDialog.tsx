@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
   DialogTitle,
+  DialogFooter,
+  DialogClose
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,7 +17,7 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { AlertCircle, Plus, Trash2 } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
@@ -48,6 +50,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -61,8 +64,35 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     toggleActive,
     updateLevel,
     deleteScale,
-    refreshData
+    refreshData,
+    ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
+
+  // Initialiser les échelles par défaut si nécessaire
+  useEffect(() => {
+    if (open && companyRiskScales.length === 0 && !isLoading && !isRefreshing) {
+      setIsInitializing(true);
+      ensureDefaultScalesExist()
+        .then(() => {
+          toast({
+            title: "Échelles initialisées",
+            description: "Les échelles de risque par défaut ont été créées",
+          });
+          refreshData();
+        })
+        .catch(err => {
+          console.error("Erreur lors de l'initialisation des échelles:", err);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible d'initialiser les échelles de risque",
+          });
+        })
+        .finally(() => {
+          setIsInitializing(false);
+        });
+    }
+  }, [open, companyRiskScales.length, isLoading, isRefreshing, companyId, ensureDefaultScalesExist, refreshData, toast]);
 
   const form = useForm<ScaleFormValues>({
     defaultValues: {
@@ -197,91 +227,100 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
             </Alert>
           )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <TabsList>
-              <TabsTrigger value="impact">Échelles d'impact</TabsTrigger>
-              <TabsTrigger value="likelihood">Échelles de probabilité</TabsTrigger>
-            </TabsList>
-
-            <div className="flex items-center gap-2 my-4">
-              <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
-                <Plus className="h-4 w-4 mr-1" />
-                Ajouter une nouvelle échelle {activeTab === 'impact' ? "d'impact" : "de probabilité"}
-              </Button>
+          {isLoading || isInitializing ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+                <p className="text-muted-foreground">Chargement des échelles de risque...</p>
+              </div>
             </div>
+          ) : (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+              <TabsList>
+                <TabsTrigger value="impact">Échelles d'impact</TabsTrigger>
+                <TabsTrigger value="likelihood">Échelles de probabilité</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="impact" className="flex-1 mt-4">
-              <ScrollArea className="h-[calc(80vh-220px)]">
-                <div className="pr-4 space-y-4">
-                  {impactScales.length === 0 && !isLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Aucune échelle d'impact configurée. Ajoutez-en une depuis le bouton ci-dessus.
-                    </div>
-                  ) : (
-                    impactScales.map((scale) => (
-                      <div key={scale.id} className="relative">
-                        <RiskScaleCard
-                          companyScale={scale}
-                          scaleType={getScaleType(getScaleTypeId(scale))}
-                          levels={getLevelsForScale(scale.id)}
-                          isLoading={isLoading}
-                          onToggleActive={toggleActive}
-                          onUpdateLevel={updateLevel}
-                        />
-                        <Button 
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-3 right-3 z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteScale(scale.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
+              <div className="flex items-center gap-2 my-4">
+                <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Ajouter une nouvelle échelle {activeTab === 'impact' ? "d'impact" : "de probabilité"}
+                </Button>
+              </div>
 
-            <TabsContent value="likelihood" className="flex-1 mt-4">
-              <ScrollArea className="h-[calc(80vh-220px)]">
-                <div className="pr-4 space-y-4">
-                  {likelihoodScales.length === 0 && !isLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Aucune échelle de probabilité configurée. Ajoutez-en une depuis le bouton ci-dessus.
-                    </div>
-                  ) : (
-                    likelihoodScales.map((scale) => (
-                      <div key={scale.id} className="relative">
-                        <RiskScaleCard
-                          companyScale={scale}
-                          scaleType={getScaleType(getScaleTypeId(scale))}
-                          levels={getLevelsForScale(scale.id)}
-                          isLoading={isLoading}
-                          onToggleActive={toggleActive}
-                          onUpdateLevel={updateLevel}
-                        />
-                        <Button 
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-3 right-3 z-10"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteScale(scale.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+              <TabsContent value="impact" className="flex-1 mt-4">
+                <ScrollArea className="h-[calc(80vh-220px)]">
+                  <div className="pr-4 space-y-4">
+                    {impactScales.length === 0 && !isLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Aucune échelle d'impact configurée. Ajoutez-en une depuis le bouton ci-dessus.
                       </div>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </TabsContent>
-          </Tabs>
+                    ) : (
+                      impactScales.map((scale) => (
+                        <div key={scale.id} className="relative">
+                          <RiskScaleCard
+                            companyScale={scale}
+                            scaleType={getScaleType(getScaleTypeId(scale))}
+                            levels={getLevelsForScale(scale.id)}
+                            isLoading={isLoading}
+                            onToggleActive={toggleActive}
+                            onUpdateLevel={updateLevel}
+                          />
+                          <Button 
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-3 right-3 z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteScale(scale.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="likelihood" className="flex-1 mt-4">
+                <ScrollArea className="h-[calc(80vh-220px)]">
+                  <div className="pr-4 space-y-4">
+                    {likelihoodScales.length === 0 && !isLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Aucune échelle de probabilité configurée. Ajoutez-en une depuis le bouton ci-dessus.
+                      </div>
+                    ) : (
+                      likelihoodScales.map((scale) => (
+                        <div key={scale.id} className="relative">
+                          <RiskScaleCard
+                            companyScale={scale}
+                            scaleType={getScaleType(getScaleTypeId(scale))}
+                            levels={getLevelsForScale(scale.id)}
+                            isLoading={isLoading}
+                            onToggleActive={toggleActive}
+                            onUpdateLevel={updateLevel}
+                          />
+                          <Button 
+                            variant="destructive"
+                            size="sm"
+                            className="absolute top-3 right-3 z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteScale(scale.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          )}
 
           <div className="flex justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -428,7 +467,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                 >
                   {isDeleting ? (
                     <>
-                      <span className="animate-spin mr-2">⌛</span>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Suppression...
                     </>
                   ) : (

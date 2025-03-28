@@ -11,7 +11,7 @@ export const useRiskScalesManager = (companyId: string) => {
     companyRiskScales,
     fetchRiskScaleTypes, 
     fetchCompanyRiskScales,
-    ensureDefaultScalesExist,
+    ensureDefaultScalesExist: ensureDefaultScalesExistApi,
     addRiskScaleType,
     addCompanyRiskScale,
     updateRiskScaleLevel,
@@ -45,6 +45,33 @@ export const useRiskScalesManager = (companyId: string) => {
     };
   };
 
+  const ensureDefaultScalesExist = useCallback(async (): Promise<boolean> => {
+    if (!companyId) return false;
+    
+    try {
+      // Force creation of default scales for this company
+      const result = await ensureDefaultScalesExistApi(companyId);
+      
+      if (result) {
+        await Promise.all([
+          fetchRiskScaleTypes(),
+          fetchCompanyRiskScales(companyId)
+        ]);
+      }
+      
+      return result;
+    } catch (err) {
+      console.error('Error ensuring default scales exist:', err);
+      setError('Erreur lors de la création des échelles de risque par défaut');
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Erreur lors de la création des échelles de risque par défaut',
+      });
+      return false;
+    }
+  }, [companyId, ensureDefaultScalesExistApi, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
+
   const loadData = useCallback(async () => {
     if (!companyId) return;
     
@@ -52,10 +79,7 @@ export const useRiskScalesManager = (companyId: string) => {
     setError(null);
     
     try {
-      // Ensure default scales exist for this company first
-      await ensureDefaultScalesExist(companyId);
-      
-      // Then load all risk scales data
+      // First load all risk scales data
       await Promise.all([
         fetchRiskScaleTypes(),
         fetchCompanyRiskScales(companyId)
@@ -71,7 +95,7 @@ export const useRiskScalesManager = (companyId: string) => {
     } finally {
       setIsInitialLoading(false);
     }
-  }, [companyId, ensureDefaultScalesExist, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
+  }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
 
   const refreshData = useCallback(async () => {
     if (!companyId) return;
@@ -310,6 +334,7 @@ export const useRiskScalesManager = (companyId: string) => {
     updateScaleType: handleUpdateScaleType,
     toggleActive: handleToggleActive,
     updateLevel: handleUpdateLevel,
-    refreshData
+    refreshData,
+    ensureDefaultScalesExist
   };
 };
