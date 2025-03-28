@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Search, AlertCircle, ChevronsUpDown } from 'lucide-react';
-import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
+import { EnhancedTemplate, GroupedTemplate } from '@/hooks/useScenarioTemplates';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -21,10 +21,7 @@ import { Badge } from '@/components/ui/badge';
 interface ScenarioTemplateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  groupedTemplates: Array<{
-    domain: string;
-    templates: EnhancedTemplate[];
-  }>;
+  groupedTemplates: GroupedTemplate[];
   onTemplateSelect: (template: EnhancedTemplate) => void;
   selectedTemplate: EnhancedTemplate | null;
   searchTerm: string;

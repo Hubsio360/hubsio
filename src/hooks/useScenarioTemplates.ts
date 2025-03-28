@@ -3,13 +3,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRiskScenarioTemplates } from '@/contexts/DataContext';
 import type { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
 
-// Interface pour les templates groupés par domaine
-interface GroupedTemplate {
+// Interface for the templates grouped by domain
+export interface GroupedTemplate {
   domain: string;
-  templates: RiskScenarioTemplate[];
+  templates: EnhancedTemplate[];
 }
 
-// Interface pour les templates avec nom et description séparés
+// Interface for the templates with name and description separated
 export interface EnhancedTemplate extends RiskScenarioTemplate {
   name: string;
   shortDescription: string;
@@ -35,7 +35,7 @@ export const useScenarioTemplates = () => {
   const templates = Array.isArray(rawTemplates) ? rawTemplates : [];
 
   // Process templates to separate name and description
-  const processTemplates = useCallback((templatesArray: RiskScenarioTemplate[]) => {
+  const processTemplates = useCallback((templatesArray: RiskScenarioTemplate[]): EnhancedTemplate[] => {
     return templatesArray.map(template => {
       // Try to extract a name from the scenario_description
       let name = template.scenario_description;
