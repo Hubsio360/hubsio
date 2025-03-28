@@ -151,13 +151,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     removeRiskScenarioAssetAssociation: riskAnalysisHook.removeRiskScenarioAssetAssociation,
     getRiskScenarioAssets: riskAnalysisHook.getRiskScenarioAssets,
     
-    // Add the risk scales hooks properties correctly
     riskScaleTypes: riskScalesHook.riskScaleTypes,
     companyRiskScales: riskScalesHook.companyRiskScales,
     fetchRiskScaleTypes: riskScalesHook.fetchRiskScaleTypes,
     fetchCompanyRiskScales: riskScalesHook.fetchCompanyRiskScales,
     updateRiskScaleLevel: riskScalesHook.updateRiskScaleLevel,
     toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
+    // Add the three missing properties from the useRiskScales hook
+    setupLikelihoodScale: riskScalesHook.setupLikelihoodScale,
+    addRiskScaleType: riskScalesHook.addRiskScaleType,
+    addCompanyRiskScale: riskScalesHook.addCompanyRiskScale,
     
     loading: {
       companies: companiesHook.loading,
