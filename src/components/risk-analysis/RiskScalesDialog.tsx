@@ -31,6 +31,15 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [selectedScaleType, setSelectedScaleType] = useState<string>('');
   const [activeTab, setActiveTab] = useState('impact');
   
+  // Get scale type details - defined BEFORE it's used
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
+    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: ''
+    };
+  };
+  
   const {
     riskScaleTypes,
     companyRiskScales,
@@ -42,15 +51,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     updateLevel,
     refreshData
   } = useRiskScalesManager(companyId);
-
-  // Get scale type details
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: ''
-    };
-  };
 
   // Helper function to get scaleTypeId regardless of naming convention
   const getScaleTypeId = (scale: any): string => {
@@ -116,7 +116,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
             <SelectContent>
               {availableScaleTypes.map((type) => (
                 <SelectItem key={type.id} value={type.id}>
-                  {type.description || type.name}
+                  {type.name}
                 </SelectItem>
               ))}
             </SelectContent>
