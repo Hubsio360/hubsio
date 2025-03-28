@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CornerDownRight, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 
@@ -37,6 +37,8 @@ export function RiskScenariosStep({
   onComplete,
   onPrevious
 }: RiskScenariosStepProps) {
+  const selectedCount = suggestedScenarios.filter(s => s.selected).length;
+
   return (
     <>
       <DialogHeader>
@@ -89,9 +91,15 @@ export function RiskScenariosStep({
             </ScrollArea>
           )}
         </div>
+        
+        {selectedCount > 0 && (
+          <p className="text-sm text-muted-foreground">
+            {selectedCount} scénario{selectedCount > 1 ? 's' : ''} sélectionné{selectedCount > 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="flex justify-between">
         <Button variant="outline" onClick={onPrevious}>
           Retour
         </Button>
