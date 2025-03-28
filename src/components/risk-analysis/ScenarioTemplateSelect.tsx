@@ -13,12 +13,25 @@ interface ScenarioTemplateSelectProps {
   onSelect: (template: any) => void;
 }
 
+// Define a type for the risk scenario template
+interface RiskScenarioTemplate {
+  id: string;
+  domain: string;
+  scenario_description: string;
+}
+
+// Define a type for the grouped templates
+interface GroupedTemplates {
+  domain: string;
+  templates: RiskScenarioTemplate[];
+}
+
 const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelect }) => {
   const [open, setOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<RiskScenarioTemplate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const { fetchRiskScenarioTemplates } = useData();
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<RiskScenarioTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -52,14 +65,14 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       }
       acc[template.domain].push(template);
       return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, RiskScenarioTemplate[]>);
 
     return Object.entries(groups)
       .sort(([domainA], [domainB]) => domainA.localeCompare(domainB))
       .map(([domain, domainTemplates]) => ({ domain, templates: domainTemplates }));
   }, [filteredTemplates]);
 
-  const handleSelectTemplate = (template: any) => {
+  const handleSelectTemplate = (template: RiskScenarioTemplate) => {
     setSelectedTemplate(template);
     setOpen(false);
     onSelect(template);
@@ -103,9 +116,9 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
                 onValueChange={setSearchTerm}
               />
               <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
-              {groupedTemplates.map(({ domain, templates }) => (
-                <CommandGroup key={domain} heading={domain}>
-                  {templates.map(template => (
+              {groupedTemplates.map((group: GroupedTemplates) => (
+                <CommandGroup key={group.domain} heading={group.domain}>
+                  {group.templates.map((template: RiskScenarioTemplate) => (
                     <CommandItem
                       key={template.id}
                       value={template.id}
