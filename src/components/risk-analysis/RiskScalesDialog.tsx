@@ -56,6 +56,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [scaleToDelete, setScaleToDelete] = useState<string | null>(null);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const {
     riskScaleTypes,
@@ -143,10 +144,18 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
 
   // Handle delete confirmation
   const confirmDelete = async () => {
-    if (scaleToDelete) {
+    if (!scaleToDelete) return;
+    
+    setIsDeleting(true);
+    try {
       await deleteScale(scaleToDelete);
+      // Seulement après le succès de la suppression, nous fermons le dialogue
       setScaleToDelete(null);
       setDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Erreur lors de la suppression de l'échelle:", error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -367,7 +376,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       </Sheet>
 
       {/* Dialogue de confirmation de suppression */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog 
+        open={deleteDialogOpen} 
+        onOpenChange={(open) => {
+          // Ne pas fermer si on est en train de supprimer
+          if (!open && isDeleting) return;
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setScaleToDelete(null);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
@@ -377,12 +396,21 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setScaleToDelete(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel 
+              onClick={() => {
+                setScaleToDelete(null);
+                setDeleteDialogOpen(false);
+              }}
+              disabled={isDeleting}
+            >
+              Annuler
+            </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
             >
-              Supprimer
+              {isDeleting ? 'Suppression...' : 'Supprimer'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
