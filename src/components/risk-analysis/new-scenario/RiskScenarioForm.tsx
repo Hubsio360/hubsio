@@ -1,3 +1,4 @@
+
 import React, { forwardRef, useImperativeHandle } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,7 +38,8 @@ const formSchema = z.object({
   }),
 });
 
-export type RiskScenarioFormValues = z.infer<typeof formSchema>;
+// Define the type only once
+type RiskScenarioFormValues = z.infer<typeof formSchema>;
 
 interface RiskScenarioFormProps {
   onSubmit: (values: RiskScenarioFormValues) => Promise<void>;
@@ -337,5 +339,7 @@ const RiskScenarioForm = forwardRef<
 
 RiskScenarioForm.displayName = "RiskScenarioForm";
 
+// Export with a cleaner approach - fixing the conflict
 export { RiskScenarioForm, formSchema };
 export type { RiskScenarioFormValues };
+
