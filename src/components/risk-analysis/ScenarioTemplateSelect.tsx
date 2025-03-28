@@ -33,25 +33,40 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
   const { fetchRiskScenarioTemplates } = useData();
   const [templates, setTemplates] = useState<RiskScenarioTemplate[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Use a stable reference for the loadTemplates function
   const loadTemplates = async () => {
     if (!isLoading && templates.length > 0) return; // Avoid unnecessary fetches
     
     setIsLoading(true);
+    setLoadError(null);
+    
     try {
       const data = await fetchRiskScenarioTemplates();
-      // Ensure we have an array of templates with the correct type
-      if (Array.isArray(data)) {
-        setTemplates(data as RiskScenarioTemplate[]);
-        console.log('Templates loaded successfully:', data.length);
+      
+      // Safely handle the data and validate it
+      if (Array.isArray(data) && data.length > 0) {
+        // Filter out any invalid templates
+        const validTemplates = data.filter(
+          (item): item is RiskScenarioTemplate => 
+            !!item && 
+            typeof item === 'object' && 
+            typeof item.id === 'string' && 
+            typeof item.scenario_description === 'string'
+        );
+        
+        setTemplates(validTemplates);
+        console.log('Templates loaded successfully:', validTemplates.length);
       } else {
-        console.error('Unexpected data format for templates:', data);
+        console.error('No valid templates returned:', data);
         setTemplates([]);
+        setLoadError('Aucun modèle disponible');
       }
     } catch (error) {
       console.error('Error loading scenario templates:', error);
       setTemplates([]);
+      setLoadError('Erreur lors du chargement des modèles');
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +79,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
 
   // Memoize filtered templates to prevent unnecessary recalculations
   const filteredTemplates = useMemo(() => {
-    if (!templates.length) return [];
+    if (!templates || !templates.length) return [];
     
     return templates.filter(template => 
       template.scenario_description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -74,7 +89,7 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
 
   // Group templates by domain, sorted alphabetically - also memoized
   const groupedTemplates = useMemo(() => {
-    if (!filteredTemplates.length) return [];
+    if (!filteredTemplates || !filteredTemplates.length) return [];
     
     const groups = filteredTemplates.reduce((acc, template) => {
       // Make sure domain is not undefined before using it as a key
@@ -93,13 +108,16 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       .map(([domain, domainTemplates]) => ({ 
         domain, 
         templates: domainTemplates.filter(t => t && t.id && t.scenario_description) // Ensure valid templates only
-      }));
+      }))
+      .filter(group => group.templates.length > 0); // Only include groups with templates
   }, [filteredTemplates]);
 
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
-    setSelectedTemplate(template);
-    setOpen(false);
-    onSelect(template);
+    if (template && template.id) {
+      setSelectedTemplate(template);
+      setOpen(false);
+      onSelect(template);
+    }
   };
 
   // Show a skeleton while loading, with a key to prevent flickering
@@ -136,6 +154,12 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
               role="combobox"
               aria-expanded={open}
               className="w-full justify-between"
+              onClick={() => {
+                // Refresh templates if needed
+                if (templates.length === 0 && !isLoading) {
+                  loadTemplates();
+                }
+              }}
             >
               {selectedTemplate
                 ? `${selectedTemplate.domain}: ${selectedTemplate.scenario_description.substring(0, 60)}...`
@@ -150,31 +174,37 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
                 value={searchTerm}
                 onValueChange={setSearchTerm}
               />
-              <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
-              {groupedTemplates.length > 0 ? (
-                groupedTemplates.map((group: GroupedTemplates) => (
-                  group.templates.length > 0 ? (
-                    <CommandGroup key={`group-${group.domain}`} heading={group.domain}>
-                      {group.templates.map((template: RiskScenarioTemplate) => (
-                        <CommandItem
-                          key={`template-${template.id}`}
-                          value={template.id}
-                          onSelect={() => handleSelectTemplate(template)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          <div className="truncate">{template.scenario_description}</div>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  ) : null
-                ))
+              {loadError ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">{loadError}</div>
               ) : (
-                <div className="py-6 text-center text-sm">Chargement des modèles...</div>
+                <>
+                  <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
+                  {groupedTemplates && groupedTemplates.length > 0 ? (
+                    groupedTemplates.map((group) => (
+                      <CommandGroup key={`group-${group.domain}`} heading={group.domain}>
+                        {group.templates.map((template) => (
+                          <CommandItem
+                            key={`template-${template.id}`}
+                            value={template.id}
+                            onSelect={() => handleSelectTemplate(template)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="truncate">{template.scenario_description}</div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    ))
+                  ) : (
+                    <div className="py-6 text-center text-sm">
+                      {templates.length > 0 ? "Aucun résultat pour cette recherche" : "Chargement des modèles..."}
+                    </div>
+                  )}
+                </>
               )}
             </Command>
           </PopoverContent>
