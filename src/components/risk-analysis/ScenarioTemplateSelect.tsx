@@ -77,16 +77,23 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
     if (!filteredTemplates.length) return [];
     
     const groups = filteredTemplates.reduce((acc, template) => {
-      if (!acc[template.domain]) {
-        acc[template.domain] = [];
+      // Make sure domain is not undefined before using it as a key
+      const domainKey = template.domain || 'Uncategorized';
+      if (!acc[domainKey]) {
+        acc[domainKey] = [];
       }
-      acc[template.domain].push(template);
+      acc[domainKey].push(template);
       return acc;
     }, {} as Record<string, RiskScenarioTemplate[]>);
 
+    // Create array of grouped templates, ensuring no undefined values
     return Object.entries(groups)
+      .filter(([domain]) => domain) // Filter out any undefined domains
       .sort(([domainA], [domainB]) => domainA.localeCompare(domainB))
-      .map(([domain, domainTemplates]) => ({ domain, templates: domainTemplates }));
+      .map(([domain, domainTemplates]) => ({ 
+        domain, 
+        templates: domainTemplates.filter(t => t && t.id && t.scenario_description) // Ensure valid templates only
+      }));
   }, [filteredTemplates]);
 
   const handleSelectTemplate = (template: RiskScenarioTemplate) => {
@@ -144,25 +151,31 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
                 onValueChange={setSearchTerm}
               />
               <CommandEmpty>Aucun modèle trouvé.</CommandEmpty>
-              {groupedTemplates.map((group: GroupedTemplates) => (
-                <CommandGroup key={group.domain} heading={group.domain}>
-                  {group.templates.map((template: RiskScenarioTemplate) => (
-                    <CommandItem
-                      key={template.id}
-                      value={template.id}
-                      onSelect={() => handleSelectTemplate(template)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="truncate">{template.scenario_description}</div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              ))}
+              {groupedTemplates.length > 0 ? (
+                groupedTemplates.map((group: GroupedTemplates) => (
+                  group.templates.length > 0 ? (
+                    <CommandGroup key={`group-${group.domain}`} heading={group.domain}>
+                      {group.templates.map((template: RiskScenarioTemplate) => (
+                        <CommandItem
+                          key={`template-${template.id}`}
+                          value={template.id}
+                          onSelect={() => handleSelectTemplate(template)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedTemplate?.id === template.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="truncate">{template.scenario_description}</div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  ) : null
+                ))
+              ) : (
+                <div className="py-6 text-center text-sm">Chargement des modèles...</div>
+              )}
             </Command>
           </PopoverContent>
         </Popover>
