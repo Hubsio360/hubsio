@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ const Navbar = () => {
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2">
           <div className="text-primary font-bold text-lg md:text-xl">
-            SecuReporter
+            Hubsio
           </div>
         </Link>
 
@@ -130,7 +131,7 @@ const Navbar = () => {
         }`}
       >
         <div className="p-4 flex justify-between items-center">
-          <div className="text-primary font-bold">SecuReporter</div>
+          <div className="text-primary font-bold">Hubsio</div>
           <Button
             variant="ghost"
             size="icon"
