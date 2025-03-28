@@ -1,4 +1,3 @@
-
 import { supabase, AuditInterviewRow, selectAuditInterviews } from '@/integrations/supabase/client';
 import { AuditInterview, InterviewParticipant } from '@/types';
 import { formatInterviewForDB, isValidUUID, validateInterview } from './interviewUtils';
@@ -299,7 +298,7 @@ export const deleteExistingInterviews = async (auditId: string): Promise<boolean
 export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[]): Promise<boolean> => {
   try {
     console.log(`Attempting to insert ${interviews.length} interviews into database`);
-    console.log('Interview data:', JSON.stringify(interviews, null, 2));
+    console.log('First interview data:', interviews[0]);
     
     // Ensure each interview has the required fields
     const validInterviews = interviews.filter(interview => 
@@ -325,18 +324,39 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
     // Cast to InterviewInsert[] after validation
     const typedInterviews = validInterviews as InterviewInsert[];
     
-    // Insert the interviews
-    const { data, error } = await supabase
-      .from('audit_interviews')
-      .insert(typedInterviews)
-      .select();
-      
-    if (error) {
-      console.error('Error creating audit interviews in DB:', error);
-      return false;
-    } else {
-      console.log(`Successfully inserted ${data?.length || 0} interviews into DB:`, data);
+    // Insert the interviews in batches of 20 to avoid potential size limitations
+    const batchSize = 20;
+    const batches = [];
+    
+    for (let i = 0; i < typedInterviews.length; i += batchSize) {
+      batches.push(typedInterviews.slice(i, i + batchSize));
+    }
+    
+    console.log(`Splitting into ${batches.length} batches for insertion`);
+    
+    let totalInserted = 0;
+    
+    for (const batch of batches) {
+      const { data, error } = await supabase
+        .from('audit_interviews')
+        .insert(batch)
+        .select();
+        
+      if (error) {
+        console.error('Error creating audit interviews batch in DB:', error);
+        // Continue with next batch even if one fails
+      } else {
+        totalInserted += data?.length || 0;
+        console.log(`Successfully inserted batch of ${data?.length || 0} interviews`);
+      }
+    }
+    
+    if (totalInserted > 0) {
+      console.log(`Successfully inserted a total of ${totalInserted} interviews into DB`);
       return true;
+    } else {
+      console.error('Failed to insert any interviews');
+      return false;
     }
   } catch (error) {
     console.error('Error creating interviews in DB:', error);

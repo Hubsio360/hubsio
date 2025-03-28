@@ -342,53 +342,23 @@ export const useAuditInterviews = () => {
     }
     
     try {
-      // 1. Supprimer les interviews existantes pour cet audit
-      console.log("[useAuditInterviews] Deleting existing interviews");
-      await deleteExistingInterviews(auditId);
+      // Importer la fonction generatePlanSchedule directement depuis le fichier d'utilitaires
+      const { generatePlanSchedule } = await import('../utils/interviewPlanGenerator');
       
-      // 2. Générer de nouvelles interviews (simulation pour l'instant)
-      // Ici, nous créerions normalement les interviews basées sur les thématiques...
-      console.log("[useAuditInterviews] Creating new interviews");
+      console.log("[useAuditInterviews] Appel direct à generatePlanSchedule avec les options:", options);
       
-      // Générer des interviews de test pour montrer la fonctionnalité
-      const interviews = [];
+      // Appel direct à la fonction de génération du plan
+      const result = await generatePlanSchedule(auditId, startDate, endDate, options);
       
-      if (options?.topicIds && options.selectedDays) {
-        const dayStart = new Date(options.selectedDays[0]);
-        dayStart.setHours(9, 0, 0, 0);
-        
-        for (const topicId of options.topicIds) {
-          const duration = options.themeDurations?.[topicId] || 60;
-          
-          interviews.push({
-            audit_id: auditId,
-            topic_id: topicId,
-            theme_id: topicId, // Utiliser le même ID que la thématique pour simplifier
-            title: `Interview sur thématique ${topicId.substring(0, 6)}`,
-            description: "Interview générée automatiquement",
-            start_time: new Date(dayStart).toISOString(),
-            duration_minutes: duration,
-            location: "Bureau principal",
-            meeting_link: "https://meet.google.com/auto-generated-link",
-            control_refs: ""
-          });
-          
-          // Avancer l'heure pour la prochaine interview
-          dayStart.setMinutes(dayStart.getMinutes() + duration + 15);
-        }
-      }
+      console.log("[useAuditInterviews] Résultat de generatePlanSchedule:", result);
       
-      // 3. Insérer les nouvelles interviews dans la base de données
-      console.log(`[useAuditInterviews] Inserting ${interviews.length} interviews into database`);
-      const insertSuccess = await createInterviewsInDB(interviews);
-      
-      if (!insertSuccess) {
-        console.error("[useAuditInterviews] Failed to insert interviews");
+      if (result) {
+        console.log("[useAuditInterviews] Successfully generated audit plan");
+        return true;
+      } else {
+        console.error("[useAuditInterviews] Failed to generate plan schedule");
         return false;
       }
-      
-      console.log("[useAuditInterviews] Successfully generated audit plan");
-      return true;
     } catch (error) {
       console.error("[useAuditInterviews] Error generating audit plan:", error);
       return false;

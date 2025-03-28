@@ -26,6 +26,7 @@ export const usePlanGeneration = (
     const { selectedTopicIds, selectedDays, themeDurations, maxHoursPerDay, requiredDays } = options;
     
     if (!auditId) {
+      console.error("ID d'audit manquant lors de la génération du plan");
       toast({
         title: "Erreur",
         description: "ID d'audit manquant",
@@ -33,6 +34,8 @@ export const usePlanGeneration = (
       });
       return;
     }
+
+    console.log(`Démarrage de la génération pour l'audit ${auditId} avec ${selectedTopicIds.length} thématiques et ${selectedDays.length} jours`);
 
     // Si aucune thématique n'est sélectionnée, tenter de charger toutes les thématiques disponibles
     let topicsToUse = selectedTopicIds;
@@ -45,7 +48,7 @@ export const usePlanGeneration = (
           .filter(theme => !['ADMIN', 'Cloture'].includes(theme.name))
           .map(theme => theme.id);
           
-        console.log(`Utilisation de ${topicsToUse.length} thématiques par défaut`);
+        console.log(`Utilisation de ${topicsToUse.length} thématiques par défaut:`, topicsToUse);
         
         if (topicsToUse.length === 0) {
           toast({
@@ -67,6 +70,7 @@ export const usePlanGeneration = (
     }
 
     if (selectedDays.length === 0) {
+      console.error("Aucun jour sélectionné pour le plan d'audit");
       toast({
         title: "Jours requis",
         description: "Veuillez sélectionner au moins un jour pour les interviews",
@@ -76,6 +80,7 @@ export const usePlanGeneration = (
     }
 
     if (selectedDays.length < requiredDays) {
+      console.error(`Nombre de jours insuffisant: ${selectedDays.length} < ${requiredDays}`);
       toast({
         title: "Jours insuffisants",
         description: `Vous avez besoin d'au moins ${requiredDays} jours pour couvrir toutes les thématiques sélectionnées`,
@@ -111,31 +116,46 @@ export const usePlanGeneration = (
         maxHoursPerDay: maxHoursPerDay
       };
       
+      console.log("Appel à la fonction generateAuditPlan avec les options:", generationOptions);
+      
       const success = await generateAuditPlan(auditId, startDate, endDate, generationOptions);
+      console.log("Résultat de generateAuditPlan:", success);
 
       if (success) {
-        // Récupérer les interviews générées pour vérifier qu'elles existent
-        const interviews = await fetchInterviewsByAuditId(auditId);
-        console.log(`Plan généré avec succès, ${interviews.length} interviews créées:`, interviews);
-        
-        toast({
-          title: "Plan d'audit généré",
-          description: `Le plan d'audit a été généré avec succès avec ${interviews.length} interviews planifiées`,
-        });
+        try {
+          // Récupérer les interviews générées pour vérifier qu'elles existent
+          console.log("Récupération des interviews générées...");
+          const interviews = await fetchInterviewsByAuditId(auditId);
+          console.log(`Plan généré avec succès, ${interviews.length} interviews créées:`, interviews);
+          
+          if (interviews.length === 0) {
+            console.error("Aucune interview créée malgré le succès de la génération");
+            throw new Error("Aucune interview générée");
+          }
+          
+          toast({
+            title: "Plan d'audit généré",
+            description: `Le plan d'audit a été généré avec succès avec ${interviews.length} interviews planifiées`,
+          });
 
-        if (onPlanGenerated) {
-          // Explicitement rediriger vers l'onglet steps (étapes) après génération
-          console.log("Redirection vers l'onglet steps (étapes)");
-          onPlanGenerated('steps');
+          if (onPlanGenerated) {
+            // Explicitement rediriger vers l'onglet steps (étapes) après génération
+            console.log("Redirection vers l'onglet steps (étapes)");
+            onPlanGenerated('steps');
+          }
+        } catch (fetchError) {
+          console.error("Erreur lors de la récupération des interviews:", fetchError);
+          throw new Error("Le plan a été généré mais les interviews ne peuvent pas être récupérées");
         }
       } else {
+        console.error("La génération du plan n'a pas abouti - aucun succès retourné");
         throw new Error("La génération du plan n'a pas abouti");
       }
     } catch (error) {
       console.error("Error generating audit plan:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de générer le plan d'audit",
+        description: "Impossible de générer le plan d'audit. Vérifiez les logs pour plus de détails.",
         variant: "destructive",
       });
     } finally {

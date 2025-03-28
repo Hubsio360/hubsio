@@ -13,9 +13,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       className="toaster group"
       richColors
       position="top-right"
-      expand={false}
+      expand
       closeButton
-      duration={4000}
+      duration={6000}
       toastOptions={{
         classNames: {
           toast:
@@ -25,6 +25,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
           cancelButton:
             "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+          error: "group-[.toast]:bg-destructive group-[.toast]:text-destructive-foreground",
+          success: "group-[.toast]:bg-green-500 group-[.toast]:text-white",
         },
       }}
       {...props}

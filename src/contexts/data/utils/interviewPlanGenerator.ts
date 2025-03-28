@@ -69,8 +69,12 @@ export const generatePlanSchedule = async (
     }
     
     // Supprimer les entretiens existants
+    console.log(`Suppression des entretiens existants pour l'audit: ${auditId}`);
     const deleteResult = await deleteExistingInterviews(auditId);
+    console.log(`Résultat de la suppression des entretiens existants: ${deleteResult}`);
+    
     if (!deleteResult) {
+      console.error("Échec de la suppression des entretiens existants");
       return false;
     }
     
@@ -79,12 +83,16 @@ export const generatePlanSchedule = async (
       new Date(a).getTime() - new Date(b).getTime()
     );
     
+    console.log(`Jours sélectionnés triés: ${sortedDays}`);
+    
     // Calculer la durée totale des entretiens thématiques
     let totalThematicDuration = 0;
     topicIds.forEach(topicId => {
       const duration = themeDurations[topicId] || 60;
       totalThematicDuration += duration;
     });
+    
+    console.log(`Durée totale des entretiens thématiques: ${totalThematicDuration} minutes`);
     
     // Préparer les données des entretiens à créer
     const dbInterviewsToCreate: InterviewInsert[] = [];
@@ -93,6 +101,8 @@ export const generatePlanSchedule = async (
     const firstDay = new Date(sortedDays[0]);
     setHours(firstDay, WORKING_DAY_START);
     setMinutes(firstDay, 0);
+    
+    console.log(`Création d'une réunion d'ouverture le ${firstDay.toISOString()}`);
     
     dbInterviewsToCreate.push({
       audit_id: auditId,
@@ -116,6 +126,8 @@ export const generatePlanSchedule = async (
       idealMinutesPerDay = effectiveMinutesPerDay;
     }
     
+    console.log(`Minutes idéales par jour: ${idealMinutesPerDay}, minutes effectives disponibles: ${effectiveMinutesPerDay}`);
+    
     // Planifier les entretiens thématiques
     let currentDayIndex = 0;
     let currentTime = new Date(sortedDays[currentDayIndex]);
@@ -125,14 +137,19 @@ export const generatePlanSchedule = async (
     
     let minutesScheduledToday = 60; // Compter la réunion d'ouverture pour le premier jour
     
+    console.log(`Planification de ${topicIds.length} entretiens thématiques à partir de ${currentTime.toISOString()}`);
+    
     for (const topicId of topicIds) {
       const duration = themeDurations[topicId] || 60;
+      
+      console.log(`Planification d'un entretien pour la thématique ${topicId} d'une durée de ${duration} minutes`);
       
       // Vérifier s'il reste assez de temps aujourd'hui
       const timeAfterInterview = addMinutes(new Date(currentTime), duration);
       
       // Cas spéciaux: pause café de 10h
       if (currentTime.getHours() === MORNING_BREAK_TIME && currentTime.getMinutes() === 0) {
+        console.log(`Ajout d'une pause café à 10h`);
         currentTime = addMinutes(currentTime, BREAK_DURATION);
         dbInterviewsToCreate.push({
           audit_id: auditId,
@@ -149,6 +166,7 @@ export const generatePlanSchedule = async (
       
       // Cas spéciaux: déjeuner
       if (isDuringLunch(currentTime) || isDuringLunch(timeAfterInterview)) {
+        console.log(`Ajout d'une pause déjeuner`);
         dbInterviewsToCreate.push({
           audit_id: auditId,
           title: "Pause déjeuner",
@@ -166,6 +184,7 @@ export const generatePlanSchedule = async (
       
       // Cas spéciaux: pause café de l'après-midi
       if (currentTime.getHours() === AFTERNOON_BREAK_TIME && currentTime.getMinutes() === 0) {
+        console.log(`Ajout d'une pause café à 16h`);
         dbInterviewsToCreate.push({
           audit_id: auditId,
           title: "Pause café",
@@ -185,7 +204,12 @@ export const generatePlanSchedule = async (
       // 3. Nous avons assez de jours pour répartir la charge
       if ((minutesScheduledToday + duration > idealMinutesPerDay && currentDayIndex < sortedDays.length - 1) ||
           (currentTime.getHours() >= WORKING_DAY_END - 1 && duration > 30)) {
+        console.log(`Passage au jour suivant`);
         currentDayIndex++;
+        if (currentDayIndex >= sortedDays.length) {
+          console.log(`Attention: Pas assez de jours disponibles, retour au premier jour`);
+          currentDayIndex = 0;
+        }
         currentTime = new Date(sortedDays[currentDayIndex]);
         setHours(currentTime, WORKING_DAY_START);
         setMinutes(currentTime, 0);
@@ -198,6 +222,7 @@ export const generatePlanSchedule = async (
       }
       
       // Créer l'entretien thématique
+      console.log(`Création d'un entretien pour la thématique ${topicId} à ${currentTime.toISOString()}`);
       dbInterviewsToCreate.push({
         audit_id: auditId,
         title: `Entretien: Thématique ${topicId.replace(/theme-/g, '')}`,
@@ -219,6 +244,8 @@ export const generatePlanSchedule = async (
     setHours(lastDay, AFTERNOON_BREAK_TIME);
     setMinutes(lastDay, 15);
     
+    console.log(`Création d'une réunion de clôture le ${lastDay.toISOString()}`);
+    
     dbInterviewsToCreate.push({
       audit_id: auditId,
       title: "Réunion de clôture",
@@ -234,6 +261,20 @@ export const generatePlanSchedule = async (
     if (dbInterviewsToCreate.length > 0) {
       console.log(`Création de ${dbInterviewsToCreate.length} entretiens pour l'audit ${auditId}`);
       const insertResult = await createInterviewsInDB(dbInterviewsToCreate);
+      console.log(`Résultat de l'insertion: ${insertResult}`);
+      
+      if (insertResult) {
+        // Vérifier que les interviews ont bien été créées
+        const createdInterviews = await fetchInterviewsFromDB(auditId);
+        console.log(`Nombre d'interviews créées et récupérées: ${createdInterviews.length}`);
+        
+        if (createdInterviews.length > 0) {
+          return true;
+        } else {
+          console.error("Aucune interview trouvée après insertion");
+          return false;
+        }
+      }
       return insertResult;
     } else {
       console.error('Aucun entretien à créer');
