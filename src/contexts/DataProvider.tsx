@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -18,6 +17,7 @@ import { useAuth } from './data/hooks/useAuth';
 import { useRiskAnalysis } from './data/hooks/useRiskAnalysis';
 import { useServices } from './data/hooks/useServices';
 import { useRiskScales } from './data/hooks/useRiskScales';
+import { useRiskScenarioTemplates } from './data/hooks/useRiskScenarioTemplates';
 
 export const DataContext = createContext<DataContextProps>({} as DataContextProps);
 
@@ -39,6 +39,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const riskAnalysisHook = useRiskAnalysis();
   const servicesHook = useServices();
   const riskScalesHook = useRiskScales();
+  const riskScenarioTemplatesHook = useRiskScenarioTemplates();
 
   const handleRefresh = async () => {
     await Promise.all([
@@ -163,6 +164,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toggleRiskScaleActive: riskScalesHook.toggleRiskScaleActive,
     deleteRiskScale: riskScalesHook.deleteRiskScale,
     setupLikelihoodScale: riskScalesHook.setupLikelihoodScale,
+    
+    fetchRiskScenarioTemplates: riskScenarioTemplatesHook.fetchRiskScenarioTemplates,
+    getRiskScenarioTemplatesByDomain: riskScenarioTemplatesHook.getRiskScenarioTemplatesByDomain,
     
     loading: {
       companies: companiesHook.loading,
