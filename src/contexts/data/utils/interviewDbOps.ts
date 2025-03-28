@@ -75,6 +75,8 @@ export const addInterviewToDB = async (interview: Omit<AuditInterview, 'id'>): P
   try {
     const formattedInterview = formatInterviewForDB(interview);
     
+    console.log('Formatted interview for DB insertion:', formattedInterview);
+    
     const { data, error } = await supabase
       .from('audit_interviews')
       .insert(formattedInterview)
@@ -324,30 +326,50 @@ export const createInterviewsInDB = async (interviews: Partial<InterviewInsert>[
     // Cast to InterviewInsert[] after validation
     const typedInterviews = validInterviews as InterviewInsert[];
     
+    // Important: Corriger les champs theme_id vs topic_id
+    // Les thématiques doivent être associées aux entretiens avec topic_id, pas theme_id
+    // theme_id doit être null à moins d'être un ID valide de la table audit_themes
+    const correctedInterviews = typedInterviews.map(interview => {
+      // Vérifier si l'interview a un theme_id défini
+      if (interview.theme_id) {
+        console.log(`Interview a theme_id défini: ${interview.theme_id}, on le supprime pour éviter la violation de clé étrangère`);
+        // Supprimer le theme_id pour éviter la violation de contrainte de clé étrangère
+        const { theme_id, ...rest } = interview;
+        return rest;
+      }
+      return interview;
+    });
+    
+    console.log(`${correctedInterviews.length} interviews après correction des thèmes`);
+    
     // Insert the interviews in batches of 20 to avoid potential size limitations
-    const batchSize = 20;
+    const batchSize = 10;
     const batches = [];
     
-    for (let i = 0; i < typedInterviews.length; i += batchSize) {
-      batches.push(typedInterviews.slice(i, i + batchSize));
+    for (let i = 0; i < correctedInterviews.length; i += batchSize) {
+      batches.push(correctedInterviews.slice(i, i + batchSize));
     }
     
     console.log(`Splitting into ${batches.length} batches for insertion`);
     
     let totalInserted = 0;
     
-    for (const batch of batches) {
+    for (let i = 0; i < batches.length; i++) {
+      const batch = batches[i];
+      console.log(`Inserting batch ${i+1}/${batches.length} with ${batch.length} interviews`);
+      
       const { data, error } = await supabase
         .from('audit_interviews')
         .insert(batch)
         .select();
         
       if (error) {
-        console.error('Error creating audit interviews batch in DB:', error);
+        console.error(`Error creating audit interviews batch ${i+1} in DB:`, error);
+        console.error('Problematic batch data:', JSON.stringify(batch));
         // Continue with next batch even if one fails
       } else {
         totalInserted += data?.length || 0;
-        console.log(`Successfully inserted batch of ${data?.length || 0} interviews`);
+        console.log(`Successfully inserted batch ${i+1} of ${data?.length || 0} interviews`);
       }
     }
     

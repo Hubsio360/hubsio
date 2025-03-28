@@ -111,8 +111,7 @@ export const generatePlanSchedule = async (
       start_time: firstDay.toISOString(),
       duration_minutes: 60,
       location: "Salle de réunion principale",
-      meeting_link: "https://meet.google.com/meeting-ouverture", // Lien par défaut que les utilisateurs pourront modifier
-      theme_id: null // Pas de thématique spécifique pour la réunion d'ouverture
+      meeting_link: "https://meet.google.com/meeting-ouverture" // Lien par défaut que les utilisateurs pourront modifier
     });
     
     // Calculer comment équilibrer les thèmes sur les jours disponibles
@@ -158,8 +157,7 @@ export const generatePlanSchedule = async (
           start_time: new Date(currentTime).toISOString(),
           duration_minutes: BREAK_DURATION,
           location: "Salle de pause",
-          meeting_link: null, // Pas de lien pour les pauses
-          theme_id: null // Pas de thématique pour les pauses
+          meeting_link: null // Pas de lien pour les pauses
         });
         currentTime = addMinutes(currentTime, BREAK_DURATION);
       }
@@ -174,8 +172,7 @@ export const generatePlanSchedule = async (
           start_time: new Date(currentTime).toISOString(),
           duration_minutes: LUNCH_DURATION,
           location: "Restaurant d'entreprise",
-          meeting_link: null, // Pas de lien pour le déjeuner
-          theme_id: null // Pas de thématique pour le déjeuner
+          meeting_link: null // Pas de lien pour le déjeuner
         });
         currentTime = new Date(currentTime);
         setHours(currentTime, LUNCH_BREAK_END);
@@ -192,8 +189,7 @@ export const generatePlanSchedule = async (
           start_time: new Date(currentTime).toISOString(),
           duration_minutes: BREAK_DURATION,
           location: "Salle de pause",
-          meeting_link: null, // Pas de lien pour les pauses
-          theme_id: null // Pas de thématique pour les pauses
+          meeting_link: null // Pas de lien pour les pauses
         });
         currentTime = addMinutes(currentTime, BREAK_DURATION);
       }
@@ -223,6 +219,7 @@ export const generatePlanSchedule = async (
       
       // Créer l'entretien thématique
       console.log(`Création d'un entretien pour la thématique ${topicId} à ${currentTime.toISOString()}`);
+      // CORRECTION: Ne pas définir theme_id mais définir topic_id pour éviter la violation de clé étrangère
       dbInterviewsToCreate.push({
         audit_id: auditId,
         title: `Entretien: Thématique ${topicId.replace(/theme-/g, '')}`,
@@ -231,7 +228,7 @@ export const generatePlanSchedule = async (
         duration_minutes: duration,
         location: "Salle d'entretien",
         meeting_link: `https://meet.google.com/${auditId.substring(0, 8)}-${topicId.substring(0, 8)}`, // Lien par défaut que les utilisateurs pourront modifier
-        theme_id: topicId // Associer la thématique à l'entretien
+        topic_id: topicId // Associer la thématique à l'entretien en tant que topic_id, pas theme_id
       });
       
       // Mettre à jour le temps et les minutes programmées aujourd'hui
@@ -253,13 +250,16 @@ export const generatePlanSchedule = async (
       start_time: lastDay.toISOString(),
       duration_minutes: 60,
       location: "Salle de réunion principale",
-      meeting_link: "https://meet.google.com/meeting-cloture", // Lien par défaut que les utilisateurs pourront modifier
-      theme_id: null // Pas de thématique spécifique pour la réunion de clôture
+      meeting_link: "https://meet.google.com/meeting-cloture" // Lien par défaut que les utilisateurs pourront modifier
     });
     
     // Insérer tous les entretiens en une seule fois
     if (dbInterviewsToCreate.length > 0) {
       console.log(`Création de ${dbInterviewsToCreate.length} entretiens pour l'audit ${auditId}`);
+      
+      // Log détaillé pour debug
+      console.log("Premiers entretiens à insérer:", dbInterviewsToCreate.slice(0, 3));
+      
       const insertResult = await createInterviewsInDB(dbInterviewsToCreate);
       console.log(`Résultat de l'insertion: ${insertResult}`);
       
