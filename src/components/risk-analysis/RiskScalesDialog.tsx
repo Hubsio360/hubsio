@@ -12,12 +12,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from 'react-hook-form';
-import { AlertCircle, Plus, Trash2, Loader2 } from 'lucide-react';
+import { AlertCircle, Plus, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { useRiskScalesManager } from '@/hooks/useRiskScalesManager';
 import RiskScaleCard from '@/components/risk-analysis/RiskScaleCard';
 import { RiskScaleType } from '@/types';
@@ -70,14 +70,10 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
 
   // Initialiser les échelles par défaut si nécessaire
   useEffect(() => {
-    if (open && companyRiskScales.length === 0 && !isLoading && !isRefreshing) {
+    if (open && !isLoading && !isRefreshing) {
       setIsInitializing(true);
       ensureDefaultScalesExist()
         .then(() => {
-          toast({
-            title: "Échelles initialisées",
-            description: "Les échelles de risque par défaut ont été créées",
-          });
           refreshData();
         })
         .catch(err => {
@@ -92,7 +88,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
           setIsInitializing(false);
         });
     }
-  }, [open, companyRiskScales.length, isLoading, isRefreshing, companyId, ensureDefaultScalesExist, refreshData, toast]);
+  }, [open, isLoading, isRefreshing, companyId, ensureDefaultScalesExist, refreshData, toast]);
 
   const form = useForm<ScaleFormValues>({
     defaultValues: {
@@ -242,9 +238,22 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               </TabsList>
 
               <div className="flex items-center gap-2 my-4">
-                <Button onClick={handleAddCustomScale} disabled={isLoading} className="w-full">
+                <Button onClick={handleAddCustomScale} disabled={isLoading} className="flex-grow">
                   <Plus className="h-4 w-4 mr-1" />
                   Ajouter une nouvelle échelle {activeTab === 'impact' ? "d'impact" : "de probabilité"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsInitializing(true);
+                    ensureDefaultScalesExist()
+                      .then(() => refreshData())
+                      .finally(() => setIsInitializing(false));
+                  }} 
+                  disabled={isLoading || isInitializing}
+                  title="Réinitialiser les échelles par défaut"
+                >
+                  <RefreshCw className="h-4 w-4" />
                 </Button>
               </div>
 
@@ -253,7 +262,14 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                   <div className="pr-4 space-y-4">
                     {impactScales.length === 0 && !isLoading ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        Aucune échelle d'impact configurée. Ajoutez-en une depuis le bouton ci-dessus.
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Aucune échelle configurée</AlertTitle>
+                          <AlertDescription>
+                            Aucune échelle d'impact n'est configurée. Utilisez le bouton ci-dessus pour
+                            ajouter une nouvelle échelle ou réinitialiser les échelles par défaut.
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     ) : (
                       impactScales.map((scale) => (
@@ -289,7 +305,14 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                   <div className="pr-4 space-y-4">
                     {likelihoodScales.length === 0 && !isLoading ? (
                       <div className="text-center py-8 text-muted-foreground">
-                        Aucune échelle de probabilité configurée. Ajoutez-en une depuis le bouton ci-dessus.
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertTitle>Aucune échelle configurée</AlertTitle>
+                          <AlertDescription>
+                            Aucune échelle de probabilité n'est configurée. Utilisez le bouton ci-dessus pour
+                            ajouter une nouvelle échelle ou réinitialiser les échelles par défaut.
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     ) : (
                       likelihoodScales.map((scale) => (

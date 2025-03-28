@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -49,14 +48,27 @@ export const useRiskScalesManager = (companyId: string) => {
     if (!companyId) return false;
     
     try {
+      console.log("Vérification des échelles de risque pour le client:", companyId);
+      
       // Force creation of default scales for this company
       const result = await ensureDefaultScalesExistApi(companyId);
       
       if (result) {
+        console.log("Échelles de risque par défaut créées avec succès");
         await Promise.all([
           fetchRiskScaleTypes(),
           fetchCompanyRiskScales(companyId)
         ]);
+        
+        // Vérifier si l'échelle de probabilité existe, sinon la créer
+        const hasLikelihoodScale = companyRiskScales.some(
+          scale => scale.scaleType?.category === 'likelihood'
+        );
+        
+        if (!hasLikelihoodScale) {
+          console.log("Création de l'échelle de probabilité manquante");
+          await setupLikelihoodScale(companyId);
+        }
       }
       
       return result;
@@ -70,7 +82,7 @@ export const useRiskScalesManager = (companyId: string) => {
       });
       return false;
     }
-  }, [companyId, ensureDefaultScalesExistApi, fetchRiskScaleTypes, fetchCompanyRiskScales, toast]);
+  }, [companyId, ensureDefaultScalesExistApi, fetchRiskScaleTypes, fetchCompanyRiskScales, toast, companyRiskScales, setupLikelihoodScale]);
 
   const loadData = useCallback(async () => {
     if (!companyId) return;
@@ -311,9 +323,44 @@ export const useRiskScalesManager = (companyId: string) => {
 
   useEffect(() => {
     if (companyId) {
-      loadData();
+      const initializeData = async () => {
+        setIsInitialLoading(true);
+        try {
+          // Charger d'abord les types d'échelles et les échelles existantes
+          await Promise.all([
+            fetchRiskScaleTypes(),
+            fetchCompanyRiskScales(companyId)
+          ]);
+          
+          // Vérifier si les échelles par défaut existent, sinon les créer
+          if (companyRiskScales.length === 0) {
+            console.log("Aucune échelle détectée, création des échelles par défaut");
+            await ensureDefaultScalesExist();
+          } else {
+            console.log(`${companyRiskScales.length} échelles trouvées pour le client`);
+            
+            // Vérifier si l'échelle de probabilité existe
+            const hasLikelihoodScale = companyRiskScales.some(
+              scale => scale.scaleType?.category === 'likelihood'
+            );
+            
+            if (!hasLikelihoodScale) {
+              console.log("Échelle de probabilité manquante, création en cours");
+              await setupLikelihoodScale(companyId);
+              await refreshData();
+            }
+          }
+        } catch (error) {
+          console.error("Erreur lors de l'initialisation des échelles:", error);
+          setError("Erreur lors de l'initialisation des échelles de risque");
+        } finally {
+          setIsInitialLoading(false);
+        }
+      };
+      
+      initializeData();
     }
-  }, [companyId, loadData]);
+  }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales, ensureDefaultScalesExist, companyRiskScales, setupLikelihoodScale]);
 
   useEffect(() => {
     if (!loading.riskScaleTypes && !loading.companyRiskScales) {
