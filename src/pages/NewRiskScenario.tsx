@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
@@ -16,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { AlertCircle, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { RiskLevel, RiskStatus, RiskScope } from '@/types';
 
 const formSchema = z.object({
   name: z.string().min(2, { message: 'Le nom doit contenir au moins 2 caractères' }),
@@ -23,14 +23,19 @@ const formSchema = z.object({
   riskLevel: z.enum(['low', 'medium', 'high', 'critical'], {
     required_error: 'Veuillez sélectionner un niveau de risque',
   }),
-  status: z.enum(['identified', 'analyzed', 'treated', 'accepted', 'rejected'], {
+  status: z.enum(['identified', 'analyzed', 'treated', 'accepted', 'monitored'], {
     required_error: 'Veuillez sélectionner un statut',
   }),
-  scope: z.enum(['business', 'technical', 'organizational', 'legal', 'financial'], {
+  scope: z.enum(['technical', 'organizational', 'human', 'physical', 'environmental'], {
     required_error: 'Veuillez sélectionner une portée',
   }),
-  impact: z.string().min(1, { message: 'Veuillez décrire l\'impact' }),
-  likelihood: z.string().min(1, { message: 'Veuillez décrire la probabilité' }),
+  impactDescription: z.string().min(1, { message: 'Veuillez décrire l\'impact' }),
+  impactLevel: z.enum(['low', 'medium', 'high', 'critical'], {
+    required_error: 'Veuillez sélectionner un niveau d\'impact',
+  }),
+  likelihood: z.enum(['low', 'medium', 'high', 'critical'], {
+    required_error: 'Veuillez sélectionner une probabilité',
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,10 +55,11 @@ const NewRiskScenario = () => {
       name: '',
       description: '',
       riskLevel: 'medium',
+      impactLevel: 'medium',
       status: 'identified',
-      scope: 'business',
-      impact: '',
-      likelihood: '',
+      scope: 'technical',
+      impactDescription: '',
+      likelihood: 'medium',
     },
   });
 
@@ -62,8 +68,15 @@ const NewRiskScenario = () => {
 
     try {
       const newScenario = {
-        ...values,
         companyId: id,
+        name: values.name,
+        description: values.description,
+        riskLevel: values.riskLevel as RiskLevel,
+        impactLevel: values.impactLevel as RiskLevel,
+        likelihood: values.likelihood as RiskLevel,
+        status: values.status as RiskStatus,
+        scope: values.scope as RiskScope,
+        impactDescription: values.impactDescription,
       };
 
       await createRiskScenario(newScenario);
@@ -96,7 +109,7 @@ const NewRiskScenario = () => {
     );
   }
 
-  const company = getCompanyById(id);
+  const company = getCompanyById(id || '');
 
   if (!company) {
     return (
@@ -115,14 +128,14 @@ const NewRiskScenario = () => {
       <div className="mb-6">
         <div className="flex items-center mb-2">
           <Link
-            to={`/company/${company.id}`}
+            to={`/company/${id}`}
             className="text-muted-foreground hover:text-foreground text-sm flex items-center mr-2"
           >
-            {company.name}
+            {getCompanyById(id || '')?.name || 'Company'}
           </Link>
           <span className="text-muted-foreground text-sm mr-2">/</span>
           <Link
-            to={`/risk-analysis/${company.id}`}
+            to={`/risk-analysis/${id}`}
             className="text-muted-foreground hover:text-foreground text-sm flex items-center mr-2"
           >
             Analyse des risques
@@ -228,7 +241,7 @@ const NewRiskScenario = () => {
                           <SelectItem value="analyzed">Analysé</SelectItem>
                           <SelectItem value="treated">Traité</SelectItem>
                           <SelectItem value="accepted">Accepté</SelectItem>
-                          <SelectItem value="rejected">Rejeté</SelectItem>
+                          <SelectItem value="monitored">Surveillé</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
@@ -253,11 +266,11 @@ const NewRiskScenario = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="business">Métier</SelectItem>
                         <SelectItem value="technical">Technique</SelectItem>
                         <SelectItem value="organizational">Organisationnel</SelectItem>
-                        <SelectItem value="legal">Légal</SelectItem>
-                        <SelectItem value="financial">Financier</SelectItem>
+                        <SelectItem value="human">Humain</SelectItem>
+                        <SelectItem value="physical">Physique</SelectItem>
+                        <SelectItem value="environmental">Environnemental</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -273,10 +286,10 @@ const NewRiskScenario = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="impact"
+                  name="impactDescription"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Impact</FormLabel>
+                      <FormLabel>Description de l'impact</FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Décrivez l'impact potentiel..."
@@ -292,26 +305,61 @@ const NewRiskScenario = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="likelihood"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Probabilité</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Décrivez la probabilité d'occurrence..."
-                          className="min-h-24"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        Facteurs affectant la probabilité d'occurrence
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="impactLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Niveau d'impact</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez un niveau d'impact" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Faible</SelectItem>
+                            <SelectItem value="medium">Moyen</SelectItem>
+                            <SelectItem value="high">Élevé</SelectItem>
+                            <SelectItem value="critical">Critique</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Gravité de l'impact en cas d'incident
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="likelihood"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Probabilité</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionnez une probabilité" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Faible</SelectItem>
+                            <SelectItem value="medium">Moyenne</SelectItem>
+                            <SelectItem value="high">Élevée</SelectItem>
+                            <SelectItem value="critical">Très élevée</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Probabilité d'occurrence du risque
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
