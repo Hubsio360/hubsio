@@ -99,7 +99,7 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
   return (
     <Card className="w-full mb-4">
       <CardHeader>
-        <CardTitle className="flex justify-between items-center">
+        <CardTitle className="flex justify-between items-center pr-10">
           <span>{scaleType.name}</span>
           <Switch 
             checked={getIsActive(companyScale)} 

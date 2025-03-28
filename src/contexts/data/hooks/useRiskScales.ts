@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,7 @@ const convertDbRiskScaleType = (dbType: any): RiskScaleType => {
     id: dbType.id,
     name: dbType.name,
     description: dbType.description || '',
-    category: dbType.category || (dbType.name.includes('likelihood') ? 'likelihood' : 'impact'),
+    category: dbType.category || 'impact', // Default to 'impact' if category is not provided
     createdAt: dbType.created_at,
     updatedAt: dbType.updated_at,
     created_at: dbType.created_at,
@@ -139,14 +140,14 @@ export const useRiskScales = () => {
     }
   }, []);
 
-  const addRiskScaleType = useCallback(async (name: string, description: string, category: 'impact' | 'likelihood' = 'impact'): Promise<RiskScaleType | null> => {
+  const addRiskScaleType = useCallback(async (name: string, description: string): Promise<RiskScaleType | null> => {
     try {
       const { data, error } = await supabase
         .from('risk_scale_types')
         .insert({
           name,
-          description,
-          category
+          description
+          // Remove the category field as it doesn't exist in the database
         })
         .select()
         .single();
@@ -474,8 +475,8 @@ export const useRiskScales = () => {
           .from('risk_scale_types')
           .insert({
             name: 'Échelle de probabilité',
-            description: 'Échelle standard de probabilité',
-            category: 'likelihood'
+            description: 'Échelle standard de probabilité'
+            // Remove category as it doesn't exist in the database
           })
           .select()
           .single();
@@ -485,6 +486,7 @@ export const useRiskScales = () => {
         }
         
         likelihoodType = convertDbRiskScaleType(data);
+        likelihoodType.category = 'likelihood'; // Manually set the category
         setRiskScaleTypes(prev => [...prev, likelihoodType]);
       }
       

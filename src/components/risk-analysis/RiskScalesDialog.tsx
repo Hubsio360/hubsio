@@ -259,14 +259,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
 
       <AlertDialog 
         open={newScaleDialogOpen} 
-        onOpenChange={(open) => {
-          // Empêcher la fermeture automatique lors de la saisie
-          if (!open && newScaleType) {
-            // Ne fermez que si l'utilisateur clique explicitement sur Annuler ou Enregistrer
-          } else {
-            setNewScaleDialogOpen(open);
-          }
-        }}
+        onOpenChange={setNewScaleDialogOpen}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -344,8 +337,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                 >
                   Annuler
                 </AlertDialogCancel>
-                <AlertDialogAction asChild>
-                  <Button type="submit">Enregistrer</Button>
+                <AlertDialogAction type="submit">
+                  Enregistrer
                 </AlertDialogAction>
               </AlertDialogFooter>
             </form>

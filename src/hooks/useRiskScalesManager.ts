@@ -105,13 +105,11 @@ export const useRiskScalesManager = (companyId: string) => {
   const handleUpdateScaleType = useCallback(async (
     scaleTypeId: string, 
     name: string, 
-    description: string,
-    category?: 'impact' | 'likelihood'
+    description: string
   ) => {
     if (!companyId) return null;
     
     try {
-      // Nous passons 3 arguments au lieu de 4
       const updatedType = await updateRiskScaleType(scaleTypeId, name, description);
       
       if (updatedType) {
@@ -138,14 +136,14 @@ export const useRiskScalesManager = (companyId: string) => {
 
   // Handle adding a custom scale with category
   const handleAddCustomScale = useCallback(async (category: 'impact' | 'likelihood' = 'impact') => {
-    if (!companyId) return;
+    if (!companyId) return null;
     
     try {
       // First, create a new custom scale type
-      const customScaleName = `custom-scale-${uuidv4().slice(0, 8)}`;
+      const customScaleName = `Échelle personnalisée`;
       const customScaleDescription = `Échelle personnalisée`;
       
-      // Nous passons 2 arguments au lieu de 3
+      // Only pass name and description without category
       const newScaleType = await addRiskScaleType(customScaleName, customScaleDescription);
       
       if (!newScaleType) {
