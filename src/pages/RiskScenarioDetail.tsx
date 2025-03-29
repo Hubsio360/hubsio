@@ -44,7 +44,7 @@ const RiskScenarioDetail = () => {
   const [currentScenario, setCurrentScenario] = useState<RiskScenario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const { updateRiskScenario, deleteRiskScenario } = useData();
+  const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
   const { toast } = useToast();
 
   // Fetch the risk scenario data
@@ -53,14 +53,46 @@ const RiskScenarioDetail = () => {
       if (!id) return;
       
       try {
-        // This is an example implementation - you may need to adjust based on your actual data fetching
-        const { fetchRiskScenarioById } = useData();
-        if (fetchRiskScenarioById) {
-          const scenario = await fetchRiskScenarioById(id);
-          setCurrentScenario(scenario);
-        } else {
-          // Fallback to scenario data in local state
-          console.warn('fetchRiskScenarioById not available');
+        setIsLoading(true);
+        // Since fetchRiskScenarioById isn't available, we'll need to get all scenarios for the company
+        // and filter for the one we need
+        
+        // First check if we already have the scenario
+        if (currentScenario) {
+          // We already have the scenario data, no need to fetch it again
+          setIsLoading(false);
+          return;
+        }
+        
+        if (id) {
+          // Get all scenarios and find the one with matching ID
+          const { riskScenarios, fetchRiskScenariosByCompanyId } = useData();
+          
+          // Try to find the scenario in current state first
+          let scenario = riskScenarios.find(s => s.id === id);
+          
+          if (!scenario && currentScenario?.companyId) {
+            // If we don't have it, fetch scenarios for this company
+            await fetchRiskScenariosByCompanyId(currentScenario.companyId);
+            // Try again after fetching
+            scenario = riskScenarios.find(s => s.id === id);
+          }
+          
+          if (scenario) {
+            setCurrentScenario(scenario);
+          } else {
+            // As a last resort, try to navigate back to the scenarios list
+            console.error("Could not find scenario with ID:", id);
+            toast({
+              title: "Erreur",
+              description: "Impossible de trouver le scénario demandé",
+              variant: "destructive",
+            });
+            
+            if (currentScenario?.companyId) {
+              navigate(`/risk-analysis/${currentScenario.companyId}`);
+            }
+          }
         }
       } catch (error) {
         console.error('Error fetching scenario:', error);
@@ -77,32 +109,33 @@ const RiskScenarioDetail = () => {
     fetchScenarioData();
   }, [id, toast]);
 
-  const handleSaveScenario = (data: any) => {
-    if (!currentScenario) return;
+  const handleSaveScenario = async (data: Partial<RiskScenario>): Promise<boolean> => {
+    if (!currentScenario || !id) return false;
     
-    // Convert "none" values to null or empty string based on your backend requirements
-    const processedData = {
-      ...data,
-      threatId: data.threatId === "none" ? null : data.threatId,
-      vulnerabilityId: data.vulnerabilityId === "none" ? null : data.vulnerabilityId
-    };
-    
-    updateRiskScenario(currentScenario.id, processedData)
-      .then((updatedScenario) => {
-        setCurrentScenario(updatedScenario);
-        toast({
-          title: "Succès",
-          description: "Scénario de risque mis à jour avec succès",
-        });
-        setIsEditing(false);
-      })
-      .catch((error) => {
-        toast({
-          title: "Erreur",
-          description: "Impossible de mettre à jour le scénario",
-          variant: "destructive",
-        });
+    try {
+      // Convert "none" values to null or empty string based on your backend requirements
+      const processedData = {
+        ...data,
+        threatId: data.threatId === "none" ? null : data.threatId,
+        vulnerabilityId: data.vulnerabilityId === "none" ? null : data.vulnerabilityId
+      };
+      
+      const updatedScenario = await updateRiskScenario(id, processedData);
+      setCurrentScenario(updatedScenario);
+      toast({
+        title: "Succès",
+        description: "Scénario de risque mis à jour avec succès",
       });
+      setIsEditing(false);
+      return true;
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le scénario",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
   const handleDeleteScenario = async () => {

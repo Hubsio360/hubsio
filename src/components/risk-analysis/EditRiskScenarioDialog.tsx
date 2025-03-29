@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -115,7 +115,9 @@ export function EditRiskScenarioDialog({
               residualLikelihood: scenario.residualLikelihood || 'low',
               residualRiskLevel: scenario.residualRiskLevel || 'low',
               securityMeasures: scenario.securityMeasures || '',
-              measureEffectiveness: scenario.measureEffectiveness || ''
+              measureEffectiveness: scenario.measureEffectiveness || '',
+              threatId: scenario.threatId || 'none',
+              vulnerabilityId: scenario.vulnerabilityId || 'none'
             }}
             saveButtonText="Enregistrer les modifications"
             isSaving={saving}
