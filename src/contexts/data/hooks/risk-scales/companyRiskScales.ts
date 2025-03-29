@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
@@ -82,7 +81,7 @@ export const useCompanyRiskScales = () => {
   const addCompanyRiskScale = useCallback(async (
     companyId: string,
     scaleTypeId: string,
-    levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[],
+    levels: Omit<RiskScaleLevel, 'id' | 'company_risk_scale_id' | 'created_at' | 'updated_at'>[],
     riskScaleTypes: RiskScaleType[]
   ): Promise<RiskScaleWithLevels | null> => {
     try {
@@ -111,25 +110,25 @@ export const useCompanyRiskScales = () => {
             name: 'Négligeable', 
             description: 'Niveau de risque négligeable', 
             color: '#4CAF50', 
-            levelValue: 1 
+            level_value: 1 
           },
           { 
             name: 'Faible', 
             description: 'Niveau de risque faible', 
             color: '#FFA726', 
-            levelValue: 2 
+            level_value: 2 
           },
           { 
             name: 'Significatif', 
             description: 'Niveau de risque significatif', 
             color: '#9C27B0', 
-            levelValue: 3 
+            level_value: 3 
           },
           { 
             name: 'Majeur', 
             description: 'Niveau de risque majeur', 
             color: '#F44336', 
-            levelValue: 4 
+            level_value: 4 
           }
         ];
       }
@@ -140,7 +139,7 @@ export const useCompanyRiskScales = () => {
         name: level.name,
         description: level.description,
         color: level.color,
-        level_value: level.levelValue
+        level_value: level.level_value
       }));
       
       const { data: levelsData, error: levelsError } = await supabase

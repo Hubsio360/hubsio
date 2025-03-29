@@ -1,3 +1,4 @@
+
 export interface RiskScaleType {
   id: string;
   name: string;
@@ -29,9 +30,14 @@ export interface CompanyRiskScale {
   scale_type?: RiskScaleType;
 }
 
+export interface RiskScaleWithLevels extends CompanyRiskScale {
+  levels: RiskScaleLevel[];
+  scaleType: RiskScaleType;
+}
+
 export interface RiskAssessment {
   impact: string;
   likelihood: string;
-  riskLevel: string;
-  impactDescription?: string;
+  risk_level: string;
+  impact_description?: string;
 }

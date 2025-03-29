@@ -1,11 +1,9 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
-// Mapping of english scale names to French
 const scaleNameMapping: Record<string, string> = {
   'financial_impact': 'Impact financier',
   'reputational_impact': 'Impact réputationnel',
@@ -40,7 +38,7 @@ export const useRiskScalesManager = (companyId: string) => {
   const { toast } = useToast();
 
   const ensureWithLevels = (scale: CompanyRiskScale): RiskScaleWithLevels => {
-    const scaleTypeId = scale.scaleTypeId || scale.scale_type_id || '';
+    const scaleTypeId = scale.scale_type_id || '';
     const scaleType = riskScaleTypes?.find(type => type.id === scaleTypeId) || {
       id: '',
       name: 'Type inconnu',
@@ -48,7 +46,6 @@ export const useRiskScalesManager = (companyId: string) => {
       category: 'impact'
     };
     
-    // Translate scale type name to French if it exists in our mapping
     if (scaleType.name && scaleNameMapping[scaleType.name]) {
       scaleType.name = scaleNameMapping[scaleType.name];
     }
@@ -66,7 +63,6 @@ export const useRiskScalesManager = (companyId: string) => {
     try {
       console.log("Vérification des échelles de risque pour le client:", companyId);
       
-      // Force creation of default scales for this company
       const result = await ensureDefaultScalesExistApi(companyId);
       
       if (result) {
@@ -76,7 +72,6 @@ export const useRiskScalesManager = (companyId: string) => {
           fetchCompanyRiskScales(companyId)
         ]);
         
-        // Vérifier si l'échelle de probabilité existe, sinon la créer
         const hasLikelihoodScale = companyRiskScales?.some(
           scale => scale.scaleType?.category === 'likelihood'
         );
@@ -107,7 +102,6 @@ export const useRiskScalesManager = (companyId: string) => {
     setError(null);
     
     try {
-      // First load all risk scales data
       await Promise.all([
         fetchRiskScaleTypes(),
         fetchCompanyRiskScales(companyId)
@@ -144,12 +138,12 @@ export const useRiskScalesManager = (companyId: string) => {
     }
   }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales]);
 
-  const getCompanyId = (scale: CompanyRiskScale): string => {
-    return scale.companyId || scale.company_id || '';
+  const getScaleTypeId = (scale: CompanyRiskScale): string => {
+    return scale.scale_type_id;
   };
 
-  const getScaleTypeId = (scale: CompanyRiskScale): string => {
-    return scale.scaleTypeId || scale.scale_type_id || '';
+  const getCompanyId = (scale: CompanyRiskScale): string => {
+    return scale.company_id;
   };
 
   const handleUpdateScaleType = useCallback(async (
@@ -222,10 +216,8 @@ export const useRiskScalesManager = (companyId: string) => {
     try {
       console.log("Début de la suppression de l'échelle:", scaleId);
       
-      // Optimistically update UI
       setCachedScales(prev => prev.filter(scale => scale.id !== scaleId));
       
-      // Actual API call
       const result = await deleteRiskScale(scaleId);
       console.log("Résultat de la suppression de l'API:", result);
       
@@ -235,7 +227,6 @@ export const useRiskScalesManager = (companyId: string) => {
           description: "L'échelle de risque a été supprimée avec succès",
         });
         
-        // Refresh data to ensure consistency
         await refreshData();
         return true;
       } else {
@@ -246,7 +237,6 @@ export const useRiskScalesManager = (companyId: string) => {
           description: "La suppression de l'échelle a échoué. Veuillez réessayer.",
         });
         
-        // Restore the cached scales since deletion failed
         await refreshData();
         return false;
       }
@@ -258,7 +248,6 @@ export const useRiskScalesManager = (companyId: string) => {
         description: "Une erreur est survenue lors de la suppression de l'échelle",
       });
       
-      // Refresh to restore state in case of error
       await refreshData();
       return false;
     }
@@ -342,20 +331,17 @@ export const useRiskScalesManager = (companyId: string) => {
       const initializeData = async () => {
         setIsInitialLoading(true);
         try {
-          // Charger d'abord les types d'échelles et les échelles existantes
           await Promise.all([
             fetchRiskScaleTypes(),
             fetchCompanyRiskScales(companyId)
           ]);
           
-          // Vérifier si les échelles par défaut existent, sinon les créer
           if (!companyRiskScales || companyRiskScales.length === 0) {
             console.log("Aucune échelle détectée, création des échelles par défaut");
             await ensureDefaultScalesExist();
           } else {
             console.log(`${companyRiskScales.length} échelles trouvées pour le client`);
             
-            // Vérifier si l'échelle de probabilité existe
             const hasLikelihoodScale = companyRiskScales.some(
               scale => scale.scaleType?.category === 'likelihood'
             );
@@ -381,7 +367,6 @@ export const useRiskScalesManager = (companyId: string) => {
   useEffect(() => {
     if (Array.isArray(companyRiskScales) && Array.isArray(riskScaleTypes) && 
         !loading.riskScaleTypes && !loading.companyRiskScales) {
-      // Apply French names to scale types
       const translatedTypes = riskScaleTypes.map(type => ({
         ...type,
         name: scaleNameMapping[type.name] || type.name
@@ -408,3 +393,5 @@ export const useRiskScalesManager = (companyId: string) => {
     ensureDefaultScalesExist
   };
 };
+
+export default useRiskScalesManager;
