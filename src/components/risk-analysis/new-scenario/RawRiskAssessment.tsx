@@ -1,16 +1,20 @@
-
-import React, { useEffect } from 'react';
-import { FormField, FormItem, FormLabel, FormDescription } from '@/components/ui/form';
-import { Badge } from '@/components/ui/badge';
-import { RiskScaleWithLevels } from '@/types/risk-scales';
-import { RiskLevel } from '@/types';
+import React from 'react';
+import { UseFormReturn } from 'react-hook-form';
+import { FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { RiskScenarioFormValues } from './RiskScenarioForm';
+import RiskLevelIndicator from './RiskLevelIndicator';
+import { Info } from 'lucide-react';
+import { RiskScaleLevel, RiskScaleWithLevels } from '@/types/risk-scales';
 import RiskScaleSlider from './RiskScaleSlider';
+import { RiskLevel } from '@/types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RawRiskAssessmentProps {
-  form: any;
+  form: UseFormReturn<RiskScenarioFormValues>;
   likelihoodScale: RiskScaleWithLevels | null;
   impactScales: RiskScaleWithLevels[];
-  activeImpactScale: string | null;
+  activeImpactScale: string;
   setActiveImpactScale: (id: string) => void;
   impactScaleRatings: Record<string, RiskLevel>;
   handleImpactScaleChange: (scaleId: string, value: RiskLevel) => void;
@@ -25,104 +29,109 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
   impactScaleRatings,
   handleImpactScaleChange
 }) => {
-  // Log available impact scales on mount
-  useEffect(() => {
-    if (impactScales.length > 0) {
-      console.log("RawRiskAssessment: Available impact scales:", impactScales.map(scale => ({
-        id: scale.id,
-        name: scale.scaleType?.name,
-        active: scale.id === activeImpactScale
-      })));
-    }
-  }, [impactScales, activeImpactScale]);
-
-  const selectImpactScale = (scaleId: string) => {
-    console.log(`RawRiskAssessment: Selecting impact scale ${scaleId}`);
-    setActiveImpactScale(scaleId);
-  };
-
+  const rawRiskLevel = form.watch('rawRiskLevel');
+  const rawImpact = form.watch('rawImpact');
+  const rawLikelihood = form.watch('rawLikelihood');
+  
   return (
-    <div className="space-y-8">
-      {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
-        <FormField
-          control={form.control}
-          name="rawLikelihood"
-          render={({ field }) => (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          {likelihoodScale && (
             <RiskScaleSlider
-              name="rawLikelihood"
               label="Probabilité"
-              description="Évaluez la probabilité que ce scénario de risque se produise"
-              levels={likelihoodScale.levels}
-              value={field.value}
-              onChange={(newValue) => {
-                console.log(`RawRiskAssessment: Updating rawLikelihood to ${newValue}`);
-                field.onChange(newValue);
-              }}
+              value={rawLikelihood}
+              onChange={(value) => form.setValue('rawLikelihood', value as RiskLevel)}
+              levels={likelihoodScale.levels as RiskScaleLevel[]}
             />
           )}
-        />
-      )}
-
-      {/* Impact Scales */}
-      {impactScales.length > 0 && (
-        <div className="space-y-6 pt-2">
-          <FormLabel className="text-lg font-medium">Impact</FormLabel>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {impactScales.map(scale => (
-              <Badge 
-                key={scale.id}
-                variant={activeImpactScale === scale.id ? "default" : "outline"}
-                className="cursor-pointer py-1.5 px-3 text-sm"
-                onClick={() => selectImpactScale(scale.id)}
-              >
-                {scale.scaleType?.name || "Échelle d'impact"}
-              </Badge>
-            ))}
-          </div>
-          
-          {/* Active impact scale */}
-          {activeImpactScale && (
-            <div className="pt-2">
-              {impactScales.map(scale => {
-                if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
-                  // Get the current value for this specific scale
-                  const scaleValue = impactScaleRatings[scale.id] || 'low';
-                  console.log(`RawRiskAssessment: Rendering impact scale ${scale.id} with value ${scaleValue}, name: ${scale.scaleType?.name}`);
-                  
-                  return (
-                    <div key={scale.id}>
-                      <RiskScaleSlider
-                        name={`impactScale_${scale.id}`}
-                        label={`Impact - ${scale.scaleType?.name || "Impact"}`}
-                        description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
-                        levels={scale.levels}
-                        value={scaleValue}
-                        onChange={(value) => {
-                          console.log(`RawRiskAssessment: Updating impact scale ${scale.id} to ${value}`);
-                          handleImpactScaleChange(scale.id, value);
-                        }}
-                      />
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </div>
+        </div>
+        
+        <div className="space-y-4">
+          {impactScales && impactScales.length > 0 && (
+            <>
+              {impactScales.length === 1 ? (
+                <RiskScaleSlider
+                  label="Impact"
+                  value={rawImpact}
+                  onChange={(value) => form.setValue('rawImpact', value as RiskLevel)}
+                  levels={impactScales[0].levels as RiskScaleLevel[]}
+                />
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="impactLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type d'impact</FormLabel>
+                      <Select onValueChange={(value) => {
+                          field.onChange(value);
+                          setActiveImpactScale(value);
+                        }} defaultValue={activeImpactScale}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le type d'impact" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {impactScales.map((scale) => (
+                            <SelectItem key={scale.id} value={scale.id}>
+                              {scale.scaleType?.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              )}
+            </>
           )}
         </div>
-      )}
+      </div>
       
-      <FormItem className="pt-2">
-        <FormLabel className="text-lg font-medium">Niveau de risque brut</FormLabel>
-        <div className="flex items-center mt-2">
-          <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
-            {form.watch('rawRiskLevel').toUpperCase()}
-          </Badge>
-          <FormDescription className="ml-4">
-            Niveau calculé automatiquement à partir de l'impact et de la probabilité
-          </FormDescription>
+      <div className="border p-4 rounded-md bg-gray-50 dark:bg-gray-900">
+        <div className="flex items-center justify-between mb-2">
+          <div className="font-medium flex items-center">
+            <Info className="w-4 h-4 mr-1" />
+            Niveau de risque brut
+          </div>
+          
+          <RiskLevelIndicator level={rawRiskLevel} />
         </div>
-      </FormItem>
+        
+        <div className="pt-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            <strong>Méthode de calcul :</strong> Le niveau de risque est calculé en multipliant les valeurs numériques 
+            d'impact (1 à 4) et de probabilité (1 à 4), puis en classifiant le score obtenu selon les seuils suivants :
+            <br />
+            • <strong>Faible</strong> : score ≤ 2
+            <br />
+            • <strong>Moyen</strong> : 2 &lt; score ≤ 6
+            <br />
+            • <strong>Élevé</strong> : 6 &lt; score ≤ 9
+            <br />
+            • <strong>Critique</strong> : score &gt; 9
+          </p>
+        </div>
+      </div>
+      
+      <FormField
+        control={form.control}
+        name="securityMeasures"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mesures de sécurité existantes</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="Décrivez les mesures de sécurité existantes..."
+                className="min-h-[80px]"
+                {...field}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
     </div>
   );
 };
