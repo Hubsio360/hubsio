@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -75,6 +76,7 @@ const RiskScenarioDetail = () => {
         }
 
         if (scenarioData) {
+          // Properly map fields from snake_case in the database to camelCase in our application
           scenario = {
             id: scenarioData.id,
             companyId: scenarioData.company_id,
@@ -89,17 +91,17 @@ const RiskScenarioDetail = () => {
             rawImpact: scenarioData.impact_level,
             rawLikelihood: scenarioData.likelihood,
             rawRiskLevel: scenarioData.risk_level,
-            residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
-            residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
-            residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
+            // Fix the property mappings with appropriate defaults for nullable fields
+            residualImpact: (scenarioData.residual_impact as RiskLevel) || 'low',
+            residualLikelihood: (scenarioData.residual_likelihood as RiskLevel) || 'low',
+            residualRiskLevel: (scenarioData.residual_risk_level as RiskLevel) || 'low',
             threatId: scenarioData.threat_id,
             vulnerabilityId: scenarioData.vulnerability_id,
-            securityMeasures: (scenarioData.security_measures as string) || '',
-            measureEffectiveness: (scenarioData.measure_effectiveness as string) || '',
-            impactScaleRatings: scenarioData.impact_scale_ratings && 
-              typeof scenarioData.impact_scale_ratings === 'object' ? 
-              scenarioData.impact_scale_ratings as Record<string, RiskLevel> : 
-              {},
+            securityMeasures: scenarioData.security_measures as string || '',
+            measureEffectiveness: scenarioData.measure_effectiveness as string || '',
+            impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' 
+              ? scenarioData.impact_scale_ratings as Record<string, RiskLevel>
+              : {},
             createdAt: scenarioData.created_at,
             updatedAt: scenarioData.updated_at
           };
