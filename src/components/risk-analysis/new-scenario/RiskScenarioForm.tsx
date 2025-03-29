@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,8 @@ export interface RiskScenarioFormValues {
   residualRiskLevel: RiskLevel;
   securityMeasures: string;
   measureEffectiveness: string;
+  threatId?: string;
+  vulnerabilityId?: string;
 }
 
 interface RiskScenarioFormProps {
@@ -54,7 +55,6 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
   }, ref) => {
     const { companyRiskScales } = useData();
     
-    // Form setup with react-hook-form
     const form = useForm<RiskScenarioFormValues>({
       defaultValues: {
         name: initialValues.name || '',
@@ -73,13 +73,11 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
         residualRiskLevel: initialValues.residualRiskLevel || 'low',
         securityMeasures: initialValues.securityMeasures || '',
         measureEffectiveness: initialValues.measureEffectiveness || '',
-        // Ensure default values for any selects that could have empty options
         threatId: initialValues.threatId || 'none',
         vulnerabilityId: initialValues.vulnerabilityId || 'none',
       },
     });
 
-    // Calculate risk levels automatically
     useEffect(() => {
       const calculateRiskLevel = (impact: RiskLevel, likelihood: RiskLevel): RiskLevel => {
         const impactValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
@@ -93,25 +91,21 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
         return 'critical';
       };
       
-      // Calculate raw risk level
       const rawImpact = form.watch('rawImpact') as RiskLevel;
       const rawLikelihood = form.watch('rawLikelihood') as RiskLevel;
       const rawRiskLevel = calculateRiskLevel(rawImpact, rawLikelihood);
       form.setValue('rawRiskLevel', rawRiskLevel);
       
-      // Update form fields to match assessed levels
       form.setValue('impactLevel', rawImpact);
       form.setValue('likelihood', rawLikelihood);
       form.setValue('riskLevel', rawRiskLevel);
       
-      // Calculate residual risk level
       const residualImpact = form.watch('residualImpact') as RiskLevel;
       const residualLikelihood = form.watch('residualLikelihood') as RiskLevel;
       const residualRiskLevel = calculateRiskLevel(residualImpact, residualLikelihood);
       form.setValue('residualRiskLevel', residualRiskLevel);
     }, [form, form.watch('rawImpact'), form.watch('rawLikelihood'), form.watch('residualImpact'), form.watch('residualLikelihood')]);
 
-    // Expose template selection function to parent
     useImperativeHandle(ref, () => ({
       handleTemplateSelect: (template: EnhancedTemplate) => {
         form.setValue('name', template.name);
@@ -120,7 +114,6 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
       },
     }));
 
-    // Submit handler
     const handleFormSubmit = (values: RiskScenarioFormValues) => {
       onSubmit(values);
     };
@@ -240,7 +233,6 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
                 />
               </div>
               
-              {/* Risk Assessment Section with Multiple Impact Scales */}
               <RiskAssessmentSection form={form} companyId={companyId} />
             </CardContent>
             <CardFooter className="flex justify-between">
