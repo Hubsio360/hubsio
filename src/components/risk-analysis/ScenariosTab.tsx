@@ -17,7 +17,6 @@ import {
 import { RiskScenario, RiskLevel } from '@/types';
 import { getRiskLevelBadge, getRiskScopeBadge, getRiskStatusBadge } from '@/components/risk-analysis/utils/riskBadges';
 import { useData } from '@/contexts/DataContext';
-import { EditRiskScenarioDialog } from './EditRiskScenarioDialog';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -36,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { EditRiskScenarioModalV2 } from './EditRiskScenarioModalV2';
 
 interface ScenariosTabProps {
   isLoading: boolean;
@@ -239,9 +239,9 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
         </CardContent>
       </Card>
 
-      {/* Dialog pour éditer un scénario */}
+      {/* Remplacer l'ancien dialog par le nouveau */}
       {selectedScenario && (
-        <EditRiskScenarioDialog
+        <EditRiskScenarioModalV2
           open={editDialogOpen}
           onOpenChange={setEditDialogOpen}
           scenario={selectedScenario}
