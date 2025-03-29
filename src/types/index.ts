@@ -253,38 +253,39 @@ export interface RiskScenario {
   name: string;
   description?: string;
   companyId: string;
+  company_id?: string; // Alias for DB compatibility
   impactLevel: RiskLevel;
+  impact_level?: RiskLevel; // Alias for DB compatibility
   likelihood: RiskLevel;
   riskLevel: RiskLevel;
+  risk_level?: RiskLevel; // Alias for DB compatibility
   scope: RiskScope;
   status: RiskStatus;
   threatId?: string;
+  threat_id?: string; // Alias for DB compatibility
   vulnerabilityId?: string;
+  vulnerability_id?: string; // Alias for DB compatibility
   impactDescription?: string;
+  impact_description?: string; // Alias for DB compatibility
   createdAt?: string;
   updatedAt?: string;
-  created_at?: string;
-  updated_at?: string;
-  company_id?: string;
-  impact_level?: RiskLevel;
-  impact_description?: string;
-  threat_id?: string;
-  vulnerability_id?: string;
+  created_at?: string; // Alias for DB compatibility
+  updated_at?: string; // Alias for DB compatibility
   rawImpact?: RiskLevel;
   rawLikelihood?: RiskLevel;
   rawRiskLevel?: RiskLevel;
   residualImpact?: RiskLevel;
+  residual_impact?: RiskLevel; // Alias for DB compatibility
   residualLikelihood?: RiskLevel;
+  residual_likelihood?: RiskLevel; // Alias for DB compatibility
   residualRiskLevel?: RiskLevel;
+  residual_risk_level?: RiskLevel; // Alias for DB compatibility
   securityMeasures?: string;
+  security_measures?: string; // Alias for DB compatibility
   measureEffectiveness?: string;
-  residual_impact?: RiskLevel;
-  residual_likelihood?: RiskLevel;
-  residual_risk_level?: RiskLevel;
-  security_measures?: string;
-  measure_effectiveness?: string;
+  measure_effectiveness?: string; // Alias for DB compatibility
   impactScaleRatings?: Record<string, RiskLevel>;
-  impact_scale_ratings?: Record<string, RiskLevel> | any;
+  impact_scale_ratings?: Json | Record<string, RiskLevel>; // Alias for DB compatibility
 }
 
 export interface RiskTreatment {

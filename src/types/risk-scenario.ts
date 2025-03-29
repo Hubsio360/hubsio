@@ -22,17 +22,17 @@ export interface RiskScenario {
   risk_level: RiskLevel;
   riskLevel?: RiskLevel; // Alias
   impact_scale_ratings: Json;
-  impactScaleRatings?: Json; // Alias
+  impactScaleRatings?: Json | Record<string, RiskLevel>; // Alias
   threat_id?: string;
   threatId?: string; // Alias
   vulnerability_id?: string;
   vulnerabilityId?: string; // Alias
   // Additional fields needed by RiskScenarioDetail
-  residual_impact: RiskLevel;
+  residual_impact?: RiskLevel;
   residualImpact?: RiskLevel; // Alias
-  residual_likelihood: RiskLevel;
+  residual_likelihood?: RiskLevel;
   residualLikelihood?: RiskLevel; // Alias
-  residual_risk_level: RiskLevel;
+  residual_risk_level?: RiskLevel;
   residualRiskLevel?: RiskLevel; // Alias
   security_measures?: string;
   securityMeasures?: string; // Alias
