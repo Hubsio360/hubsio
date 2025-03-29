@@ -1,8 +1,9 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Service, ConsultingProject, RssiService } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './useAuth.tsx';
+import { useAuth } from '@/contexts/AuthContext'; // Import from AuthContext directly
 
 export const useServices = () => {
   const [services, setServices] = useState<Service[]>([]);

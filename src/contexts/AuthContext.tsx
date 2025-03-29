@@ -1,9 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { useAuth as useAuthHook } from '@/contexts/data/hooks/useAuth.tsx';
 
 interface AuthContextProps {
   user: User | null;
@@ -28,34 +28,87 @@ const mapSupabaseUser = (supabaseUser: SupabaseUser): User => ({
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
-  const { logout: logoutHook, isAuthenticated, getUsers: getUsersHook } = useAuthHook();
 
+  // Check authentication status and set up listener
   useEffect(() => {
     const setupAuth = async () => {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        console.log('Auth state changed:', _event, !!session);
-        if (session?.user) {
-          setUser(mapSupabaseUser(session.user));
+      try {
+        // Set up auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          console.log('Auth state changed:', _event, !!session);
+          if (session?.user) {
+            setUser(mapSupabaseUser(session.user));
+            setIsAuthenticated(true);
+          } else {
+            setUser(null);
+            setIsAuthenticated(false);
+          }
+          setIsLoading(false);
+        });
+
+        // Get initial session
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) {
+          setUser(mapSupabaseUser(data.session.user));
+          setIsAuthenticated(true);
         } else {
-          setUser(null);
+          setIsAuthenticated(false);
         }
         setIsLoading(false);
-      });
 
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        setUser(mapSupabaseUser(data.session.user));
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error in auth setup:', error);
+        setIsAuthenticated(false);
+        setIsLoading(false);
       }
-      setIsLoading(false);
-
-      return () => {
-        subscription.unsubscribe();
-      };
     };
 
     setupAuth();
   }, []);
+
+  // Get users function
+  const getUsers = async (): Promise<User[]> => {
+    try {
+      // Vérifier d'abord l'authentification
+      if (!isAuthenticated) {
+        console.log('Tentative de récupération des utilisateurs sans authentification');
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+        
+      if (error) throw error;
+      
+      // Make sure to map the users to include the role property and handle the "reviewer" role mapping
+      return (data || []).map(user => {
+        // Convert "reviewer" to "viewer" to match UserRole type
+        let mappedRole = user.role;
+        if (user.role === 'reviewer') {
+          mappedRole = 'viewer';
+        }
+        
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: mappedRole,
+          avatar: user.avatar,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
+  };
 
   const login = async (email: string, password: string) => {
     try {
@@ -128,6 +181,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       if (data.session) {
         setUser(mapSupabaseUser(data.user));
+        setIsAuthenticated(true);
       }
     } catch (error: any) {
       console.error("Erreur complète d'inscription:", error);
@@ -149,7 +203,34 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         description: "Veuillez patienter...",
       });
       
-      await logoutHook();
+      setIsLoading(true);
+      
+      // Standard signOut method
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Standard logout error:', error.message);
+      }
+      
+      // Clear any localStorage session data
+      localStorage.removeItem('supabase-auth');
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Clear any cookies related to auth
+      document.cookie.split(';').forEach(c => {
+        document.cookie = c
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+      
+      console.log('Completed forceful logout actions');
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      // Browser reload as last resort to clear all state
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
     } catch (error: any) {
       console.error("Erreur lors de la déconnexion:", error);
       toast({
@@ -159,15 +240,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       });
       
       window.location.href = '/login';
-    }
-  };
-
-  const getUsers = async (): Promise<User[]> => {
-    try {
-      return await getUsersHook();
-    } catch (error) {
-      console.error("Failed to get users:", error);
-      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
