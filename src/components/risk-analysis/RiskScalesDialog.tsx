@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -67,6 +68,20 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
 
+  // Définir les fonctions helper AVANT leur utilisation
+  const getScaleType = (scaleTypeId: string): RiskScaleType => {
+    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: '',
+      category: 'impact'
+    };
+  };
+
+  const getScaleTypeId = (scale: any): string => {
+    return scale.scaleTypeId || scale.scale_type_id || '';
+  };
+
   // Séparation explicite des échelles de probabilité et d'impact
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
@@ -111,19 +126,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       category: 'impact'
     }
   });
-
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: '',
-      category: 'impact'
-    };
-  };
-
-  const getScaleTypeId = (scale: any): string => {
-    return scale.scaleTypeId || scale.scale_type_id || '';
-  };
 
   const handleAddCustomScale = async () => {
     const category = activeTab as 'impact' | 'likelihood';
