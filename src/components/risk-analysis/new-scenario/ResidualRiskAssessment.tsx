@@ -1,0 +1,151 @@
+
+import React from 'react';
+import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { RiskScaleWithLevels } from '@/types/risk-scales';
+import RiskScaleSlider from './RiskScaleSlider';
+
+interface ResidualRiskAssessmentProps {
+  form: any;
+  likelihoodScale: RiskScaleWithLevels | null;
+  impactScales: RiskScaleWithLevels[];
+  activeImpactScale: string | null;
+  setActiveImpactScale: (id: string) => void;
+}
+
+const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
+  form,
+  likelihoodScale,
+  impactScales,
+  activeImpactScale,
+  setActiveImpactScale
+}) => {
+  return (
+    <div className="space-y-6 pt-4">
+      <FormField
+        control={form.control}
+        name="securityMeasures"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Mesures de sécurité</FormLabel>
+            <FormDescription>
+              Décrivez les mesures de sécurité mises en place pour réduire ce risque
+            </FormDescription>
+            <FormControl>
+              <Textarea
+                placeholder="Ex: Chiffrement des données, formation des utilisateurs..."
+                className="min-h-[100px]"
+                {...field}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        control={form.control}
+        name="measureEffectiveness"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Efficacité des mesures</FormLabel>
+            <FormDescription>
+              Évaluez l'efficacité des mesures de sécurité mises en place
+            </FormDescription>
+            <FormControl>
+              <Textarea
+                placeholder="Ex: Niveau d'efficacité, limites éventuelles..."
+                className="min-h-[80px]"
+                {...field}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      
+      <Separator className="my-4" />
+      
+      <div className="space-y-4">
+        {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
+          <FormField
+            control={form.control}
+            name="residualLikelihood"
+            render={({ field }) => (
+              <RiskScaleSlider
+                name="residualLikelihood"
+                label="Probabilité résiduelle"
+                description="Évaluez la probabilité résiduelle après application des mesures"
+                levels={likelihoodScale.levels}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
+        )}
+
+        {/* Residual Impact Scales */}
+        {impactScales.length > 0 && (
+          <div className="space-y-4">
+            <FormLabel>Impact résiduel</FormLabel>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {impactScales.map(scale => (
+                <Badge 
+                  key={scale.id}
+                  variant={activeImpactScale === scale.id ? "default" : "outline"}
+                  className="cursor-pointer"
+                  onClick={() => setActiveImpactScale(scale.id)}
+                >
+                  {scale.scaleType?.name}
+                </Badge>
+              ))}
+            </div>
+            
+            {/* Active residual impact scale */}
+            {activeImpactScale && (
+              <div className="pt-2">
+                {impactScales.map(scale => {
+                  if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                    return (
+                      <div key={scale.id}>
+                        <FormField
+                          control={form.control}
+                          name="residualImpact"
+                          render={({ field }) => (
+                            <RiskScaleSlider
+                              name="residualImpact"
+                              label={`Impact résiduel - ${scale.scaleType?.name}`}
+                              description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
+                              levels={scale.levels}
+                              value={field.value}
+                              onChange={field.onChange}
+                            />
+                          )}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        
+        <FormItem className="pt-2">
+          <FormLabel>Niveau de risque résiduel</FormLabel>
+          <div className="flex items-center mt-2">
+            <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
+              {form.watch('residualRiskLevel').toUpperCase()}
+            </Badge>
+            <FormDescription className="ml-4">
+              Niveau calculé automatiquement à partir de l'impact et de la probabilité résiduels
+            </FormDescription>
+          </div>
+        </FormItem>
+      </div>
+    </div>
+  );
+};
+
+export default ResidualRiskAssessment;
