@@ -24,10 +24,10 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
             <TooltipProvider key={level.id || index}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="relative flex flex-col items-center" style={{ width: '40px' }}>
+                  <div className="relative flex flex-col items-center cursor-pointer" style={{ width: '40px' }}>
                     {/* Dot indicator for each level */}
                     <div 
-                      className={`w-5 h-5 rounded-full transition-all ${
+                      className={`w-5 h-5 rounded-full mb-2 transition-all ${
                         isSelected ? 'scale-125 ring-2 ring-white/20 ring-offset-1 shadow-glow' : ''
                       }`}
                       style={{ 
@@ -37,7 +37,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
                     />
                     
                     {/* Label below the dot */}
-                    <div className={`mt-2 text-xs text-center whitespace-nowrap ${
+                    <div className={`text-xs text-center whitespace-nowrap ${
                       isSelected ? 'font-medium text-white' : 'text-muted-foreground'
                     }`} style={{ maxWidth: '60px' }}>
                       {level.name}
