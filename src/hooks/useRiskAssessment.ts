@@ -20,11 +20,15 @@ export const useRiskAssessment = (
 
   useEffect(() => {
     const loadScales = async () => {
-      // Ensure default scales exist for this company
-      await ensureDefaultScalesExist(companyId);
-      
-      // Fetch company risk scales
-      await fetchCompanyRiskScales(companyId);
+      try {
+        // Ensure default scales exist for this company
+        await ensureDefaultScalesExist(companyId);
+        
+        // Fetch company risk scales
+        await fetchCompanyRiskScales(companyId);
+      } catch (error) {
+        console.error("Error loading risk scales:", error);
+      }
     };
     
     loadScales();
@@ -66,7 +70,6 @@ export const useRiskAssessment = (
       
       // Find the maximum impact level from all scales
       Object.values(impactScaleRatings).forEach(level => {
-        // Ensure the level is cast to RiskLevel type
         const riskLevel = level as RiskLevel;
         const impactValue = impactValues[riskLevel] || 1;
         if (impactValue > maxImpactValue) {
@@ -88,7 +91,7 @@ export const useRiskAssessment = (
 
   // Handle change for a specific impact scale
   const handleImpactScaleChange = (scaleId: string, value: RiskLevel) => {
-    const newRatings: Record<string, RiskLevel> = { ...impactScaleRatings };
+    const newRatings = { ...impactScaleRatings };
     newRatings[scaleId] = value;
     form.setValue('impactScaleRatings', newRatings);
   };

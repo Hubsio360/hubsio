@@ -2,7 +2,7 @@
 import React from 'react';
 import { FormField, FormItem, FormLabel, FormDescription } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
-import { RiskScaleLevel, RiskScaleWithLevels } from '@/types/risk-scales';
+import { RiskScaleWithLevels } from '@/types/risk-scales';
 import { RiskLevel } from '@/types';
 import RiskScaleSlider from './RiskScaleSlider';
 
@@ -67,7 +67,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
               {impactScales.map(scale => {
                 if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
                   // Get the current value for this specific scale
-                  const scaleValue = impactScaleRatings[scale.id] || form.watch('rawImpact') || 'low';
+                  const scaleValue = impactScaleRatings[scale.id] || 'low';
                   
                   return (
                     <div key={scale.id}>
@@ -76,7 +76,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                         label={`Impact - ${scale.scaleType?.name}`}
                         description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
                         levels={scale.levels}
-                        value={scaleValue as RiskLevel}
+                        value={scaleValue}
                         onChange={(value) => handleImpactScaleChange(scale.id, value)}
                       />
                     </div>

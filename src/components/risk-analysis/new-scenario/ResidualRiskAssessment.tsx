@@ -85,7 +85,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         )}
 
         {/* Residual Impact Scales */}
-        {impactScales.length > 0 && (
+        {impactScales.length > 0 && activeImpactScale && (
           <div className="space-y-6">
             <FormLabel className="text-lg font-medium">Impact résiduel</FormLabel>
             <div className="flex flex-wrap gap-2 mb-6">
@@ -102,33 +102,31 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
             </div>
             
             {/* Active residual impact scale */}
-            {activeImpactScale && (
-              <div className="pt-2">
-                {impactScales.map(scale => {
-                  if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
-                    return (
-                      <div key={scale.id}>
-                        <FormField
-                          control={form.control}
-                          name="residualImpact"
-                          render={({ field }) => (
-                            <RiskScaleSlider
-                              name="residualImpact"
-                              label={`Impact résiduel - ${scale.scaleType?.name}`}
-                              description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
-                              levels={scale.levels}
-                              value={field.value}
-                              onChange={field.onChange}
-                            />
-                          )}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-            )}
+            <div className="pt-2">
+              {impactScales.map(scale => {
+                if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                  return (
+                    <div key={scale.id}>
+                      <FormField
+                        control={form.control}
+                        name="residualImpact"
+                        render={({ field }) => (
+                          <RiskScaleSlider
+                            name="residualImpact"
+                            label={`Impact résiduel - ${scale.scaleType?.name}`}
+                            description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
+                            levels={scale.levels}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })}
+            </div>
           </div>
         )}
         

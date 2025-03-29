@@ -46,7 +46,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   // Initialize slider position when values change
   useEffect(() => {
     initializeSliderPosition();
-  }, [initializeSliderPosition]);
+  }, [initializeSliderPosition, value]); // Add value as dependency
   
   // Handle slider value change
   const handleSliderChange = useCallback((newValue: number[]) => {

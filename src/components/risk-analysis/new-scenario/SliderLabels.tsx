@@ -37,7 +37,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
                     />
                     
                     {/* Label below the dot */}
-                    <div className={`mt-2 text-xs text-center ${
+                    <div className={`mt-2 text-xs text-center whitespace-nowrap ${
                       isSelected ? 'font-medium text-white' : 'text-muted-foreground'
                     }`} style={{ maxWidth: '60px' }}>
                       {level.name}
