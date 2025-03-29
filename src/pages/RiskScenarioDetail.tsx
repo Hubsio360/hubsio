@@ -103,7 +103,13 @@ const RiskScenarioDetail = () => {
               ? scenarioData.impact_scale_ratings as Record<string, RiskLevel>
               : {},
             createdAt: scenarioData.created_at,
-            updatedAt: scenarioData.updated_at
+            updatedAt: scenarioData.updated_at,
+            // Keep the original snake_case fields for consistency
+            residual_impact: scenarioData.residual_impact,
+            residual_likelihood: scenarioData.residual_likelihood,
+            residual_risk_level: scenarioData.residual_risk_level,
+            security_measures: scenarioData.security_measures,
+            measure_effectiveness: scenarioData.measure_effectiveness
           };
 
           await fetchRiskScenariosByCompanyId(scenario.companyId);
