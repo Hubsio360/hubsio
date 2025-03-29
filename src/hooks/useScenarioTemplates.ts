@@ -1,176 +1,186 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useRiskScenarioTemplates } from '@/contexts/DataContext';
+import type { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
+import { RiskScope } from '@/types';
 
-export interface ScenarioTemplate {
-  id: string;
-  domain: string;
-  scenario_description: string;
-}
-
-export interface EnhancedTemplate {
-  id: string;
-  name: string;
-  description: string;
-  domain: string;
-  category?: string;
-  shortDescription?: string;
-}
-
+// Interface for the templates grouped by domain
 export interface GroupedTemplate {
   domain: string;
   templates: EnhancedTemplate[];
 }
 
+// Interface for the templates with name, description, and additional fields separated
+export interface EnhancedTemplate extends RiskScenarioTemplate {
+  name: string;
+  shortDescription: string;
+  description: string; // Adding this property
+  category?: RiskScope; // Adding this property
+}
+
 export const useScenarioTemplates = () => {
-  const [templates, setTemplates] = useState<ScenarioTemplate[]>([]);
-  const [enhancedTemplates, setEnhancedTemplates] = useState<EnhancedTemplate[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<EnhancedTemplate | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [groupedTemplates, setGroupedTemplates] = useState<GroupedTemplate[]>([]);
+  const [enhancedTemplates, setEnhancedTemplates] = useState<EnhancedTemplate[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+  
+  // Get templates from the context hook
+  const { 
+    templates: rawTemplates = [], 
+    loading, 
+    error, 
+    fetchRiskScenarioTemplates 
+  } = useRiskScenarioTemplates();
 
-  // Fonction pour récupérer les modèles de scénarios de risque
-  const fetchTemplates = async () => {
-    setLoading(true);
-    setError(null);
+  // Ensure templates is always an array
+  const templates = Array.isArray(rawTemplates) ? rawTemplates : [];
+
+  // Process templates to separate name and description
+  const processTemplates = useCallback((templatesArray: RiskScenarioTemplate[]): EnhancedTemplate[] => {
+    return templatesArray.map(template => {
+      // Try to extract a name from the scenario_description
+      let name = template.scenario_description;
+      let shortDescription = '';
+      let fullDescription = template.scenario_description;
+      
+      // Try to identify if there's a colon or period to separate title from description
+      if (name.includes(':')) {
+        const parts = name.split(':');
+        name = parts[0].trim();
+        shortDescription = parts.slice(1).join(':').trim();
+      } else if (name.includes('.') && name.indexOf('.') < 100) {
+        const parts = name.split('.');
+        name = parts[0].trim();
+        shortDescription = parts.slice(1).join('.').trim();
+      } else if (name.length > 60) {
+        name = name.substring(0, 60) + '...';
+        shortDescription = template.scenario_description;
+      } else {
+        shortDescription = template.scenario_description;
+      }
+      
+      // Determine category based on domain if possible
+      let category: RiskScope | undefined = undefined;
+      const domainLower = template.domain.toLowerCase();
+      
+      if (domainLower.includes('technique') || domainLower.includes('technical')) {
+        category = 'technical';
+      } else if (domainLower.includes('humain') || domainLower.includes('human')) {
+        category = 'human';
+      } else if (domainLower.includes('organisationnel') || domainLower.includes('organizational')) {
+        category = 'organizational';
+      } else if (domainLower.includes('physique') || domainLower.includes('physical')) {
+        category = 'physical';
+      } else if (domainLower.includes('environnement') || domainLower.includes('environmental')) {
+        category = 'environmental';
+      }
+      
+      return {
+        ...template,
+        name,
+        shortDescription,
+        description: fullDescription, // Adding full description
+        category // Adding category based on the domain
+      };
+    });
+  }, []);
+
+  // Callback for fetching templates - prevent infinite useEffect loops
+  const handleRetry = useCallback(async () => {
+    console.log("Manually fetching templates...");
+    try {
+      const fetchedTemplates = await fetchRiskScenarioTemplates();
+      console.log(`Fetched ${fetchedTemplates.length} templates`);
+      
+      // Process templates to extract names and descriptions
+      const processed = processTemplates(fetchedTemplates);
+      setEnhancedTemplates(processed);
+      
+      return fetchedTemplates;
+    } catch (err) {
+      console.error("Failed to fetch templates:", err);
+      return [];
+    }
+  }, [fetchRiskScenarioTemplates, processTemplates]);
+
+  // Load templates on mount
+  useEffect(() => {
+    handleRetry();
+  }, [handleRetry]);
+
+  // Filter and group templates when templates or search term changes
+  useEffect(() => {
+    if (!templates || !templates.length) {
+      setGroupedTemplates([]);
+      return;
+    }
     
     try {
-      console.log('Fetching scenario templates from database...');
-      const { data, error } = await supabase
-        .from('risk_scenarios_templates')
-        .select('*')
-        .order('domain');
+      console.log(`Processing ${templates.length} templates with search "${searchTerm}"`);
       
-      if (error) {
-        console.error('Error fetching templates:', error);
-        setError(`Erreur: ${error.message}`);
-        setLoading(false);
-        return;
+      // Process templates to have proper name and description
+      const processed = processTemplates(templates);
+      setEnhancedTemplates(processed);
+      
+      // Filter templates based on search term
+      const filtered = processed.filter(template => 
+        template && 
+        ((template.name && 
+          template.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+         (template.shortDescription && 
+          template.shortDescription.toLowerCase().includes(searchTerm.toLowerCase())) ||
+         (template.domain && 
+          template.domain.toLowerCase().includes(searchTerm.toLowerCase())))
+      );
+      
+      // Group templates by domain
+      const groups: Record<string, EnhancedTemplate[]> = {};
+      
+      // First group templates by domain
+      for (const template of filtered) {
+        if (template && template.domain) {
+          if (!groups[template.domain]) {
+            groups[template.domain] = [];
+          }
+          groups[template.domain].push(template);
+        }
       }
       
-      if (!data) {
-        console.log('No templates found');
-        setTemplates([]);
-        setEnhancedTemplates([]);
-        setLoading(false);
-        return;
+      // Convert to array and sort
+      const groupedArray = Object.entries(groups)
+        .map(([domain, domainTemplates]) => ({
+          domain,
+          templates: domainTemplates.filter(t => t && t.id)
+        }))
+        .filter(group => group.templates.length > 0)
+        .sort((a, b) => a.domain.localeCompare(b.domain));
+      
+      console.log(`Grouped into ${groupedArray.length} domain groups`);
+      setGroupedTemplates(groupedArray);
+      
+      // Set active tab to the first domain if no active tab
+      if (groupedArray.length > 0 && !activeTab) {
+        setActiveTab(groupedArray[0].domain);
       }
-      
-      console.log(`Found ${data.length} templates`);
-      setTemplates(data as ScenarioTemplate[]);
-      
-      // Améliorer les templates pour l'affichage
-      const enhanced = data.map((template: ScenarioTemplate): EnhancedTemplate => {
-        // Extraire un nom plus court à partir de la description du scénario
-        const name = extractNameFromDescription(template.scenario_description);
-        return {
-          id: template.id,
-          name: name,
-          description: template.scenario_description,
-          shortDescription: truncateDescription(template.scenario_description, 150),
-          domain: template.domain,
-          category: getCategoryFromDomain(template.domain)
-        };
-      });
-      
-      setEnhancedTemplates(enhanced);
-      
-      // Grouper les templates par domaine
-      const grouped = groupTemplatesByDomain(enhanced);
-      setGroupedTemplates(grouped);
-      
-      // Définir l'onglet actif par défaut s'il n'y en a pas
-      if (grouped.length > 0 && !activeTab) {
-        setActiveTab(grouped[0].domain);
-      }
-      
-    } catch (err) {
-      console.error('Exception in fetchTemplates:', err);
-      setError('Erreur lors de la récupération des modèles de scénarios');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error grouping templates:', error);
+      setGroupedTemplates([]);
     }
+  }, [templates, searchTerm, processTemplates, activeTab]);
+
+  const handleSelectTemplate = (template: EnhancedTemplate) => {
+    if (template && template.id) {
+      console.log(`Selected template: ${template.id} - ${template.domain}`);
+      setSelectedTemplate(template);
+      setOpen(false);
+      return template;
+    }
+    return null;
   };
-
-  // Extraire un nom à partir de la description
-  const extractNameFromDescription = (description: string): string => {
-    // Si la description est vide, retourner un texte par défaut
-    if (!description) return 'Scénario sans description';
-    
-    // Limiter le nom à la première phrase ou aux 60 premiers caractères
-    const firstSentence = description.split('.')[0];
-    if (firstSentence.length <= 60) return firstSentence;
-    
-    return firstSentence.substring(0, 57) + '...';
-  };
-
-  // Tronquer la description pour l'affichage court
-  const truncateDescription = (description: string, maxLength: number): string => {
-    if (!description) return '';
-    if (description.length <= maxLength) return description;
-    
-    return description.substring(0, maxLength) + '...';
-  };
-
-  // Grouper les templates par domaine
-  const groupTemplatesByDomain = (templates: EnhancedTemplate[]): GroupedTemplate[] => {
-    const groupedMap = templates.reduce((acc, template) => {
-      if (!acc[template.domain]) {
-        acc[template.domain] = [];
-      }
-      acc[template.domain].push(template);
-      return acc;
-    }, {} as Record<string, EnhancedTemplate[]>);
-    
-    return Object.entries(groupedMap).map(([domain, templates]) => ({
-      domain,
-      templates
-    }));
-  };
-
-  // Déterminer une catégorie à partir du domaine
-  const getCategoryFromDomain = (domain: string): string => {
-    domain = domain.toLowerCase();
-    
-    if (domain.includes('technique') || domain.includes('technical')) 
-      return 'technical';
-    if (domain.includes('organisation') || domain.includes('organization')) 
-      return 'organizational';
-    if (domain.includes('humain') || domain.includes('human')) 
-      return 'human';
-    if (domain.includes('physique') || domain.includes('physical')) 
-      return 'physical';
-    if (domain.includes('environnement') || domain.includes('environment')) 
-      return 'environmental';
-    
-    return 'technical'; // Valeur par défaut
-  };
-
-  // Gérer la sélection d'un template
-  const handleSelectTemplate = useCallback((template: EnhancedTemplate): EnhancedTemplate => {
-    setSelectedTemplate(template);
-    return template;
-  }, []);
-
-  // Fonction de réessai pour les erreurs
-  const handleRetry = useCallback(() => {
-    fetchTemplates();
-  }, []);
-
-  // Charger les templates au montage du composant
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
 
   return {
-    templates,
-    enhancedTemplates,
-    loading,
-    error,
     open,
     setOpen,
     selectedTemplate,
@@ -178,9 +188,12 @@ export const useScenarioTemplates = () => {
     searchTerm,
     setSearchTerm,
     groupedTemplates,
+    enhancedTemplates,
+    loading,
+    error,
+    handleRetry,
+    templates,
     activeTab,
-    setActiveTab,
-    refreshTemplates: fetchTemplates,
-    handleRetry
+    setActiveTab
   };
 };

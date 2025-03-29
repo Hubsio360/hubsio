@@ -94,11 +94,10 @@ export function useScenarioGeneration() {
           progress: 0
         });
         
-        // Suppression du toast de succès pour éviter l'empilement
-        // toast({
-        //   title: "Succès",
-        //   description: `${scenarios.length} scénarios de risque générés avec succès`,
-        // });
+        toast({
+          title: "Succès",
+          description: `${scenarios.length} scénarios de risque générés avec succès`,
+        });
       }, 500);
 
       return true;
@@ -167,11 +166,10 @@ export function useScenarioGeneration() {
       // Appeler le callback de succès avec les nouveaux scénarios
       onSuccess(newScenarios);
 
-      // Suppression du toast de succès pour éviter l'empilement
-      // toast({
-      //   title: "Succès",
-      //   description: `${additionalScenarios.length} scénarios additionnels générés`,
-      // });
+      toast({
+        title: "Succès",
+        description: `${additionalScenarios.length} scénarios additionnels générés`,
+      });
     } catch (error) {
       console.error("Erreur lors de la génération des scénarios additionnels:", error);
       toast({

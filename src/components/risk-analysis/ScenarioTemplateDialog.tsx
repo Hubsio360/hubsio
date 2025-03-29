@@ -12,14 +12,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, AlertCircle, ChevronsUpDown } from 'lucide-react';
-import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
+import { EnhancedTemplate, GroupedTemplate } from '@/hooks/useScenarioTemplates';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-
-interface GroupedTemplate {
-  domain: string;
-  templates: EnhancedTemplate[];
-}
 
 interface ScenarioTemplateDialogProps {
   open: boolean;
@@ -78,7 +73,7 @@ const ScenarioTemplateDialog: React.FC<ScenarioTemplateDialogProps> = ({
     const filtered = groupedTemplates.map(group => {
       const filteredTemplates = group.templates.filter(template => 
         template.name.toLowerCase().includes(lowercaseSearch) || 
-        (template.shortDescription && template.shortDescription.toLowerCase().includes(lowercaseSearch)) ||
+        template.shortDescription.toLowerCase().includes(lowercaseSearch) ||
         template.domain.toLowerCase().includes(lowercaseSearch)
       );
       return { ...group, templates: filteredTemplates };
