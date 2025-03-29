@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
