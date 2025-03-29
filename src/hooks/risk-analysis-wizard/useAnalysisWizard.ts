@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BusinessProcess, SuggestedScenario } from './types';
 import { useTemplateSelection } from './scenarios/useTemplateSelection';
 import { supabase } from '@/integrations/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 
 export const useAnalysisWizard = (companyId: string, companyName?: string, onComplete?: () => void) => {
   const [step, setStep] = useState(1);
@@ -14,7 +14,7 @@ export const useAnalysisWizard = (companyId: string, companyName?: string, onCom
   
   // Initialisation des hooks dépendants
   const { toast } = useToast();
-  const router = useRouter();
+  const navigate = useNavigate();
   
   // État de l'entreprise
   const [companyInfo, setCompanyInfo] = useState({
@@ -192,10 +192,10 @@ export const useAnalysisWizard = (companyId: string, companyName?: string, onCom
   };
   
   // Basculer la sélection d'un scénario
-  const toggleScenarioSelection = (index: number) => {
+  const toggleScenarioSelection = (id: string) => {
     setSuggestedScenarios(prev => 
-      prev.map((scenario, i) => 
-        i === index 
+      prev.map(scenario => 
+        scenario.id === id 
           ? { ...scenario, selected: !scenario.selected } 
           : scenario
       )
@@ -221,7 +221,7 @@ export const useAnalysisWizard = (companyId: string, companyName?: string, onCom
       }
       
       // Redirection vers la page d'analyse de risque
-      router.push(`/risk-analysis/${companyId}`);
+      navigate(`/risk-analysis/${companyId}`);
     }
   };
   

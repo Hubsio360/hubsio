@@ -6,6 +6,7 @@ import { CompanyInfoStep } from './wizard/CompanyInfoStep';
 import { BusinessProcessStep } from './wizard/BusinessProcessStep';
 import { RiskScenariosStep } from './wizard/RiskScenariosStep';
 import { ConfirmDialog } from './wizard/ConfirmDialog';
+import { BusinessProcess, SuggestedScenario } from '@/hooks/risk-analysis-wizard/types';
 
 interface AnalysisWizardProps {
   open: boolean;
@@ -57,6 +58,36 @@ export function AnalysisWizard({
     }
   };
 
+  // Adapter pour corriger l'incompatibilité de type
+  const handleAddProcess = (process: string) => {
+    const businessProcess: BusinessProcess = {
+      id: `process-${Date.now()}`,
+      name: process,
+      description: ``
+    };
+    addBusinessProcess(businessProcess);
+  };
+
+  // Adapter pour corriger l'incompatibilité de type
+  const handleRemoveProcess = (id: string) => {
+    // Trouver l'index à partir de l'id
+    const index = businessProcesses.findIndex(process => process.id === id);
+    if (index !== -1) {
+      removeBusinessProcess(index);
+    }
+  };
+
+  // Adapter pour corriger l'incompatibilité de type
+  const handleToggleScenario = (id: string) => {
+    toggleScenarioSelection(id);
+  };
+
+  // Adapter pour corriger l'incompatibilité de type
+  const handleSaveAndClose = async (): Promise<boolean> => {
+    await saveAndClose();
+    return true;
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={handleModalClose}>
@@ -92,8 +123,8 @@ export function AnalysisWizard({
           {step === 2 && (
             <BusinessProcessStep
               businessProcesses={businessProcesses}
-              onAddProcess={addBusinessProcess}
-              onRemoveProcess={removeBusinessProcess}
+              onAddProcess={handleAddProcess}
+              onRemoveProcess={handleRemoveProcess}
               onNext={goToNextStep}
               onPrevious={goToPreviousStep}
               generatingScenarios={generatingScenarios}
@@ -106,11 +137,11 @@ export function AnalysisWizard({
               suggestedScenarios={suggestedScenarios}
               loading={loading}
               onSelectTemplate={handleTemplateSelect}
-              onToggleScenario={toggleScenarioSelection}
+              onToggleScenario={handleToggleScenario}
               onComplete={goToNextStep}
               onPrevious={goToPreviousStep}
               onGenerateMoreScenarios={generateAdditionalScenarios}
-              onSaveAndClose={saveAndClose}
+              onSaveAndClose={handleSaveAndClose}
             />
           )}
         </DialogContent>

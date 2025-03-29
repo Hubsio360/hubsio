@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,21 +12,34 @@ interface ScenarioTemplateSelectProps {
 }
 
 const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelect }) => {
+  const [open, setOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<EnhancedTemplate | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<string | null>(null);
+
   const {
-    open,
-    setOpen,
-    selectedTemplate,
-    handleSelectTemplate,
-    searchTerm,
-    setSearchTerm,
-    groupedTemplates,
+    enhancedTemplates,
     loading,
     error,
-    handleRetry,
-    templates,
-    activeTab,
-    setActiveTab
+    refreshTemplates: handleRetry,
+    templates
   } = useScenarioTemplates();
+
+  // Créer des groupes de templates à partir des templates améliorés
+  const groupedTemplates = React.useMemo(() => {
+    const groupedMap = enhancedTemplates.reduce((acc, template) => {
+      if (!acc[template.domain]) {
+        acc[template.domain] = [];
+      }
+      acc[template.domain].push(template);
+      return acc;
+    }, {} as Record<string, EnhancedTemplate[]>);
+    
+    return Object.entries(groupedMap).map(([domain, templates]) => ({
+      domain,
+      templates
+    }));
+  }, [enhancedTemplates]);
 
   // Force fetch templates on mount
   useEffect(() => {
@@ -34,6 +47,18 @@ const ScenarioTemplateSelect: React.FC<ScenarioTemplateSelectProps> = ({ onSelec
       handleRetry();
     }
   }, [templates, handleRetry]);
+
+  // Set active tab if not set
+  useEffect(() => {
+    if (groupedTemplates.length > 0 && !activeTab) {
+      setActiveTab(groupedTemplates[0].domain);
+    }
+  }, [groupedTemplates, activeTab]);
+
+  const handleSelectTemplate = (template: EnhancedTemplate) => {
+    setSelectedTemplate(template);
+    return template;
+  };
 
   const onTemplateSelect = (template: EnhancedTemplate) => {
     const selected = handleSelectTemplate(template);
