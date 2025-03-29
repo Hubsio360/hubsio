@@ -35,7 +35,7 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
   // Explicitly type the form context
   const form = useFormContext<RiskScenarioFormValues>();
   const { control, setValue } = form;
-  const { companyRiskScales } = useData();
+  
   const { 
     impactScales, 
     likelihoodScale, 
@@ -51,6 +51,8 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
   
   // Calculate risk level when impact or likelihood changes
   useEffect(() => {
+    let isMounted = true;
+    
     if (rawImpact && rawLikelihood) {
       const riskMatrix: Record<RiskLevel, Record<RiskLevel, RiskLevel>> = {
         low: {
@@ -80,8 +82,14 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
       };
       
       const calculatedRiskLevel = riskMatrix[rawImpact][rawLikelihood];
-      setValue('rawRiskLevel', calculatedRiskLevel);
+      if (isMounted) {
+        setValue('rawRiskLevel', calculatedRiskLevel);
+      }
     }
+    
+    return () => {
+      isMounted = false;
+    };
   }, [rawImpact, rawLikelihood, setValue]);
   
   return (

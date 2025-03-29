@@ -26,6 +26,7 @@ export const useRiskAssessment = (
   useEffect(() => {
     return () => {
       isMounted.current = false;
+      console.log("useRiskAssessment: Cleaning up resources");
     };
   }, []);
 
@@ -33,32 +34,31 @@ export const useRiskAssessment = (
   useEffect(() => {
     const loadScales = async () => {
       try {
+        if (!companyId || !isMounted.current) return;
+        
         console.log("Ensuring default scales exist for company:", companyId);
         // Ensure default scales exist for this company
         await ensureDefaultScalesExist(companyId);
         
         // Fetch company risk scales
-        await fetchCompanyRiskScales(companyId);
+        if (isMounted.current) {
+          await fetchCompanyRiskScales(companyId);
+        }
       } catch (error) {
         console.error("Error loading risk scales:", error);
       }
     };
     
-    if (companyId && isMounted.current) {
+    if (companyId) {
       loadScales();
     }
-    
-    return () => {
-      // Cleanup function
-      console.log("useRiskAssessment: Cleaning up resources");
-    };
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
 
   // Separation des échelles d'impact et de probabilité
   useEffect(() => {
-    if (!isMounted.current) return;
+    if (!isMounted.current || !companyRiskScales) return;
     
-    if (companyRiskScales && companyRiskScales.length > 0) {
+    if (companyRiskScales.length > 0) {
       // Filter active scales by category
       const activeScales = companyRiskScales.filter(scale => scale.isActive || scale.is_active);
       
@@ -78,8 +78,10 @@ export const useRiskAssessment = (
       console.log("Filtered impact scales:", impacts.map(s => s.scaleType?.name || 'unknown'));
       console.log("Likelihood scale:", likelihood?.scaleType?.name || 'none');
       
-      setImpactScales(impacts);
-      setLikelihoodScale(likelihood || null);
+      if (isMounted.current) {
+        setImpactScales(impacts);
+        setLikelihoodScale(likelihood || null);
+      }
       
       // Track which scales we've already processed to avoid duplicate initializations
       const newProcessedIds = new Set(processedScaleIds);
@@ -138,8 +140,10 @@ export const useRiskAssessment = (
       console.log(`Setting rawImpact to ${maxImpactLevel} based on impact scale ratings:`, impactScaleRatings);
       
       // Set the main impact value (which will be stored in the database)
-      form.setValue('rawImpact', maxImpactLevel);
-      form.setValue('impactLevel', maxImpactLevel);
+      if (isMounted.current) {
+        form.setValue('rawImpact', maxImpactLevel);
+        form.setValue('impactLevel', maxImpactLevel);
+      }
     }
   }, [impactScaleRatings, form]);
 

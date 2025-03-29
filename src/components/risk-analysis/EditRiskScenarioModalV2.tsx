@@ -54,28 +54,9 @@ export function EditRiskScenarioModalV2({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { companyRiskScales } = useData();
   
-  const methods = useForm<ScenarioFormValues>({
-    defaultValues: scenario ? {
-      name: scenario.name,
-      description: scenario.description || '',
-      impactDescription: scenario.impactDescription || '',
-      scope: scenario.scope,
-      status: scenario.status,
-      rawImpact: scenario.rawImpact || scenario.impactLevel,
-      rawLikelihood: scenario.rawLikelihood || scenario.likelihood,
-      rawRiskLevel: scenario.rawRiskLevel || scenario.riskLevel,
-      residualImpact: scenario.residualImpact || 'low',
-      residualLikelihood: scenario.residualLikelihood || 'low',
-      residualRiskLevel: scenario.residualRiskLevel || 'low',
-      securityMeasures: scenario.securityMeasures || '',
-      measureEffectiveness: scenario.measureEffectiveness || '',
-      threatId: scenario.threatId || 'none',
-      vulnerabilityId: scenario.vulnerabilityId || 'none',
-      impactScaleRatings: scenario.impactScaleRatings || {},
-    } : {} as ScenarioFormValues
-  });
+  // Initialiser le formulaire avec les valeurs du scénario sélectionné
+  const methods = useForm<ScenarioFormValues>();
 
   // Reset form when dialog opens or scenario changes
   useEffect(() => {
@@ -107,8 +88,9 @@ export function EditRiskScenarioModalV2({
     if (!open) {
       setSaving(false);
       setFormError(null);
+      methods.reset(); // Réinitialiser le formulaire quand la modale se ferme
     }
-  }, [open]);
+  }, [open, methods]);
 
   const handleSubmit = async (values: ScenarioFormValues) => {
     if (!scenario) return;
@@ -176,6 +158,11 @@ export function EditRiskScenarioModalV2({
     methods.reset();
     onOpenChange(false);
   };
+
+  // Empêcher les mises à jour du formulaire lorsque la modale est fermée
+  if (!open) {
+    return null;
+  }
 
   return (
     <Dialog 
