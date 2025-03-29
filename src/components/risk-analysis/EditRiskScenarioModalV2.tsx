@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -54,9 +54,15 @@ export function EditRiskScenarioModalV2({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const { toast } = useToast();
+  const dialogOpenRef = useRef(open);
   
   // Initialiser le formulaire avec les valeurs du scénario sélectionné
   const methods = useForm<ScenarioFormValues>();
+
+  // Update ref when open state changes
+  useEffect(() => {
+    dialogOpenRef.current = open;
+  }, [open]);
 
   // Reset form when dialog opens or scenario changes
   useEffect(() => {
@@ -88,7 +94,13 @@ export function EditRiskScenarioModalV2({
     if (!open) {
       setSaving(false);
       setFormError(null);
-      methods.reset(); // Réinitialiser le formulaire quand la modale se ferme
+      
+      // Force a complete reset of the form when dialog closes
+      setTimeout(() => {
+        if (!dialogOpenRef.current) {
+          methods.reset();
+        }
+      }, 100);
     }
   }, [open, methods]);
 
@@ -124,16 +136,22 @@ export function EditRiskScenarioModalV2({
       const success = await onSave(updatedScenario);
       
       if (success) {
-        // Ensure dialog closes properly before showing toast
-        onOpenChange(false);
+        // Use a timeout to ensure we don't update state after unmount
+        const closeTimeout = setTimeout(() => {
+          if (dialogOpenRef.current) {
+            onOpenChange(false);
+            
+            // Small delay to ensure UI updates properly
+            setTimeout(() => {
+              toast({
+                title: "Scénario mis à jour",
+                description: "Les modifications ont été enregistrées avec succès"
+              });
+            }, 100);
+          }
+        }, 0);
         
-        // Small delay to ensure UI updates properly
-        setTimeout(() => {
-          toast({
-            title: "Scénario mis à jour",
-            description: "Les modifications ont été enregistrées avec succès"
-          });
-        }, 100);
+        return () => clearTimeout(closeTimeout);
       } else {
         setFormError("Impossible de sauvegarder les modifications.");
         setSaving(false);
@@ -170,6 +188,11 @@ export function EditRiskScenarioModalV2({
       onOpenChange={(newOpen) => {
         // Prevent closing while saving
         if (saving && !newOpen) return;
+        
+        // Update our ref first
+        dialogOpenRef.current = newOpen;
+        
+        // Then call the handler
         onOpenChange(newOpen);
       }}
     >

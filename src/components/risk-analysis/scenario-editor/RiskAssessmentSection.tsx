@@ -51,9 +51,9 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
   
   // Calculate risk level when impact or likelihood changes
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
     
-    if (rawImpact && rawLikelihood) {
+    if (rawImpact && rawLikelihood && mounted) {
       const riskMatrix: Record<RiskLevel, Record<RiskLevel, RiskLevel>> = {
         low: {
           low: 'low',
@@ -82,13 +82,13 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
       };
       
       const calculatedRiskLevel = riskMatrix[rawImpact][rawLikelihood];
-      if (isMounted) {
+      if (mounted) {
         setValue('rawRiskLevel', calculatedRiskLevel);
       }
     }
     
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, [rawImpact, rawLikelihood, setValue]);
   

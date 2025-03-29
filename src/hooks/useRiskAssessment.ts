@@ -26,12 +26,14 @@ export const useRiskAssessment = (
   useEffect(() => {
     return () => {
       isMounted.current = false;
-      console.log("useRiskAssessment: Cleaning up resources");
+      console.log("useRiskAssessment: Cleanup complete - component unmounted");
     };
   }, []);
 
   // Chargement initial des échelles et initialisation
   useEffect(() => {
+    let isEffectActive = true;
+    
     const loadScales = async () => {
       try {
         if (!companyId || !isMounted.current) return;
@@ -41,7 +43,7 @@ export const useRiskAssessment = (
         await ensureDefaultScalesExist(companyId);
         
         // Fetch company risk scales
-        if (isMounted.current) {
+        if (isMounted.current && isEffectActive) {
           await fetchCompanyRiskScales(companyId);
         }
       } catch (error) {
@@ -52,13 +54,19 @@ export const useRiskAssessment = (
     if (companyId) {
       loadScales();
     }
+    
+    return () => {
+      isEffectActive = false;
+    };
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
 
   // Separation des échelles d'impact et de probabilité
   useEffect(() => {
     if (!isMounted.current || !companyRiskScales) return;
     
-    if (companyRiskScales.length > 0) {
+    let isEffectActive = true;
+    
+    if (companyRiskScales.length > 0 && isEffectActive) {
       // Filter active scales by category
       const activeScales = companyRiskScales.filter(scale => scale.isActive || scale.is_active);
       
@@ -78,7 +86,7 @@ export const useRiskAssessment = (
       console.log("Filtered impact scales:", impacts.map(s => s.scaleType?.name || 'unknown'));
       console.log("Likelihood scale:", likelihood?.scaleType?.name || 'none');
       
-      if (isMounted.current) {
+      if (isMounted.current && isEffectActive) {
         setImpactScales(impacts);
         setLikelihoodScale(likelihood || null);
       }
@@ -100,25 +108,31 @@ export const useRiskAssessment = (
         }
       });
       
-      if (hasNewRatings && isMounted.current) {
+      if (hasNewRatings && isMounted.current && isEffectActive) {
         console.log("Setting initial impact scale ratings:", initialRatings);
         form.setValue('impactScaleRatings', initialRatings);
         setProcessedScaleIds(newProcessedIds);
       }
       
       // Set the first impact scale as active if there is one and no active scale is set
-      if (impacts.length > 0 && !activeImpactScale && isMounted.current) {
+      if (impacts.length > 0 && !activeImpactScale && isMounted.current && isEffectActive) {
         console.log("Setting first impact scale as active:", impacts[0].id, impacts[0].scaleType?.name);
         setActiveImpactScale(impacts[0].id);
       }
     }
+    
+    return () => {
+      isEffectActive = false;
+    };
   }, [companyRiskScales, activeImpactScale, form, processedScaleIds]);
 
   // Calculate main impact level based on the maximum value from all scale ratings
   useEffect(() => {
     if (!isMounted.current) return;
     
-    if (Object.keys(impactScaleRatings).length > 0) {
+    let isEffectActive = true;
+    
+    if (Object.keys(impactScaleRatings).length > 0 && isEffectActive) {
       const impactValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
       let maxImpactValue = 1; // Default to low
       
@@ -140,11 +154,15 @@ export const useRiskAssessment = (
       console.log(`Setting rawImpact to ${maxImpactLevel} based on impact scale ratings:`, impactScaleRatings);
       
       // Set the main impact value (which will be stored in the database)
-      if (isMounted.current) {
+      if (isMounted.current && isEffectActive) {
         form.setValue('rawImpact', maxImpactLevel);
         form.setValue('impactLevel', maxImpactLevel);
       }
     }
+    
+    return () => {
+      isEffectActive = false;
+    };
   }, [impactScaleRatings, form]);
 
   // Handle change for a specific impact scale
@@ -157,6 +175,17 @@ export const useRiskAssessment = (
     form.setValue('impactScaleRatings', newRatings);
   }, [impactScaleRatings, form]);
 
+  // Reset function to clear state when modal closes
+  const reset = useCallback(() => {
+    if (!isMounted.current) return;
+    
+    console.log("useRiskAssessment: Resetting state");
+    setImpactScales([]);
+    setLikelihoodScale(null);
+    setActiveImpactScale(null);
+    setProcessedScaleIds(new Set());
+  }, []);
+
   return {
     loading,
     impactScales,
@@ -164,6 +193,7 @@ export const useRiskAssessment = (
     activeImpactScale,
     setActiveImpactScale,
     impactScaleRatings,
-    handleImpactScaleChange
+    handleImpactScaleChange,
+    reset
   };
 };
