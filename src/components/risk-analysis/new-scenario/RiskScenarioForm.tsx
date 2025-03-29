@@ -73,6 +73,9 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
         residualRiskLevel: initialValues.residualRiskLevel || 'low',
         securityMeasures: initialValues.securityMeasures || '',
         measureEffectiveness: initialValues.measureEffectiveness || '',
+        // Ensure default values for any selects that could have empty options
+        threatId: initialValues.threatId || 'none',
+        vulnerabilityId: initialValues.vulnerabilityId || 'none',
       },
     });
 

@@ -38,6 +38,7 @@ export function EditRiskScenarioDialog({
     setSaving(true);
     
     try {
+      // Process any "none" values to null or empty string depending on backend requirements
       const updatedScenario: Partial<RiskScenario> = {
         name: values.name,
         description: values.description,
@@ -55,7 +56,10 @@ export function EditRiskScenarioDialog({
         residualLikelihood: values.residualLikelihood,
         residualRiskLevel: values.residualRiskLevel,
         securityMeasures: values.securityMeasures,
-        measureEffectiveness: values.measureEffectiveness
+        measureEffectiveness: values.measureEffectiveness,
+        // Handle any "none" values for IDs
+        threatId: values.threatId === "none" ? null : values.threatId,
+        vulnerabilityId: values.vulnerabilityId === "none" ? null : values.vulnerabilityId
       };
       
       const success = await onSave(updatedScenario);
