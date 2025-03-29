@@ -33,21 +33,21 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
 
   return (
     <div className="space-y-6">
-      <Card className="border-white/10 bg-black/30 shadow-xl">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center text-white">
-            <Gauge className="mr-2 h-6 w-6" />
+          <CardTitle className="flex items-center">
+            <Gauge className="mr-2 h-5 w-5" />
             Évaluation du risque
           </CardTitle>
-          <CardDescription className="text-gray-300">
+          <CardDescription>
             Évaluez les niveaux d'impact et de probabilité pour ce scénario
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="raw" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-black/40 mb-6">
-              <TabsTrigger value="raw" className="data-[state=active]:bg-primary">Risque brut</TabsTrigger>
-              <TabsTrigger value="residual" className="data-[state=active]:bg-primary">Risque résiduel</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="raw">Risque brut</TabsTrigger>
+              <TabsTrigger value="residual">Risque résiduel</TabsTrigger>
             </TabsList>
             
             <TabsContent value="raw" className="space-y-6 pt-4">
