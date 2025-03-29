@@ -19,6 +19,7 @@ export const useRiskAssessment = (
   // Get the current values of all impact scale ratings
   const impactScaleRatings = form.watch('impactScaleRatings') || {};
 
+  // Chargement initial des échelles et initialisation
   useEffect(() => {
     const loadScales = async () => {
       try {
@@ -33,9 +34,12 @@ export const useRiskAssessment = (
       }
     };
     
-    loadScales();
+    if (companyId) {
+      loadScales();
+    }
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
 
+  // Separation des échelles d'impact et de probabilité
   useEffect(() => {
     if (companyRiskScales && companyRiskScales.length > 0) {
       // Filter active scales by category
@@ -53,6 +57,9 @@ export const useRiskAssessment = (
         const category = scale.scaleType?.category || '';
         return category.includes('likelihood');
       });
+      
+      console.log("Filtered impact scales:", impacts.map(s => s.scaleType?.name || 'unknown'));
+      console.log("Likelihood scale:", likelihood?.scaleType?.name || 'none');
       
       setImpactScales(impacts);
       setLikelihoodScale(likelihood || null);
@@ -82,7 +89,7 @@ export const useRiskAssessment = (
       
       // Set the first impact scale as active if there is one and no active scale is set
       if (impacts.length > 0 && !activeImpactScale) {
-        console.log("Setting first impact scale as active:", impacts[0].id);
+        console.log("Setting first impact scale as active:", impacts[0].id, impacts[0].scaleType?.name);
         setActiveImpactScale(impacts[0].id);
       }
     }

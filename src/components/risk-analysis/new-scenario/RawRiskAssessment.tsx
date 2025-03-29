@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FormField, FormItem, FormLabel, FormDescription } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { RiskScaleWithLevels } from '@/types/risk-scales';
@@ -25,6 +25,17 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
   impactScaleRatings,
   handleImpactScaleChange
 }) => {
+  // Log available impact scales on mount
+  useEffect(() => {
+    if (impactScales.length > 0) {
+      console.log("RawRiskAssessment: Available impact scales:", impactScales.map(scale => ({
+        id: scale.id,
+        name: scale.scaleType?.name,
+        active: scale.id === activeImpactScale
+      })));
+    }
+  }, [impactScales, activeImpactScale]);
+
   const selectImpactScale = (scaleId: string) => {
     console.log(`RawRiskAssessment: Selecting impact scale ${scaleId}`);
     setActiveImpactScale(scaleId);
@@ -64,7 +75,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                 className="cursor-pointer py-1.5 px-3 text-sm"
                 onClick={() => selectImpactScale(scale.id)}
               >
-                {scale.scaleType?.name}
+                {scale.scaleType?.name || "Échelle d'impact"}
               </Badge>
             ))}
           </div>
@@ -76,13 +87,13 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                 if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
                   // Get the current value for this specific scale
                   const scaleValue = impactScaleRatings[scale.id] || 'low';
-                  console.log(`RawRiskAssessment: Rendering impact scale ${scale.id} with value ${scaleValue}`);
+                  console.log(`RawRiskAssessment: Rendering impact scale ${scale.id} with value ${scaleValue}, name: ${scale.scaleType?.name}`);
                   
                   return (
                     <div key={scale.id}>
                       <RiskScaleSlider
                         name={`impactScale_${scale.id}`}
-                        label={`Impact - ${scale.scaleType?.name}`}
+                        label={`Impact - ${scale.scaleType?.name || "Impact"}`}
                         description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
                         levels={scale.levels}
                         value={scaleValue}

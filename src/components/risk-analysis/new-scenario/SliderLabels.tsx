@@ -17,7 +17,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
 
   // Handle label click
   const handleLabelClick = (index: number) => {
-    console.log(`SliderLabels: Label clicked: ${index}, level: ${levels[index]?.name}`);
+    console.log(`SliderLabels: Label clicked: ${index}, level name: ${levels[index]?.name}`);
     if (onLabelClick) {
       onLabelClick(index);
     }
@@ -33,12 +33,12 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
             <TooltipProvider key={level.id || index}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div 
-                    className="relative flex flex-col items-center cursor-pointer group focus:outline-none" 
+                  <button 
+                    type="button"
+                    className="relative flex flex-col items-center cursor-pointer group focus:outline-none bg-transparent border-none p-0" 
                     style={{ width: '40px' }}
                     onClick={() => handleLabelClick(index)}
                     aria-selected={isSelected}
-                    role="button"
                     tabIndex={0}
                     aria-label={`Sélectionner le niveau ${level.name}`}
                   >
@@ -59,7 +59,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
                     }`} style={{ maxWidth: '60px' }}>
                       {level.name}
                     </div>
-                  </div>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent 
                   side="top" 

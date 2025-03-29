@@ -19,7 +19,7 @@ export function mapPositionToRiskLevel(position: number, sortedLevels: RiskScale
   
   const levelName = level.name.toLowerCase();
   
-  // Map level name to standard risk level based on common terms
+  // Map level name to standard risk level based on common terms in French and English
   if (levelName.includes('néglig') || levelName.includes('faibl') || 
       levelName.includes('peu probable') || levelName.includes('rare') || 
       levelName === 'low' || levelName === 'bas' || levelName === 'basse') {
@@ -66,7 +66,7 @@ export function mapPositionToRiskLevel(position: number, sortedLevels: RiskScale
  * @returns The index in the sorted array
  */
 export function mapRiskLevelToIndex(value: RiskLevel, sortedLevels: RiskScaleLevel[]): number {
-  // First attempt: exact match based on level strings
+  // First attempt: exact match based on level strings - en français et en anglais
   for (let i = 0; i < sortedLevels.length; i++) {
     const level = sortedLevels[i];
     const levelName = level.name.toLowerCase();
