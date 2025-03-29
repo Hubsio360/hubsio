@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import RiskLevelIndicator from './RiskLevelIndicator';
 import SliderLabels from './SliderLabels';
 import { mapPositionToRiskLevel, mapRiskLevelToIndex } from './riskLevelMapper';
+import { Badge } from '@/components/ui/badge';
 
 interface RiskScaleSliderProps {
   levels: RiskScaleLevel[];
@@ -91,19 +92,19 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   
   return (
     <FormItem>
-      <FormLabel>{label}</FormLabel>
+      <FormLabel className="text-lg">{label}</FormLabel>
       {description && <FormDescription>{description}</FormDescription>}
       
       <div className="space-y-6 pt-1">
         <FormControl>
-          <div className="relative pt-2">
+          <div className="relative pt-4 px-2">
             {/* Slider component with larger clickable area */}
             <Slider
               value={[sliderValue]}
               max={sortedLevels.length - 1}
               step={1}
               onValueChange={handleSliderChange}
-              className="my-6 h-4"
+              className="my-4 z-10"
               data-testid={`${name}-slider`}
               aria-label={label}
             />
@@ -115,7 +116,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         
         {/* Description of selected level shown below the slider */}
         {currentLevel && (
-          <div className="mt-2">
+          <div className="mt-6">
             <RiskLevelIndicator level={currentLevel} />
           </div>
         )}

@@ -7,17 +7,36 @@ interface RiskLevelIndicatorProps {
   level: RiskScaleLevel;
 }
 
+// Fixed colors for the 4 risk levels
+const levelColors = [
+  "#4CAF50", // Négligeable (vert)
+  "#FFA726", // Faible (jaune)
+  "#9C27B0", // Significatif (violet)
+  "#F44336", // Majeur (rouge)
+];
+
 const RiskLevelIndicator: React.FC<RiskLevelIndicatorProps> = ({ level }) => {
+  // Get appropriate color based on level value
+  const getLevelColor = () => {
+    const levelValue = level.levelValue !== undefined ? level.levelValue : (level.level_value || 0);
+    if (levelValue >= 0 && levelValue < levelColors.length) {
+      return levelColors[levelValue];
+    }
+    return level.color || '#e2e8f0';
+  };
+
+  const color = getLevelColor();
+  
   return (
     <div 
-      className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-8"
+      className="px-6 py-4 rounded-lg text-sm transition-all shadow-md mt-4 border border-white/10"
       style={{ 
-        backgroundColor: level?.color || '#e2e8f0',
-        color: getContrastColor(level?.color || '#e2e8f0')
+        backgroundColor: color,
+        color: getContrastColor(color)
       }}
     >
-      <div className="font-semibold mb-1">{level?.name || 'Niveau non défini'}</div>
-      <div className="text-sm">{level?.description || 'Description non disponible'}</div>
+      <div className="font-bold mb-2 text-lg">{level?.name || 'Niveau non défini'}</div>
+      <div className="text-sm opacity-90">{level?.description || 'Description non disponible'}</div>
     </div>
   );
 };
