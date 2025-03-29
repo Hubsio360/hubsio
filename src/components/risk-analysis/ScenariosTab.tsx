@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,7 +27,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { EditRiskScenarioModalV2 } from './EditRiskScenarioModalV2';
 
 interface ScenariosTabProps {
   isLoading: boolean;
@@ -36,7 +36,6 @@ interface ScenariosTabProps {
 
 const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps) => {
   const { deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<RiskScenario | null>(null);
   const { toast } = useToast();
@@ -77,24 +76,6 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
   const handleDeleteScenario = (scenario: RiskScenario) => {
     setSelectedScenario(scenario);
     setDeleteDialogOpen(true);
-  };
-
-  const handleSaveScenario = async (updatedData: Partial<RiskScenario>) => {
-    if (!selectedScenario) return false;
-    
-    try {
-      await updateRiskScenario(selectedScenario.id, updatedData);
-      await fetchRiskScenariosByCompanyId(companyId);
-      return true;
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour du scénario:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le scénario de risque",
-        variant: "destructive",
-      });
-      return false;
-    }
   };
 
   const confirmDeleteScenario = async () => {
