@@ -141,8 +141,8 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {scale.levels?.sort((a, b) => (a.levelValue || 0) - (b.levelValue || 0)).map(level => (
-                          <SelectItem key={level.id} value={level.levelValue === 1 ? 'low' : level.levelValue === 2 ? 'medium' : level.levelValue === 3 ? 'high' : 'critical'}>
+                        {scale.levels?.sort((a, b) => (a.level_value || 0) - (b.level_value || 0)).map(level => (
+                          <SelectItem key={level.id} value={level.level_value === 1 ? 'low' : level.level_value === 2 ? 'medium' : level.level_value === 3 ? 'high' : 'critical'}>
                             {level.name} - {level.description}
                           </SelectItem>
                         ))}
