@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +5,7 @@ import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { BusinessProcess, SuggestedScenario, RiskScenarioCreate } from './types';
 import { useData } from '@/contexts/DataContext';
 import { createErrorHandler } from '@/contexts/data/utils/auditErrorUtils';
-import { RiskScope } from '@/types';
+import { RiskScope, RiskStatus, RiskLevel } from '@/types';
 
 export function useRiskScenarios(companyId: string) {
   const { toast } = useToast();
@@ -309,17 +308,17 @@ export function useRiskScenarios(companyId: string) {
             companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified',
+            status: 'identified' as RiskStatus, // Cast to RiskStatus type
             scope: 'technical' as RiskScope, // Cast to RiskScope type
-            riskLevel: 'medium',
-            impactLevel: 'medium',
-            likelihood: 'medium',
-            rawImpact: 'medium',
-            rawLikelihood: 'medium',
-            rawRiskLevel: 'medium',
-            residualImpact: 'low',
-            residualLikelihood: 'low',
-            residualRiskLevel: 'low'
+            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
           };
           console.log('Données du scénario à enregistrer:', scenarioData);
           
@@ -392,18 +391,18 @@ export function useRiskScenarios(companyId: string) {
             companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified',
+            status: 'identified' as RiskStatus, // Cast to RiskStatus type
             scope: 'technical' as RiskScope, // Cast to RiskScope type
-            riskLevel: 'medium',
-            impactLevel: 'medium',
-            likelihood: 'medium',
+            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
             // Valeurs par défaut pour les autres champs
-            rawImpact: 'medium',
-            rawLikelihood: 'medium',
-            rawRiskLevel: 'medium',
-            residualImpact: 'low',
-            residualLikelihood: 'low',
-            residualRiskLevel: 'low'
+            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
           });
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
