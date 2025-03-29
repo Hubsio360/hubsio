@@ -15,6 +15,14 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
     return null;
   }
 
+  // Handle label click
+  const handleLabelClick = (index: number) => {
+    console.log(`Label clicked: ${index}, level: ${levels[index]?.name}`);
+    if (onLabelClick) {
+      onLabelClick(index);
+    }
+  };
+
   return (
     <div className="relative w-full">
       <div className="flex justify-between relative pb-2 px-3 mt-6">
@@ -28,14 +36,14 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
                   <div 
                     className="relative flex flex-col items-center cursor-pointer group" 
                     style={{ width: '40px' }}
-                    onClick={() => onLabelClick && onLabelClick(index)}
+                    onClick={() => handleLabelClick(index)}
                     role="button"
                     tabIndex={0}
                     aria-selected={isSelected}
                     aria-label={`Sélectionner le niveau ${level.name}`}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
-                        onLabelClick && onLabelClick(index);
+                        handleLabelClick(index);
                       }
                     }}
                   >

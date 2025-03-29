@@ -68,6 +68,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                 if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
                   // Get the current value for this specific scale
                   const scaleValue = impactScaleRatings[scale.id] || 'low';
+                  console.log(`Showing impact scale ${scale.id} with value ${scaleValue}`);
                   
                   return (
                     <div key={scale.id}>
@@ -77,7 +78,10 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                         description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
                         levels={scale.levels}
                         value={scaleValue}
-                        onChange={(value) => handleImpactScaleChange(scale.id, value)}
+                        onChange={(value) => {
+                          console.log(`Updating impact scale ${scale.id} to ${value}`);
+                          handleImpactScaleChange(scale.id, value);
+                        }}
                       />
                     </div>
                   );

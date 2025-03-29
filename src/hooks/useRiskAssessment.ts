@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useData } from '@/contexts/DataContext';
 import { RiskLevel } from '@/types';
@@ -91,12 +91,12 @@ export const useRiskAssessment = (
   }, [impactScaleRatings, form]);
 
   // Handle change for a specific impact scale
-  const handleImpactScaleChange = (scaleId: string, value: RiskLevel) => {
+  const handleImpactScaleChange = useCallback((scaleId: string, value: RiskLevel) => {
     console.log(`Updating impact scale ${scaleId} to ${value}`);
     const newRatings = { ...impactScaleRatings };
     newRatings[scaleId] = value;
     form.setValue('impactScaleRatings', newRatings);
-  };
+  }, [impactScaleRatings, form]);
 
   return {
     loading,

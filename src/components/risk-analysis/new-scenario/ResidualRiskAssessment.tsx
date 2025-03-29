@@ -29,6 +29,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
 }) => {
   // Créer un gestionnaire spécifique pour l'impact résiduel
   const handleResidualImpactChange = (value: RiskLevel) => {
+    console.log(`Residual impact change to ${value}`);
     if (activeImpactScale) {
       // Mettre à jour à la fois l'impact spécifique et l'impact résiduel global
       handleImpactScaleChange(activeImpactScale, value);
@@ -121,6 +122,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
                 if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
                   // Utiliser l'impact résiduel global comme valeur pour tous les échelles
                   const residualImpact = form.watch('residualImpact');
+                  console.log(`Showing residual impact scale ${scale.id} with value ${residualImpact}`);
                   
                   return (
                     <div key={scale.id}>

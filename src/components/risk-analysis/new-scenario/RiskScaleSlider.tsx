@@ -58,6 +58,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     if (position !== sliderValue && sortedLevels[position]) {
       setSliderValue(position);
       const riskLevel = mapPositionToRiskLevel(position, sortedLevels);
+      console.log(`Slider changed to position ${position}, level: ${riskLevel}`);
       onChange(riskLevel);
     }
   }, [sliderValue, sortedLevels, onChange]);
@@ -66,8 +67,10 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   const handleLabelClick = useCallback((index: number) => {
     if (!sortedLevels.length || index < 0 || index >= sortedLevels.length) return;
     
+    console.log(`Label clicked in RiskScaleSlider: ${index}, current: ${sliderValue}`);
     setSliderValue(index);
     const riskLevel = mapPositionToRiskLevel(index, sortedLevels);
+    console.log(`Setting risk level to: ${riskLevel}`);
     onChange(riskLevel);
   }, [sortedLevels, onChange]);
   
