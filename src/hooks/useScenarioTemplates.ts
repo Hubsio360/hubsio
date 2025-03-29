@@ -1,7 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRiskScenarioTemplates } from '@/contexts/DataContext';
-import type { RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
+import { useRiskScenarioTemplates, RiskScenarioTemplate } from '@/contexts/data/hooks/useRiskScenarioTemplates';
 import { RiskScope } from '@/types';
 
 // Interface for the templates grouped by domain
@@ -11,11 +10,14 @@ export interface GroupedTemplate {
 }
 
 // Interface for the templates with name, description, and additional fields separated
-export interface EnhancedTemplate extends RiskScenarioTemplate {
+export interface EnhancedTemplate {
+  id: string;
+  domain: string;
   name: string;
   shortDescription: string;
-  description: string; // Adding this property
-  category?: RiskScope; // Adding this property
+  description: string;
+  scenario_description: string;
+  category?: RiskScope;
 }
 
 export const useScenarioTemplates = () => {
@@ -28,7 +30,7 @@ export const useScenarioTemplates = () => {
   
   // Get templates from the context hook
   const { 
-    templates: rawTemplates = [], 
+    riskScenarioTemplates: rawTemplates, 
     loading, 
     error, 
     fetchRiskScenarioTemplates 
@@ -81,8 +83,8 @@ export const useScenarioTemplates = () => {
         ...template,
         name,
         shortDescription,
-        description: fullDescription, // Adding full description
-        category // Adding category based on the domain
+        description: fullDescription,
+        category
       };
     });
   }, []);
