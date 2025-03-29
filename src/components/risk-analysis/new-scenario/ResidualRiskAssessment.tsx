@@ -14,8 +14,8 @@ interface ResidualRiskAssessmentProps {
   impactScales: RiskScaleWithLevels[];
   activeImpactScale: string | null;
   setActiveImpactScale: (id: string) => void;
-  impactScaleRatings?: Record<string, RiskLevel>;
-  handleImpactScaleChange?: (scaleId: string, value: RiskLevel) => void;
+  impactScaleRatings: Record<string, RiskLevel>;
+  handleImpactScaleChange: (scaleId: string, value: RiskLevel) => void;
 }
 
 const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
@@ -24,9 +24,18 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
   impactScales,
   activeImpactScale,
   setActiveImpactScale,
-  impactScaleRatings = {},
+  impactScaleRatings,
   handleImpactScaleChange
 }) => {
+  // Créer un gestionnaire spécifique pour l'impact résiduel
+  const handleResidualImpactChange = (value: RiskLevel) => {
+    if (activeImpactScale) {
+      // Mettre à jour à la fois l'impact spécifique et l'impact résiduel global
+      handleImpactScaleChange(activeImpactScale, value);
+      form.setValue('residualImpact', value);
+    }
+  };
+
   return (
     <div className="space-y-6 pt-4">
       <FormField
@@ -110,21 +119,18 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
             <div className="pt-2">
               {impactScales.map(scale => {
                 if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                  // Utiliser l'impact résiduel global comme valeur pour tous les échelles
+                  const residualImpact = form.watch('residualImpact');
+                  
                   return (
                     <div key={scale.id}>
-                      <FormField
-                        control={form.control}
-                        name="residualImpact"
-                        render={({ field }) => (
-                          <RiskScaleSlider
-                            name="residualImpact"
-                            label={`Impact résiduel - ${scale.scaleType?.name}`}
-                            description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
-                            levels={scale.levels}
-                            value={field.value}
-                            onChange={field.onChange}
-                          />
-                        )}
+                      <RiskScaleSlider
+                        name={`residualImpact_${scale.id}`}
+                        label={`Impact résiduel - ${scale.scaleType?.name}`}
+                        description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
+                        levels={scale.levels}
+                        value={residualImpact}
+                        onChange={handleResidualImpactChange}
                       />
                     </div>
                   );

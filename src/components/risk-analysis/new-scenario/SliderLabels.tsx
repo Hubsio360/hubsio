@@ -26,13 +26,13 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <div 
-                    className="relative flex flex-col items-center cursor-pointer" 
+                    className="relative flex flex-col items-center cursor-pointer group" 
                     style={{ width: '40px' }}
                     onClick={() => onLabelClick && onLabelClick(index)}
                     role="button"
                     tabIndex={0}
                     aria-selected={isSelected}
-                    aria-label={`Select ${level.name} level`}
+                    aria-label={`Sélectionner le niveau ${level.name}`}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         onLabelClick && onLabelClick(index);
@@ -41,7 +41,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
                   >
                     {/* Dot indicator for each level */}
                     <div 
-                      className={`w-5 h-5 rounded-full mb-2 transition-all ${
+                      className={`w-5 h-5 rounded-full mb-2 transition-all group-hover:scale-110 ${
                         isSelected ? 'scale-125 ring-2 ring-white/20 ring-offset-1 shadow-glow' : ''
                       }`}
                       style={{ 
@@ -52,7 +52,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
                     
                     {/* Label below the dot */}
                     <div className={`text-xs text-center whitespace-nowrap ${
-                      isSelected ? 'font-medium text-white' : 'text-muted-foreground'
+                      isSelected ? 'font-medium text-white' : 'text-muted-foreground group-hover:text-foreground'
                     }`} style={{ maxWidth: '60px' }}>
                       {level.name}
                     </div>

@@ -61,7 +61,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
             ))}
           </div>
           
-          {/* Active impact scale - each scale now gets its own slider with its own stored value */}
+          {/* Active impact scale */}
           {activeImpactScale && (
             <div className="pt-2">
               {impactScales.map(scale => {
