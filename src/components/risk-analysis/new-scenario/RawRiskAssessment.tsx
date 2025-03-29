@@ -119,7 +119,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
             {form.watch('rawRiskLevel').toUpperCase()}
           </Badge>
           <FormDescription className="ml-4">
-            Niveau calculé automatiquement à partir de l'impact et de la probabilité
+            Niveau calculé automatiquement à partir de l'impact maximal multiplié par la probabilité
           </FormDescription>
         </div>
       </FormItem>
