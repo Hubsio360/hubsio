@@ -136,7 +136,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     }
   };
   
-  // Handle direct level click
+  // Handle direct level click - move to that position
   const handleLevelClick = (index: number) => {
     setSliderValue(index);
     handleSliderChange([index]);
@@ -161,75 +161,43 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       <FormLabel>{label}</FormLabel>
       {description && <FormDescription>{description}</FormDescription>}
       
-      <div className="space-y-4 pt-2 pb-16">
+      <div className="space-y-4 py-6">
         <FormControl>
-          <div className="relative pb-24">
-            {/* Slider amélioré */}
+          <div className="relative">
+            {/* Slider amélioré avec un step entier et snap */}
             <Slider
               value={[sliderValue]}
               max={sortedLevels.length - 1}
               step={1}
               onValueChange={handleSliderChange}
-              className="py-2 my-4"
-              aria-label={label}
+              className="py-4 my-3"
               data-testid={`${name}-slider`}
+              aria-label={label}
             />
             
-            {/* Points de niveau rapprochés du slider */}
-            <div className="flex justify-between absolute w-full top-6">
+            {/* Labels sous le slider - simplifiés pour éviter les chevauchements */}
+            <div className="flex mt-6 justify-between relative">
               {sortedLevels.map((level, index) => {
-                const offset = index === 0 ? '0%' : index === sortedLevels.length - 1 ? '100%' : `${(index / (sortedLevels.length - 1)) * 100}%`;
-                const isActive = sliderValue === index;
+                const width = 100 / sortedLevels.length;
+                const centerPosition = index * width + (width / 2);
                 
                 return (
-                  <TooltipProvider key={level.id}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div 
-                          className={`flex flex-col items-center cursor-pointer absolute transform -translate-x-1/2`}
-                          style={{ left: offset }}
-                          onClick={() => handleLevelClick(index)}
-                        >
-                          <div 
-                            className={`w-5 h-5 rounded-full transition-all ${isActive ? 'ring-2 ring-primary scale-125' : 'hover:scale-110'}`} 
-                            style={{ backgroundColor: level.color || '#e2e8f0' }}
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom">
-                        <span>{level.name}</span>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
-            </div>
-            
-            {/* Étiquettes de texte en dessous des points - réajustées pour éviter les dépassements */}
-            <div className="flex justify-between absolute w-full top-14">
-              {sortedLevels.map((level, index) => {
-                const offset = index === 0 ? '0%' : index === sortedLevels.length - 1 ? '100%' : `${(index / (sortedLevels.length - 1)) * 100}%`;
-                const isActive = sliderValue === index;
-                const textAlignment = index === 0 
-                  ? 'text-left' 
-                  : index === sortedLevels.length - 1 
-                    ? 'text-right' 
-                    : 'text-center';
-                
-                const textOffsetStyle = index === 0 
-                  ? { left: '0%', transform: 'none' } 
-                  : index === sortedLevels.length - 1 
-                    ? { right: '0%', left: 'auto', transform: 'none' } 
-                    : { left: offset, transform: 'translateX(-50%)' };
-                
-                return (
-                  <div 
-                    key={`label-${level.id}`}
-                    className={`absolute text-xs font-medium whitespace-nowrap transition-all cursor-pointer max-w-[80px] ${textAlignment} ${isActive ? 'text-primary font-semibold' : ''}`}
-                    style={textOffsetStyle}
+                  <div
+                    key={level.id}
+                    className={`absolute text-center cursor-pointer transition-colors ${sliderValue === index ? 'font-semibold text-primary' : 'font-normal text-muted-foreground'}`}
+                    style={{ 
+                      width: `${width}%`,
+                      left: `${index * width}%`
+                    }}
                     onClick={() => handleLevelClick(index)}
                   >
-                    {level.name}
+                    <div 
+                      className={`w-4 h-4 rounded-full mx-auto mb-2 cursor-pointer ${sliderValue === index ? 'scale-125' : 'scale-100'}`}
+                      style={{ backgroundColor: level.color || '#e2e8f0' }}
+                    ></div>
+                    <div className="text-xs overflow-hidden text-ellipsis whitespace-nowrap px-1">
+                      {level.name}
+                    </div>
                   </div>
                 );
               })}
@@ -239,7 +207,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         
         {/* Description du niveau sélectionné affichée sous la barre */}
         <div 
-          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-6"
+          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-10"
           style={{ 
             backgroundColor: currentLevel?.color || '#e2e8f0',
             color: getContrastColor(currentLevel?.color || '#e2e8f0')
