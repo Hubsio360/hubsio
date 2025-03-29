@@ -23,6 +23,9 @@ import NewRiskScenario from "@/pages/NewRiskScenario";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
 
+// Create a QueryClient instance outside of the component
+const queryClient = new QueryClient();
+
 // Composant pour les routes protégées
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -55,7 +58,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Définition de l'application
+// Définition des routes de l'application (déplacée à l'intérieur de l'AuthProvider)
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -136,9 +139,6 @@ const AppRoutes = () => {
   );
 };
 
-// Create a QueryClient instance outside of the component
-const queryClient = new QueryClient();
-
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
@@ -146,13 +146,13 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <AuthProvider>
-            <DataProvider>
-              <BrowserRouter>
+          <BrowserRouter>
+            <AuthProvider>
+              <DataProvider>
                 <AppRoutes />
-              </BrowserRouter>
-            </DataProvider>
-          </AuthProvider>
+              </DataProvider>
+            </AuthProvider>
+          </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
