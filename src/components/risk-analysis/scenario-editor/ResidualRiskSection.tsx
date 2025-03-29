@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { 
   FormField,
@@ -18,16 +18,18 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { RiskLevel } from '@/types';
+import { RiskScenarioFormValues } from '@/components/risk-analysis/new-scenario/RiskScenarioForm';
 
 export function ResidualRiskSection() {
-  const { control, setValue } = useFormContext();
+  const form = useFormContext<RiskScenarioFormValues>();
+  const { control, setValue } = form;
   
   // Watch residual impact and likelihood to calculate residual risk level
   const residualImpact = useWatch({ control, name: 'residualImpact' }) as RiskLevel;
   const residualLikelihood = useWatch({ control, name: 'residualLikelihood' }) as RiskLevel;
   
-  // Calculate residual risk level when impact or likelihood changes
-  useEffect(() => {
+  // Calculate risk level when impact or likelihood changes
+  React.useEffect(() => {
     if (residualImpact && residualLikelihood) {
       const riskMatrix: Record<RiskLevel, Record<RiskLevel, RiskLevel>> = {
         low: {
@@ -56,8 +58,8 @@ export function ResidualRiskSection() {
         }
       };
       
-      const calculatedResidualRiskLevel = riskMatrix[residualImpact][residualLikelihood];
-      setValue('residualRiskLevel', calculatedResidualRiskLevel);
+      const calculatedRiskLevel = riskMatrix[residualImpact][residualLikelihood];
+      setValue('residualRiskLevel', calculatedRiskLevel);
     }
   }, [residualImpact, residualLikelihood, setValue]);
   
@@ -70,14 +72,17 @@ export function ResidualRiskSection() {
         name="securityMeasures"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Mesures de sécurité existantes ou envisagées</FormLabel>
+            <FormLabel>Mesures de sécurité</FormLabel>
             <FormControl>
               <Textarea 
+                placeholder="Décrivez les mesures de sécurité mises en place..." 
+                className="min-h-[100px]" 
                 {...field} 
-                placeholder="Décrivez les mesures de sécurité qui sont ou seront mises en place" 
-                className="min-h-[80px]"
               />
             </FormControl>
+            <FormDescription>
+              Détaillez les mesures de sécurité mises en œuvre pour réduire ce risque
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -91,17 +96,20 @@ export function ResidualRiskSection() {
             <FormLabel>Efficacité des mesures</FormLabel>
             <FormControl>
               <Textarea 
+                placeholder="Évaluez l'efficacité des mesures de sécurité..." 
+                className="min-h-[100px]" 
                 {...field} 
-                placeholder="Évaluez l'efficacité des mesures de sécurité" 
-                className="min-h-[80px]"
               />
             </FormControl>
+            <FormDescription>
+              Indiquez l'efficacité des mesures et leur impact sur la réduction du risque
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         <FormField
           control={control}
           name="residualImpact"
@@ -115,7 +123,7 @@ export function ResidualRiskSection() {
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un impact" />
+                    <SelectValue placeholder="Sélectionner un niveau d'impact" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -157,39 +165,39 @@ export function ResidualRiskSection() {
             </FormItem>
           )}
         />
-        
-        <FormField
-          control={control}
-          name="residualRiskLevel"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Niveau de risque résiduel</FormLabel>
-              <Select 
-                onValueChange={field.onChange} 
-                defaultValue={field.value}
-                value={field.value}
-                disabled
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Niveau de risque calculé" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="low">Faible</SelectItem>
-                  <SelectItem value="medium">Moyen</SelectItem>
-                  <SelectItem value="high">Élevé</SelectItem>
-                  <SelectItem value="critical">Critique</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                Niveau calculé automatiquement à partir de l'impact résiduel et de la probabilité résiduelle
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
       </div>
+      
+      <FormField
+        control={control}
+        name="residualRiskLevel"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Niveau de risque résiduel</FormLabel>
+            <Select 
+              onValueChange={field.onChange} 
+              defaultValue={field.value}
+              value={field.value}
+              disabled
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Niveau de risque calculé" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="low">Faible</SelectItem>
+                <SelectItem value="medium">Moyen</SelectItem>
+                <SelectItem value="high">Élevé</SelectItem>
+                <SelectItem value="critical">Critique</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormDescription>
+              Niveau calculé automatiquement à partir de l'impact résiduel multiplié par la probabilité résiduelle
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

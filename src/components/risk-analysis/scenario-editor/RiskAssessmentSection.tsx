@@ -25,13 +25,15 @@ import {
 import { useData } from '@/contexts/DataContext';
 import { useRiskAssessment } from '@/hooks/useRiskAssessment';
 import { RiskLevel } from '@/types';
+import { RiskScenarioFormValues } from '@/components/risk-analysis/new-scenario/RiskScenarioForm';
 
 interface RiskAssessmentSectionProps {
   companyId: string;
 }
 
 export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps) {
-  const form = useFormContext();
+  // Explicitly type the form context
+  const form = useFormContext<RiskScenarioFormValues>();
   const { control, setValue } = form;
   const { companyRiskScales } = useData();
   const { 
