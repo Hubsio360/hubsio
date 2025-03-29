@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ensureCompanyHasRequiredScales } from '@/utils/riskScalesUtils';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -70,6 +71,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [isCreatingDefaultScales, setIsCreatingDefaultScales] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -194,6 +196,36 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   };
 
+  const handleCreateRequiredScales = async () => {
+    setIsCreatingDefaultScales(true);
+    try {
+      const success = await ensureCompanyHasRequiredScales(companyId);
+      
+      if (success) {
+        toast({
+          title: "Succès",
+          description: "Les échelles de risque requises ont été créées avec succès",
+        });
+        await refreshData();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de créer toutes les échelles requises",
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la création des échelles requises:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la création des échelles",
+      });
+    } finally {
+      setIsCreatingDefaultScales(false);
+    }
+  };
+
   const confirmDelete = async () => {
     if (!scaleToDelete) return;
     
@@ -293,17 +325,15 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => {
-                  setIsInitializing(true);
-                  console.log("Initializing default scales for company:", companyId);
-                  ensureDefaultScalesExist()
-                    .then(() => refreshData())
-                    .finally(() => setIsInitializing(false));
-                }} 
-                disabled={isLoading || isInitializing}
-                title="Réinitialiser les échelles par défaut"
+                onClick={handleCreateRequiredScales} 
+                disabled={isLoading || isCreatingDefaultScales}
+                title="Créer les échelles requises"
               >
-                <RefreshCw className="h-4 w-4" />
+                {isCreatingDefaultScales ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
               </Button>
             </div>
 

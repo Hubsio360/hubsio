@@ -1,4 +1,3 @@
-
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -202,10 +201,17 @@ export interface RssiService {
 }
 
 // Risk Analysis Types
-export type RiskStatus = 'identified' | 'analyzed' | 'treated' | 'accepted' | 'monitored';
-export type RiskTreatmentStrategy = 'reduce' | 'maintain' | 'avoid' | 'share';
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type RiskScope = 'technical' | 'organizational' | 'human' | 'physical' | 'environmental';
+export type RiskStatus = 'identified' | 'analyzed' | 'treated' | 'accepted' | 'monitored';
 
 export interface RiskAsset {
   id: string;
@@ -255,7 +261,6 @@ export interface RiskScenario {
   impactDescription?: string;
   createdAt?: string;
   updatedAt?: string;
-  // Database field mappings
   created_at?: string;
   updated_at?: string;
   company_id?: string;
@@ -263,7 +268,6 @@ export interface RiskScenario {
   impact_description?: string;
   threat_id?: string;
   vulnerability_id?: string;
-  // Risk Assessment fields
   rawImpact?: RiskLevel;
   rawLikelihood?: RiskLevel;
   rawRiskLevel?: RiskLevel;
@@ -272,13 +276,11 @@ export interface RiskScenario {
   residualRiskLevel?: RiskLevel;
   securityMeasures?: string;
   measureEffectiveness?: string;
-  // Database mappings for assessment fields
   residual_impact?: RiskLevel;
   residual_likelihood?: RiskLevel;
   residual_risk_level?: RiskLevel;
   security_measures?: string;
   measure_effectiveness?: string;
-  // New field to store individual scale impact ratings
   impactScaleRatings?: Record<string, RiskLevel>;
   impact_scale_ratings?: Record<string, RiskLevel> | any;
 }
