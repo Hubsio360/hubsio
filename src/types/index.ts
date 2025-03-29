@@ -7,12 +7,6 @@ export interface StandardClause {
   description?: string;
 }
 
-export interface AuditTheme {
-  id: string;
-  name: string;
-  description?: string;
-}
-
 // Types pour les audits et interviews
 export interface AuditInterview {
   id: string;
