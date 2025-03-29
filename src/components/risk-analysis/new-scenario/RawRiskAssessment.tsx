@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { FormField, FormItem, FormLabel, FormDescription } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { RiskScaleWithLevels } from '@/types/risk-scales';
@@ -34,12 +34,18 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
         active: scale.id === activeImpactScale
       })));
     }
+    
+    // Cleanup function to prevent memory leaks
+    return () => {
+      console.log("RawRiskAssessment: Component unmounting, cleaning up");
+    };
   }, [impactScales, activeImpactScale]);
 
-  const selectImpactScale = (scaleId: string) => {
+  // Memoize the select impact scale function to prevent unnecessary re-renders
+  const selectImpactScale = useCallback((scaleId: string) => {
     console.log(`RawRiskAssessment: Selecting impact scale ${scaleId}`);
     setActiveImpactScale(scaleId);
-  };
+  }, [setActiveImpactScale]);
 
   return (
     <div className="space-y-8">

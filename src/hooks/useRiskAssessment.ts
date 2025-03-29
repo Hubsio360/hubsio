@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useData } from '@/contexts/DataContext';
 import { RiskLevel } from '@/types';
@@ -15,9 +15,19 @@ export const useRiskAssessment = (
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
   const [activeImpactScale, setActiveImpactScale] = useState<string | null>(null);
   const [processedScaleIds, setProcessedScaleIds] = useState<Set<string>>(new Set());
+  
+  // Use a ref to track if the component is mounted
+  const isMounted = useRef(true);
 
   // Get the current values of all impact scale ratings
   const impactScaleRatings = form.watch('impactScaleRatings') || {};
+
+  // Set isMounted to false when component unmounts
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Chargement initial des échelles et initialisation
   useEffect(() => {
@@ -34,13 +44,20 @@ export const useRiskAssessment = (
       }
     };
     
-    if (companyId) {
+    if (companyId && isMounted.current) {
       loadScales();
     }
+    
+    return () => {
+      // Cleanup function
+      console.log("useRiskAssessment: Cleaning up resources");
+    };
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
 
   // Separation des échelles d'impact et de probabilité
   useEffect(() => {
+    if (!isMounted.current) return;
+    
     if (companyRiskScales && companyRiskScales.length > 0) {
       // Filter active scales by category
       const activeScales = companyRiskScales.filter(scale => scale.isActive || scale.is_active);
@@ -81,14 +98,14 @@ export const useRiskAssessment = (
         }
       });
       
-      if (hasNewRatings) {
+      if (hasNewRatings && isMounted.current) {
         console.log("Setting initial impact scale ratings:", initialRatings);
         form.setValue('impactScaleRatings', initialRatings);
         setProcessedScaleIds(newProcessedIds);
       }
       
       // Set the first impact scale as active if there is one and no active scale is set
-      if (impacts.length > 0 && !activeImpactScale) {
+      if (impacts.length > 0 && !activeImpactScale && isMounted.current) {
         console.log("Setting first impact scale as active:", impacts[0].id, impacts[0].scaleType?.name);
         setActiveImpactScale(impacts[0].id);
       }
@@ -97,6 +114,8 @@ export const useRiskAssessment = (
 
   // Calculate main impact level based on the maximum value from all scale ratings
   useEffect(() => {
+    if (!isMounted.current) return;
+    
     if (Object.keys(impactScaleRatings).length > 0) {
       const impactValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
       let maxImpactValue = 1; // Default to low
@@ -126,6 +145,8 @@ export const useRiskAssessment = (
 
   // Handle change for a specific impact scale
   const handleImpactScaleChange = useCallback((scaleId: string, value: RiskLevel) => {
+    if (!isMounted.current) return;
+    
     console.log(`useRiskAssessment: Updating impact scale ${scaleId} to ${value}`);
     const newRatings = { ...impactScaleRatings };
     newRatings[scaleId] = value;
