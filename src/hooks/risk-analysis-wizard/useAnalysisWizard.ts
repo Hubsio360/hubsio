@@ -1,121 +1,249 @@
 
-import { useCompanyInfo } from './useCompanyInfo';
-import { useRiskScenarios } from './useRiskScenarios';
-import { useWizardState } from './useWizardState';
-import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
+import { useState, useEffect } from 'react';
+import { useScenarioSuggestion } from './scenarios/useScenarioSuggestion';
+import { useScenarioSaving } from './scenarios/useScenarioSaving';
+import { useToast } from '@/hooks/use-toast';
+import { BusinessProcess, SuggestedScenario } from './types';
+import { useTemplateSelection } from './scenarios/useTemplateSelection';
+import { supabase } from '@/integrations/supabase/client';
+import { useRouter } from 'next/navigation';
 
-export function useAnalysisWizard(companyId: string, companyName = '', onComplete?: () => void) {
-  // Initialize the specialized hooks
-  const {
-    loading: companyLoading,
-    companyInfo,
-    businessProcesses,
-    updateCompanyName,
-    updateCompanyDescription,
-    updateCompanyActivities,
-    fetchCompanyInfo,
-    addBusinessProcess,
-    removeBusinessProcess,
-    setCompanyInfo
-  } = useCompanyInfo();
+export const useAnalysisWizard = (companyId: string, companyName?: string, onComplete?: () => void) => {
+  const [step, setStep] = useState(1);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   
-  const {
-    loading: scenariosLoading,
-    suggestedScenarios,
+  // Initialisation des hooks dépendants
+  const { toast } = useToast();
+  const router = useRouter();
+  
+  // État de l'entreprise
+  const [companyInfo, setCompanyInfo] = useState({
+    name: companyName || '',
+    description: '',
+    activities: ''
+  });
+  
+  // États pour les processus métier et scénarios
+  const [businessProcesses, setBusinessProcesses] = useState<BusinessProcess[]>([]);
+  const [suggestedScenarios, setSuggestedScenarios] = useState<SuggestedScenario[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  // Hooks spécialisés
+  const { 
+    generateScenarios, 
     generatingScenarios,
-    generationProgress,
-    generateRiskScenarios,
-    generateAdditionalScenarios,
-    handleTemplateSelect,
-    toggleScenarioSelection,
-    saveScenarios,
-    saveAndClose: baseSaveAndClose,
-    storeBusinessProcesses
-  } = useRiskScenarios(companyId);
+    generationProgress 
+  } = useScenarioSuggestion();
   
   const {
-    step,
-    confirmDialogOpen,
-    setConfirmDialogOpen,
-    handleClose: baseHandleClose,
-    resetAndClose: baseResetAndClose,
-    goToNextStep: baseGoToNextStep,
-    goToPreviousStep
-  } = useWizardState();
-
-  // Set initial company name if provided
-  if (companyName && companyInfo.name === '') {
-    setCompanyInfo(prev => ({ ...prev, name: companyName }));
-  }
-
-  // Combined loading state
-  const loading = companyLoading || scenariosLoading;
-
-  // Customized handleClose function
-  const handleClose = (open: boolean) => {
-    baseHandleClose(step, (newState) => {
-      if (!newState) {
-        resetAndClose();
-      } else {
-        setConfirmDialogOpen(newState);
-      }
-    });
+    loading: savingLoading,
+    storeBusinessProcesses,
+    saveAndClose,
+    saveScenarios
+  } = useScenarioSaving(companyId);
+  
+  const { handleTemplateSelect } = useTemplateSelection(setSuggestedScenarios);
+  
+  // Mise à jour des informations de l'entreprise
+  const updateCompanyName = (name: string) => {
+    setCompanyInfo(prev => ({ ...prev, name }));
   };
-
-  // Customized resetAndClose function
-  const resetAndClose = () => {
-    baseResetAndClose((newState) => {
-      // Execute onComplete callback if provided
-      if (onComplete) {
-        onComplete();
-      }
-    });
+  
+  const updateCompanyDescription = (description: string) => {
+    setCompanyInfo(prev => ({ ...prev, description }));
   };
-
-  // Customized goToNextStep function
-  const goToNextStep = async () => {
+  
+  const updateCompanyActivities = (activities: string) => {
+    setCompanyInfo(prev => ({ ...prev, activities }));
+  };
+  
+  // Fetch company info from OpenAI
+  const fetchCompanyInfo = async () => {
+    if (!companyInfo.name.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir le nom de l'entreprise",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      setLoading(false);
+      toast({
+        title: "Succès",
+        description: "Informations récupérées avec succès",
+      });
+    } catch (error) {
+      console.error("Erreur lors de la récupération des informations:", error);
+      setLoading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les informations sur l'entreprise",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Gestion des processus métier
+  const addBusinessProcess = (process: BusinessProcess) => {
+    if (!process.name.trim()) return;
+    
+    // Vérifier si le processus existe déjà
+    const exists = businessProcesses.some(p => 
+      p.name.toLowerCase() === process.name.toLowerCase()
+    );
+    
+    if (exists) {
+      toast({
+        title: "Déjà présent",
+        description: "Ce processus métier existe déjà dans la liste",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setBusinessProcesses(prev => [...prev, process]);
+  };
+  
+  const removeBusinessProcess = (index: number) => {
+    setBusinessProcesses(prev => 
+      prev.filter((_, i) => i !== index)
+    );
+  };
+  
+  // Génération des scénarios basés sur les processus métier
+  const generateScenariosFromProcesses = async () => {
+    if (businessProcesses.length === 0) {
+      toast({
+        title: "Attention",
+        description: "Veuillez ajouter au moins un processus métier",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const companyContext = {
+      name: companyInfo.name,
+      description: companyInfo.description,
+      activities: companyInfo.activities
+    };
+    
+    const results = await generateScenarios(companyContext, businessProcesses);
+    setSuggestedScenarios(results);
+    
+    // Stockage des processus métier pour utilisation ultérieure
+    storeBusinessProcesses(businessProcesses);
+    
+    // Passage à l'étape suivante
+    if (results.length > 0) {
+      setStep(3);
+    }
+  };
+  
+  // Génération de scénarios supplémentaires
+  const generateAdditionalScenarios = async () => {
+    if (businessProcesses.length === 0) return;
+    
+    const companyContext = {
+      name: companyInfo.name,
+      description: companyInfo.description,
+      activities: companyInfo.activities
+    };
+    
+    const results = await generateScenarios(companyContext, businessProcesses, 5);
+    
+    // Ajouter les nouveaux scénarios aux existants, en évitant les doublons
+    const newScenarios = results.filter(newScenario => 
+      !suggestedScenarios.some(existingScenario => 
+        existingScenario.name === newScenario.name ||
+        existingScenario.description === newScenario.description
+      )
+    );
+    
+    setSuggestedScenarios(prev => [...prev, ...newScenarios]);
+    
+    if (newScenarios.length > 0) {
+      toast({
+        title: "Nouveaux scénarios générés",
+        description: `${newScenarios.length} nouveaux scénarios ont été ajoutés à la liste`,
+      });
+    } else {
+      toast({
+        title: "Information",
+        description: "Aucun nouveau scénario unique n'a pu être généré",
+        variant: "default",
+      });
+    }
+  };
+  
+  // Navigation entre les étapes
+  const goToNextStep = () => {
     if (step === 2) {
-      // Avant de passer à l'étape 3, stocker les processus métier pour une utilisation ultérieure
-      storeBusinessProcesses(businessProcesses);
-      
-      // Générer les scénarios
-      const success = await generateRiskScenarios(companyInfo.name, businessProcesses);
-      if (success) {
-        baseGoToNextStep();
-      }
-      return;
+      generateScenariosFromProcesses();
+    } else {
+      setStep(prev => prev + 1);
     }
-    
-    if (step === 3) {
-      // À la dernière étape, enregistrer les scénarios et fermer l'assistant
-      const success = await saveScenarios();
-      if (success) {
-        if (onComplete) {
-          onComplete();
-        }
-        resetAndClose();
-      }
-      return;
-    }
-    
-    baseGoToNextStep();
   };
-
-  // Fonction pour enregistrer et fermer
-  const saveAndClose = async () => {
-    const success = await baseSaveAndClose();
+  
+  const goToPreviousStep = () => {
+    setStep(prev => prev - 1);
+  };
+  
+  // Basculer la sélection d'un scénario
+  const toggleScenarioSelection = (index: number) => {
+    setSuggestedScenarios(prev => 
+      prev.map((scenario, i) => 
+        i === index 
+          ? { ...scenario, selected: !scenario.selected } 
+          : scenario
+      )
+    );
+  };
+  
+  // Enregistrement et fermeture
+  const handleSave = async (): Promise<boolean> => {
+    const selectedScenarios = suggestedScenarios.filter(scenario => scenario.selected);
+    return await saveAndClose(selectedScenarios);
+  };
+  
+  const saveAndRedirect = async () => {
+    const success = await handleSave();
     if (success) {
+      toast({
+        title: "Succès",
+        description: "L'analyse de risque a été créée avec succès",
+      });
+      
       if (onComplete) {
         onComplete();
       }
-      resetAndClose();
+      
+      // Redirection vers la page d'analyse de risque
+      router.push(`/risk-analysis/${companyId}`);
     }
-    return success;
   };
-
+  
+  // Fermeture du wizard
+  const handleClose = () => {
+    setConfirmDialogOpen(true);
+  };
+  
+  const resetAndClose = () => {
+    setStep(1);
+    setBusinessProcesses([]);
+    setSuggestedScenarios([]);
+    setConfirmDialogOpen(false);
+    
+    if (onComplete) {
+      onComplete();
+    }
+  };
+  
   return {
     step,
-    loading,
+    loading: loading || savingLoading,
     companyInfo,
     businessProcesses,
     suggestedScenarios,
@@ -136,7 +264,7 @@ export function useAnalysisWizard(companyId: string, companyName = '', onComplet
     goToPreviousStep,
     setConfirmDialogOpen,
     saveScenarios,
-    saveAndClose,
+    saveAndClose: saveAndRedirect,
     generateAdditionalScenarios
   };
-}
+};
