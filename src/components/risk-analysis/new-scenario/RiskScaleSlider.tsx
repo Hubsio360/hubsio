@@ -38,17 +38,50 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         return true;
       }
       
-      // Then try to match by approximate mapping
-      if (value === 'low' && (level.levelValue === 1 || level.level_value === 1 || level.name.toLowerCase().includes('faibl') || level.name.toLowerCase().includes('négligeable') || level.name.toLowerCase().includes('peu probable'))) {
+      // Match by partial name for better recognition
+      const levelName = level.name.toLowerCase();
+      if (value === 'low' && (
+        levelName.includes('faibl') || 
+        levelName.includes('néglig') || 
+        levelName.includes('peu probable')
+      )) {
         return true;
       }
-      if (value === 'medium' && (level.levelValue === 2 || level.level_value === 2 || level.name.toLowerCase().includes('moyen') || level.name.toLowerCase().includes('modér') || level.name.toLowerCase().includes('signif') || level.name.toLowerCase().includes('relativement'))) {
+      if (value === 'medium' && (
+        levelName.includes('moyen') || 
+        levelName.includes('modér') || 
+        levelName.includes('signif') || 
+        levelName.includes('relativement')
+      )) {
         return true;
       }
-      if (value === 'high' && (level.levelValue === 3 || level.level_value === 3 || level.name.toLowerCase().includes('élev') || level.name.toLowerCase().includes('haut') || level.name.toLowerCase().includes('import'))) {
+      if (value === 'high' && (
+        levelName.includes('élev') || 
+        levelName.includes('haut') || 
+        levelName.includes('import')
+      )) {
         return true;
       }
-      if (value === 'critical' && (level.levelValue === 4 || level.level_value === 4 || level.name.toLowerCase().includes('critique') || level.name.toLowerCase().includes('critic') || level.name.toLowerCase().includes('majeur') || level.name.toLowerCase().includes('certain'))) {
+      if (value === 'critical' && (
+        levelName.includes('critique') || 
+        levelName.includes('critic') || 
+        levelName.includes('majeur') || 
+        levelName.includes('certain')
+      )) {
+        return true;
+      }
+      
+      // Try to match by level value as fallback
+      if (value === 'low' && (level.levelValue === 1 || level.level_value === 1)) {
+        return true;
+      }
+      if (value === 'medium' && (level.levelValue === 2 || level.level_value === 2)) {
+        return true;
+      }
+      if (value === 'high' && (level.levelValue === 3 || level.level_value === 3)) {
+        return true;
+      }
+      if (value === 'critical' && (level.levelValue === 4 || level.level_value === 4)) {
         return true;
       }
       
@@ -66,20 +99,37 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       setSliderValue(position);
       
       if (sortedLevels[position]) {
-        // Map back to standard risk level based on position
+        // Map back to standard risk level
         let riskLevel: RiskLevel = 'low';
         
-        if (position === 0) riskLevel = 'low';
-        else if (position === sortedLevels.length - 1) riskLevel = 'critical';
-        else if (position === Math.floor(sortedLevels.length / 2)) riskLevel = 'medium';
-        else if (position > Math.floor(sortedLevels.length / 2)) riskLevel = 'high';
-        
-        // Override with more accurate mapping if possible
+        // Improved mapping by name matching
         const levelName = sortedLevels[position].name.toLowerCase();
-        if (levelName.includes('faibl') || levelName.includes('néglig') || levelName.includes('peu probable')) riskLevel = 'low';
-        else if (levelName.includes('moyen') || levelName.includes('modér') || levelName.includes('signif') || levelName.includes('relativement')) riskLevel = 'medium';
-        else if (levelName.includes('élev') || levelName.includes('haut') || levelName.includes('import')) riskLevel = 'high';
-        else if (levelName.includes('critique') || levelName.includes('critic') || levelName.includes('majeur') || levelName.includes('certain')) riskLevel = 'critical';
+        
+        if (levelName.includes('néglig') || levelName.includes('faibl') || levelName.includes('peu probable')) {
+          riskLevel = 'low';
+        }
+        else if (levelName.includes('signif') || levelName.includes('moyen') || levelName.includes('modér') || levelName.includes('relativement')) {
+          riskLevel = 'medium';
+        }
+        else if (levelName.includes('élev') || levelName.includes('haut') || levelName.includes('import')) {
+          riskLevel = 'high';
+        }
+        else if (levelName.includes('critique') || levelName.includes('critic') || levelName.includes('majeur') || levelName.includes('certain')) {
+          riskLevel = 'critical';
+        }
+        // Fallback based on position if name matching fails
+        else if (position === 0) {
+          riskLevel = 'low';
+        }
+        else if (position === sortedLevels.length - 1) {
+          riskLevel = 'critical';
+        }
+        else if (position <= Math.floor(sortedLevels.length / 2)) {
+          riskLevel = 'medium';
+        }
+        else {
+          riskLevel = 'high';
+        }
         
         onChange(riskLevel);
       }
@@ -111,9 +161,9 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       <FormLabel>{label}</FormLabel>
       {description && <FormDescription>{description}</FormDescription>}
       
-      <div className="space-y-4 pt-2">
+      <div className="space-y-4 pt-2 pb-16">
         <FormControl>
-          <div className="relative pb-20">
+          <div className="relative pb-24">
             {/* Slider amélioré */}
             <Slider
               value={[sliderValue]}
@@ -126,7 +176,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
             />
             
             {/* Points de niveau rapprochés du slider */}
-            <div className="flex justify-between absolute w-full top-11">
+            <div className="flex justify-between absolute w-full top-6">
               {sortedLevels.map((level, index) => {
                 const offset = index === 0 ? '0%' : index === sortedLevels.length - 1 ? '100%' : `${(index / (sortedLevels.length - 1)) * 100}%`;
                 const isActive = sliderValue === index;
@@ -146,7 +196,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
                           />
                         </div>
                       </TooltipTrigger>
-                      <TooltipContent side="top">
+                      <TooltipContent side="bottom">
                         <span>{level.name}</span>
                       </TooltipContent>
                     </Tooltip>
@@ -155,17 +205,28 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
               })}
             </div>
             
-            {/* Étiquettes de texte en dessous des points */}
-            <div className="flex justify-between absolute w-full top-[4.5rem]">
+            {/* Étiquettes de texte en dessous des points - réajustées pour éviter les dépassements */}
+            <div className="flex justify-between absolute w-full top-14">
               {sortedLevels.map((level, index) => {
                 const offset = index === 0 ? '0%' : index === sortedLevels.length - 1 ? '100%' : `${(index / (sortedLevels.length - 1)) * 100}%`;
                 const isActive = sliderValue === index;
+                const textAlignment = index === 0 
+                  ? 'text-left' 
+                  : index === sortedLevels.length - 1 
+                    ? 'text-right' 
+                    : 'text-center';
+                
+                const textOffsetStyle = index === 0 
+                  ? { left: '0%', transform: 'none' } 
+                  : index === sortedLevels.length - 1 
+                    ? { right: '0%', left: 'auto', transform: 'none' } 
+                    : { left: offset, transform: 'translateX(-50%)' };
                 
                 return (
                   <div 
                     key={`label-${level.id}`}
-                    className={`absolute transform -translate-x-1/2 text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${isActive ? 'text-primary font-semibold' : ''}`}
-                    style={{ left: offset }}
+                    className={`absolute text-xs font-medium whitespace-nowrap transition-all cursor-pointer max-w-[80px] ${textAlignment} ${isActive ? 'text-primary font-semibold' : ''}`}
+                    style={textOffsetStyle}
                     onClick={() => handleLevelClick(index)}
                   >
                     {level.name}
@@ -178,7 +239,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         
         {/* Description du niveau sélectionné affichée sous la barre */}
         <div 
-          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-10"
+          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-6"
           style={{ 
             backgroundColor: currentLevel?.color || '#e2e8f0',
             color: getContrastColor(currentLevel?.color || '#e2e8f0')
