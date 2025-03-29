@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Card, 
@@ -49,56 +50,51 @@ const RiskScenarioDetail = () => {
   const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchScenarioData = async () => {
-      if (!id) return;
+  // Use useCallback to prevent recreation of this function on each render
+  const fetchScenarioData = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
       
-      try {
-        setIsLoading(true);
-        if (currentScenario) {
-          setIsLoading(false);
-          return;
-        }
-        
-        if (id) {
-          const { riskScenarios, fetchRiskScenariosByCompanyId } = useData();
-          
-          let scenario = riskScenarios.find(s => s.id === id);
-          
-          if (!scenario && currentScenario?.companyId) {
-            await fetchRiskScenariosByCompanyId(currentScenario.companyId);
-            scenario = riskScenarios.find(s => s.id === id);
-          }
-          
-          if (scenario) {
-            setCurrentScenario(scenario);
-          } else {
-            console.error("Could not find scenario with ID:", id);
-            toast({
-              title: "Erreur",
-              description: "Impossible de trouver le scénario demandé",
-              variant: "destructive",
-            });
-            
-            if (currentScenario?.companyId) {
-              navigate(`/risk-analysis/${currentScenario.companyId}`);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching scenario:', error);
+      const { riskScenarios } = useData();
+      
+      let scenario = riskScenarios.find(s => s.id === id);
+      
+      if (!scenario && currentScenario?.companyId) {
+        await fetchRiskScenariosByCompanyId(currentScenario.companyId);
+        scenario = riskScenarios.find(s => s.id === id);
+      }
+      
+      if (scenario) {
+        setCurrentScenario(scenario);
+      } else {
+        console.error("Could not find scenario with ID:", id);
         toast({
           title: "Erreur",
-          description: "Impossible de récupérer les détails du scénario",
+          description: "Impossible de trouver le scénario demandé",
           variant: "destructive",
         });
-      } finally {
-        setIsLoading(false);
+        
+        if (currentScenario?.companyId) {
+          navigate(`/risk-analysis/${currentScenario.companyId}`);
+        }
       }
-    };
+    } catch (error) {
+      console.error('Error fetching scenario:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les détails du scénario",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [id, toast, navigate, currentScenario?.companyId, fetchRiskScenariosByCompanyId]);
 
+  useEffect(() => {
     fetchScenarioData();
-  }, [id, toast]);
+  }, [fetchScenarioData]);
 
   const handleSaveScenario = async (data: Partial<RiskScenario>): Promise<boolean> => {
     if (!currentScenario || !id) return false;
@@ -111,14 +107,17 @@ const RiskScenarioDetail = () => {
       };
       
       const updatedScenario = await updateRiskScenario(id, processedData);
-      setCurrentScenario(updatedScenario);
-      toast({
-        title: "Succès",
-        description: "Scénario de risque mis à jour avec succès",
-      });
-      setIsEditing(false);
+      
+      if (!updatedScenario) {
+        throw new Error("Failed to update scenario");
+      }
+      
+      // Update local state to reflect changes
+      setCurrentScenario(prev => prev ? {...prev, ...processedData} : null);
+      
       return true;
     } catch (error) {
+      console.error("Error updating scenario:", error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour le scénario",
@@ -474,7 +473,14 @@ const RiskScenarioDetail = () => {
       
       <EditRiskScenarioDialog
         open={isEditing}
-        onOpenChange={setIsEditing}
+        onOpenChange={(open) => {
+          // Only allow closing if not in the middle of saving
+          setIsEditing(open);
+          if (!open) {
+            // Refresh data when dialog closes to ensure we have latest state
+            fetchScenarioData();
+          }
+        }}
         scenario={currentScenario}
         onSave={handleSaveScenario}
       />

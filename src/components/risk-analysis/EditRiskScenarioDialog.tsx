@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -29,6 +30,14 @@ export function EditRiskScenarioDialog({
   const { companyRiskScales } = useData();
   
   const formRef = React.useRef<any>(null);
+
+  // Clear state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      // Reset state when dialog closes
+      setSaving(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (values: any) => {
     if (!scenario) return;
@@ -61,11 +70,19 @@ export function EditRiskScenarioDialog({
       const success = await onSave(updatedScenario);
       
       if (success) {
+        // Ensure dialog closes properly before showing toast
         onOpenChange(false);
-        toast({
-          title: "Scénario mis à jour",
-          description: "Les modifications ont été enregistrées avec succès"
-        });
+        
+        // Small delay to ensure UI updates properly
+        setTimeout(() => {
+          toast({
+            title: "Scénario mis à jour",
+            description: "Les modifications ont été enregistrées avec succès"
+          });
+        }, 100);
+      } else {
+        // If save failed, release the saving state
+        setSaving(false);
       }
     } catch (error) {
       console.error('Erreur lors de la mise à jour du scénario:', error);
@@ -74,13 +91,22 @@ export function EditRiskScenarioDialog({
         description: "Impossible de mettre à jour le scénario de risque",
         variant: "destructive",
       });
-    } finally {
       setSaving(false);
     }
   };
 
+  const handleCancel = () => {
+    // Ensure we're not in saving state when canceling
+    setSaving(false);
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newOpen) => {
+      // Prevent closing while saving
+      if (saving && !newOpen) return;
+      onOpenChange(newOpen);
+    }}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Modifier le scénario de risque</DialogTitle>
@@ -118,7 +144,7 @@ export function EditRiskScenarioDialog({
             }}
             saveButtonText="Enregistrer les modifications"
             isSaving={saving}
-            onCancel={() => onOpenChange(false)}
+            onCancel={handleCancel}
           />
         )}
       </DialogContent>
