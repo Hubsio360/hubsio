@@ -116,17 +116,17 @@ export function RiskScenariosStep({
   );
 
   return (
-    <>
-      <DialogHeader className="pb-4 border-b">
+    <div className="flex flex-col h-[600px]"> {/* Fixed height container */}
+      <DialogHeader className="pb-4 border-b flex-shrink-0">
         <DialogTitle className="text-xl font-bold">Étape 3 : Scénarios de risque</DialogTitle>
         <DialogDescription className="text-base">
           Sélectionnez les scénarios de risque pertinents pour votre analyse
         </DialogDescription>
       </DialogHeader>
       
-      <div className="flex flex-col gap-5 py-6">
+      <div className="flex flex-col gap-5 py-6 flex-grow overflow-hidden">
         {/* Header with search and actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
           <div className="relative w-full md:w-auto md:flex-1 min-w-[250px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -138,7 +138,7 @@ export function RiskScenariosStep({
             />
           </div>
           
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center gap-2 w-full md:w-auto flex-shrink-0">
             <Button 
               variant="outline" 
               size="sm" 
@@ -163,7 +163,7 @@ export function RiskScenariosStep({
         </div>
         
         {/* Selection counter */}
-        <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between">
+        <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <span className="font-medium">Scénarios disponibles:</span>
             <Badge variant="outline" className="ml-2">
@@ -177,68 +177,70 @@ export function RiskScenariosStep({
           )}
         </div>
         
-        {/* Scenarios list */}
-        <div className="bg-card rounded-lg border shadow-sm flex-1">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center p-8">
-              <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-              <p className="text-muted-foreground">Chargement des scénarios...</p>
-            </div>
-          ) : filteredScenarios.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-8 text-center">
-              {searchTerm ? (
-                <>
-                  <Filter className="h-10 w-10 text-muted-foreground mb-4" />
-                  <p className="font-medium">Aucun résultat</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Aucun scénario ne correspond à votre recherche.
-                  </p>
-                </>
+        {/* Scenarios list with explicit ScrollArea */}
+        <div className="flex-grow overflow-hidden">
+          <ScrollArea className="h-full w-full pr-4">
+            <div className="bg-card rounded-lg border shadow-sm">
+              {loading ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                  <p className="text-muted-foreground">Chargement des scénarios...</p>
+                </div>
+              ) : filteredScenarios.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-8 text-center">
+                  {searchTerm ? (
+                    <>
+                      <Filter className="h-10 w-10 text-muted-foreground mb-4" />
+                      <p className="font-medium">Aucun résultat</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Aucun scénario ne correspond à votre recherche.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <Filter className="h-10 w-10 text-muted-foreground mb-4" />
+                      <p className="font-medium">Aucun scénario suggéré</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Utilisez le bouton "Utiliser un modèle" ou générez de nouveaux scénarios.
+                      </p>
+                    </>
+                  )}
+                </div>
               ) : (
-                <>
-                  <Filter className="h-10 w-10 text-muted-foreground mb-4" />
-                  <p className="font-medium">Aucun scénario suggéré</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Utilisez le bouton "Utiliser un modèle" ou générez de nouveaux scénarios.
-                  </p>
-                </>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
+                  {filteredScenarios.map((scenario) => (
+                    <div 
+                      key={scenario.id} 
+                      className={`group rounded-md border p-3 cursor-pointer transition-all ${
+                        scenario.selected 
+                          ? "border-primary bg-primary/5 hover:bg-primary/10" 
+                          : "hover:border-muted-foreground/50 hover:bg-accent/30"
+                      }`}
+                      onClick={() => onToggleScenario(scenario.id)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-medium line-clamp-1 pr-2">{scenario.name}</h4>
+                        <div className={`flex-shrink-0 h-5 w-5 rounded-full border ${
+                          scenario.selected 
+                            ? "border-primary bg-primary text-primary-foreground" 
+                            : "border-muted-foreground/30"
+                        } flex items-center justify-center transition-all`}>
+                          {scenario.selected && <Check className="h-3 w-3" />}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {scenario.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          ) : (
-            <ScrollArea className="h-[330px]">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3">
-                {filteredScenarios.map((scenario) => (
-                  <div 
-                    key={scenario.id} 
-                    className={`group rounded-md border p-3 cursor-pointer transition-all ${
-                      scenario.selected 
-                        ? "border-primary bg-primary/5 hover:bg-primary/10" 
-                        : "hover:border-muted-foreground/50 hover:bg-accent/30"
-                    }`}
-                    onClick={() => onToggleScenario(scenario.id)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium line-clamp-1 pr-2">{scenario.name}</h4>
-                      <div className={`flex-shrink-0 h-5 w-5 rounded-full border ${
-                        scenario.selected 
-                          ? "border-primary bg-primary text-primary-foreground" 
-                          : "border-muted-foreground/30"
-                      } flex items-center justify-center transition-all`}>
-                        {scenario.selected && <Check className="h-3 w-3" />}
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {scenario.description}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
+          </ScrollArea>
         </div>
       </div>
 
-      <DialogFooter className="pt-4 border-t flex flex-col sm:flex-row sm:justify-between gap-3">
+      <DialogFooter className="pt-4 border-t flex flex-col sm:flex-row sm:justify-between gap-3 flex-shrink-0">
         <Button variant="outline" onClick={onPrevious} className="w-full sm:w-auto">
           Retour
         </Button>
@@ -271,6 +273,6 @@ export function RiskScenariosStep({
           </Button>
         </div>
       </DialogFooter>
-    </>
+    </div>
   );
 }
