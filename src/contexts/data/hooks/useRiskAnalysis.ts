@@ -277,6 +277,30 @@ export const useRiskAnalysis = () => {
   const addRiskAsset = useCallback(async (asset: Omit<RiskAsset, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskAsset> => {
     try {
       const dbAsset = mapRiskAssetToDbAsset(asset);
+      
+      // Vérifier que tous les champs obligatoires sont présents
+      if (!asset.companyId) {
+        console.error('Erreur: Le champ companyId est obligatoire');
+        throw new Error('Le champ companyId est obligatoire');
+      }
+      
+      if (!asset.name) {
+        console.error('Erreur: Le champ name est obligatoire');
+        throw new Error('Le nom de l\'actif est obligatoire');
+      }
+      
+      if (!asset.category) {
+        console.error('Erreur: Le champ category est obligatoire');
+        throw new Error('La catégorie de l\'actif est obligatoire');
+      }
+      
+      if (!asset.value) {
+        console.error('Erreur: Le champ value est obligatoire');
+        throw new Error('La valeur de l\'actif est obligatoire');
+      }
+      
+      console.log('Tentative d\'insertion d\'un actif dans la base de données:', dbAsset);
+      
       const { data, error } = await supabase
         .from('risk_assets')
         .insert([dbAsset])
@@ -284,13 +308,18 @@ export const useRiskAnalysis = () => {
         .single();
       
       if (error) {
-        console.error('Error adding risk asset:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ajouter l'actif",
-          variant: "destructive",
-        });
-        throw new Error(error.message);
+        console.error('Erreur détaillée lors de l\'ajout d\'un actif:', error);
+        console.error('Code d\'erreur:', error.code);
+        console.error('Détails:', error.details);
+        console.error('Message:', error.message);
+        
+        if (error.code === '42501') {
+          throw new Error('Permissions insuffisantes. Vérifiez vos droits d\'accès.');
+        } else if (error.code === '23505') {
+          throw new Error('Un actif avec ce nom existe déjà.');
+        } else {
+          throw new Error(`Impossible d'ajouter l'actif: ${error.message}`);
+        }
       }
       
       const newAsset = mapDbAssetToRiskAsset(data);
@@ -301,10 +330,21 @@ export const useRiskAnalysis = () => {
       });
       return newAsset;
     } catch (error) {
-      console.error('Error adding risk asset:', error);
+      console.error('Erreur détaillée lors de l\'ajout d\'un actif:', error);
+      
+      // Afficher un message d'erreur plus précis
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : "Une erreur inconnue s'est produite lors de l'ajout de l'actif";
+      
+      toast({
+        title: "Erreur",
+        description: errorMessage,
+        variant: "destructive",
+      });
       throw error;
     }
-  }, [toast]);
+  }, [toast, supabase, setRiskAssets]);
 
   // Add a risk threat
   const addRiskThreat = useCallback(async (threat: Omit<RiskThreat, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskThreat> => {

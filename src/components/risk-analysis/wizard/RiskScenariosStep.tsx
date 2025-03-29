@@ -76,6 +76,7 @@ export function RiskScenariosStep({
     try {
       console.log("Début de la sauvegarde et fermeture");
       const success = await onSaveAndClose();
+      
       if (success) {
         toast({
           title: "Succès",

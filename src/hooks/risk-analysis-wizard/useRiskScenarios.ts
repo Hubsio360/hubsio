@@ -222,16 +222,36 @@ export function useRiskScenarios(companyId: string) {
     }
 
     setLoading(true);
+    let hasErrors = false;
+    let savedAssetsCount = 0;
+    let savedScenariosCount = 0;
+
     try {
       console.log('Début de sauvegarde des scénarios et des processus métier');
       console.log('ID entreprise:', companyId);
       console.log('Nombre de scénarios à sauvegarder:', selectedScenarios.length);
+      console.log('Nombre de processus métier à sauvegarder:', businessProcesses.length);
+
+      // Vérification de l'ID de l'entreprise
+      if (!companyId) {
+        console.error("L'ID de l'entreprise est manquant ou invalide:", companyId);
+        throw new Error("ID d'entreprise invalide");
+      }
+
+      // Vérifier la session Supabase
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Erreur d'authentification:", sessionError);
+        throw new Error("Erreur d'authentification. Veuillez vous reconnecter.");
+      }
+      
+      console.log('Session Supabase valide:', !!sessionData.session);
 
       // 1. Enregistrer les processus métier comme actifs
       console.log('Sauvegarde des processus métier:', businessProcesses.length);
       for (const process of businessProcesses) {
         try {
-          console.log('Enregistrement du processus:', process.name);
+          console.log('Tentative d\'enregistrement du processus:', process.name);
           await addRiskAsset({
             companyId,
             name: process.name,
@@ -240,8 +260,12 @@ export function useRiskScenarios(companyId: string) {
             value: 'high',
             owner: ''
           });
+          savedAssetsCount++;
+          console.log(`Processus enregistré avec succès: ${process.name}`);
         } catch (processError) {
           console.error(`Erreur lors de l'enregistrement du processus ${process.name}:`, processError);
+          hasErrors = true;
+          // Continuer avec les autres processus malgré l'erreur
         }
       }
       
@@ -249,7 +273,7 @@ export function useRiskScenarios(companyId: string) {
       console.log('Sauvegarde des scénarios de risque');
       for (const scenario of selectedScenarios) {
         try {
-          console.log('Enregistrement du scénario:', scenario.name);
+          console.log('Tentative d\'enregistrement du scénario:', scenario.name);
           await createRiskScenario({
             companyId,
             name: scenario.name,
@@ -267,25 +291,44 @@ export function useRiskScenarios(companyId: string) {
             residualLikelihood: 'low',
             residualRiskLevel: 'low'
           });
+          savedScenariosCount++;
+          console.log(`Scénario enregistré avec succès: ${scenario.name}`);
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
-          // Ne pas lancer d'erreur ici, continuer avec les autres scénarios
+          hasErrors = true;
+          // Continuer avec les autres scénarios malgré l'erreur
         }
       }
       
-      toast({
-        title: "Succès",
-        description: `${selectedScenarios.length} scénario(s) et ${businessProcesses.length} processus métier enregistrés`,
-      });
+      if (hasErrors) {
+        if (savedAssetsCount > 0 || savedScenariosCount > 0) {
+          toast({
+            title: "Succès partiel",
+            description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés. Certaines entrées n'ont pas pu être sauvegardées.`,
+            variant: "default",
+          });
+        } else {
+          toast({
+            title: "Erreur",
+            description: "Impossible d'enregistrer les données. Vérifiez les droits d'accès et réessayez.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Succès",
+          description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés`,
+        });
+      }
       
       setLoading(false);
-      return true;
+      return savedScenariosCount > 0 || savedAssetsCount > 0;
     } catch (error) {
       console.error("Erreur détaillée lors de l'enregistrement des données:", error);
       setLoading(false);
       toast({
         title: "Erreur",
-        description: "Impossible d'enregistrer les données. Veuillez vérifier vos droits d'accès.",
+        description: error instanceof Error ? error.message : "Impossible d'enregistrer les données. Veuillez vérifier vos droits d'accès.",
         variant: "destructive",
       });
       return false;
