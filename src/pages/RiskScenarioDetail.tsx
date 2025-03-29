@@ -37,7 +37,7 @@ import {
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
 import { RiskScenario } from '@/types';
-import { EditRiskScenarioDialog } from '@/components/risk-analysis/EditRiskScenarioDialog';
+import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 import { supabase } from '@/integrations/supabase/client';
 
 const RiskScenarioDetail = () => {
@@ -471,13 +471,13 @@ const RiskScenarioDetail = () => {
         </CardContent>
       </Card>
       
-      <EditRiskScenarioDialog
+      <EditRiskScenarioModalV2
         open={isEditing}
         onOpenChange={(open) => {
-          // Only allow closing if not in the middle of saving
           setIsEditing(open);
+          
+          // Refresh data when dialog closes to ensure we have latest state
           if (!open) {
-            // Refresh data when dialog closes to ensure we have latest state
             fetchScenarioData();
           }
         }}
