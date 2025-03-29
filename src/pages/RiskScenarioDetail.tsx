@@ -94,10 +94,12 @@ const RiskScenarioDetail = () => {
             residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
             threatId: scenarioData.threat_id,
             vulnerabilityId: scenarioData.vulnerability_id,
-            securityMeasures: scenarioData.security_measures as string || '',
-            measureEffectiveness: scenarioData.measure_effectiveness as string || '',
-            impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' ? 
-              scenarioData.impact_scale_ratings as Record<string, RiskLevel> : {},
+            securityMeasures: (scenarioData.security_measures as string) || '',
+            measureEffectiveness: (scenarioData.measure_effectiveness as string) || '',
+            impactScaleRatings: scenarioData.impact_scale_ratings && 
+              typeof scenarioData.impact_scale_ratings === 'object' ? 
+              scenarioData.impact_scale_ratings as Record<string, RiskLevel> : 
+              {},
             createdAt: scenarioData.created_at,
             updatedAt: scenarioData.updated_at
           };
