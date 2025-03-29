@@ -20,7 +20,7 @@ const Slider = React.forwardRef<
       <SliderPrimitive.Range className="absolute h-full bg-transparent" />
     </SliderPrimitive.Track>
     <SliderPrimitive.Thumb 
-      className="block h-6 w-6 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:cursor-grab active:cursor-grabbing shadow-md" 
+      className="block h-6 w-6 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:cursor-grab active:cursor-grabbing shadow-md z-10" 
       aria-label="Sélectionnez une valeur"
     />
   </SliderPrimitive.Root>

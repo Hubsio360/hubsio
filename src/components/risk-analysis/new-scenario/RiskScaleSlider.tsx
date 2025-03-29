@@ -62,6 +62,15 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     }
   }, [sliderValue, sortedLevels, onChange]);
   
+  // Handle label click
+  const handleLabelClick = useCallback((index: number) => {
+    if (!sortedLevels.length || index < 0 || index >= sortedLevels.length) return;
+    
+    setSliderValue(index);
+    const riskLevel = mapPositionToRiskLevel(index, sortedLevels);
+    onChange(riskLevel);
+  }, [sortedLevels, onChange]);
+  
   // Get current level from slider value
   const currentLevel = sortedLevels[sliderValue] || null;
   
@@ -136,7 +145,11 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
             />
             
             {/* Labels under the slider */}
-            <SliderLabels levels={sortedLevels} selectedIndex={sliderValue} />
+            <SliderLabels 
+              levels={sortedLevels} 
+              selectedIndex={sliderValue} 
+              onLabelClick={handleLabelClick}
+            />
           </div>
         </FormControl>
         

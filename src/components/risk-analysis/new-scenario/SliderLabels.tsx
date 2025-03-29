@@ -6,9 +6,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface SliderLabelsProps {
   levels: RiskScaleLevel[];
   selectedIndex: number;
+  onLabelClick?: (index: number) => void;
 }
 
-const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) => {
+const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLabelClick }) => {
   // Don't render anything if no levels are provided
   if (!levels || levels.length === 0) {
     return null;
@@ -24,7 +25,20 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
             <TooltipProvider key={level.id || index}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="relative flex flex-col items-center cursor-pointer" style={{ width: '40px' }}>
+                  <div 
+                    className="relative flex flex-col items-center cursor-pointer" 
+                    style={{ width: '40px' }}
+                    onClick={() => onLabelClick && onLabelClick(index)}
+                    role="button"
+                    tabIndex={0}
+                    aria-selected={isSelected}
+                    aria-label={`Select ${level.name} level`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        onLabelClick && onLabelClick(index);
+                      }
+                    }}
+                  >
                     {/* Dot indicator for each level */}
                     <div 
                       className={`w-5 h-5 rounded-full mb-2 transition-all ${
