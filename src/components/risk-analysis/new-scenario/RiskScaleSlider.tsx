@@ -82,6 +82,12 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     }
   };
   
+  // Handle direct level click
+  const handleLevelClick = (index: number) => {
+    setSliderValue(index);
+    handleSliderChange([index]);
+  };
+  
   if (!sortedLevels || !sortedLevels.length) {
     return (
       <FormItem>
@@ -101,49 +107,59 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       <FormLabel>{label}</FormLabel>
       {description && <FormDescription>{description}</FormDescription>}
       
-      <div className="space-y-3 pt-2">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">
-            {currentLevel?.name || 'Niveau non défini'}
-          </span>
-          <span 
-            className="px-2 py-1 rounded-full text-xs font-medium"
-            style={{ 
-              backgroundColor: currentLevel?.color || '#e2e8f0',
-              color: getContrastColor(currentLevel?.color || '#e2e8f0')
-            }}
-          >
-            {currentLevel?.description || 'Description non disponible'}
-          </span>
-        </div>
-        
+      <div className="space-y-4 pt-2">
         <FormControl>
-          <Slider
-            value={[sliderValue]}
-            max={sortedLevels.length - 1}
-            step={1}
-            onValueChange={handleSliderChange}
-            className="py-4"
-          />
+          <div className="relative pt-1 pb-6">
+            {/* Slider avec taille augmentée pour faciliter la manipulation */}
+            <Slider
+              value={[sliderValue]}
+              max={sortedLevels.length - 1}
+              step={1}
+              onValueChange={handleSliderChange}
+              className="py-4"
+            />
+            
+            {/* Positions des niveaux sous la barre */}
+            <div className="flex justify-between mt-4 absolute w-full top-8">
+              {sortedLevels.map((level, index) => {
+                // Calcul du décalage pour aligner le centre du point avec les repères
+                const offset = index === 0 ? 0 : index === sortedLevels.length - 1 ? -100 : -50;
+                
+                return (
+                  <div 
+                    key={level.id} 
+                    className="flex flex-col items-center cursor-pointer relative"
+                    style={{ 
+                      position: 'absolute', 
+                      left: `${(index / (sortedLevels.length - 1)) * 100}%`,
+                      transform: `translateX(${offset}%)` 
+                    }}
+                    onClick={() => handleLevelClick(index)}
+                  >
+                    <div 
+                      className={`w-3 h-3 rounded-full mb-1 ${sliderValue === index ? 'ring-2 ring-primary' : ''}`} 
+                      style={{ backgroundColor: level.color || '#e2e8f0' }} 
+                    />
+                    <span className="text-xs whitespace-nowrap">
+                      {level.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </FormControl>
         
-        <div className="flex justify-between mt-1">
-          {sortedLevels.map((level, index) => (
-            <div 
-              key={level.id} 
-              className="flex flex-col items-center cursor-pointer" 
-              style={{ width: `${100 / sortedLevels.length}%` }}
-              onClick={() => handleSliderChange([index])}
-            >
-              <div 
-                className="w-3 h-3 rounded-full mb-1" 
-                style={{ backgroundColor: level.color || '#e2e8f0' }} 
-              />
-              <span className="text-xs text-center truncate w-full" title={level.name}>
-                {level.name}
-              </span>
-            </div>
-          ))}
+        {/* Description du niveau sélectionné affichée sous la barre */}
+        <div 
+          className="px-3 py-2 rounded-md text-sm mt-8 transition-all"
+          style={{ 
+            backgroundColor: currentLevel?.color || '#e2e8f0',
+            color: getContrastColor(currentLevel?.color || '#e2e8f0')
+          }}
+        >
+          <div className="font-medium mb-1">{currentLevel?.name || 'Niveau non défini'}</div>
+          <div className="text-sm">{currentLevel?.description || 'Description non disponible'}</div>
         </div>
       </div>
       <FormMessage />
