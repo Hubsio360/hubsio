@@ -13,33 +13,48 @@ export function mapPositionToRiskLevel(position: number, sortedLevels: RiskScale
     return 'low';
   }
   
-  const levelName = sortedLevels[position]?.name.toLowerCase() || '';
+  // Get the level at the specified position
+  const level = sortedLevels[position];
+  if (!level) return 'low';
   
-  // Map level name to standard risk level
-  if (levelName.includes('néglig') || levelName.includes('faibl') || levelName.includes('peu probable')) {
+  const levelName = level.name.toLowerCase();
+  
+  // Map level name to standard risk level based on common terms
+  if (levelName.includes('néglig') || levelName.includes('faibl') || 
+      levelName.includes('peu probable') || levelName.includes('rare') || 
+      levelName === 'low' || levelName === 'bas' || levelName === 'basse') {
     return 'low';
   }
-  else if (levelName.includes('signif') || levelName.includes('moyen') || levelName.includes('modér') || levelName.includes('relativement')) {
+  
+  if (levelName.includes('signif') || levelName.includes('moyen') || 
+      levelName.includes('modér') || levelName.includes('relativement') || 
+      levelName === 'medium' || levelName === 'normal') {
     return 'medium';
   }
-  else if (levelName.includes('élev') || levelName.includes('haut') || levelName.includes('import')) {
+  
+  if (levelName.includes('élev') || levelName.includes('haut') || 
+      levelName.includes('import') || levelName.includes('fort') || 
+      levelName === 'high') {
     return 'high';
   }
-  else if (levelName.includes('critique') || levelName.includes('critic') || levelName.includes('majeur') || levelName.includes('certain')) {
+  
+  if (levelName.includes('critique') || levelName.includes('critic') || 
+      levelName.includes('majeur') || levelName.includes('certain') || 
+      levelName.includes('extrême') || levelName === 'critical') {
     return 'critical';
   }
   
-  // Fallback based on position
-  if (position === 0) {
-    return 'low';
-  }
-  else if (position === sortedLevels.length - 1) {
-    return 'critical';
-  }
-  else if (position <= Math.floor(sortedLevels.length / 2)) {
-    return 'medium';
-  }
-  else {
+  // Fallback to position-based mapping if name matching fails
+  if (sortedLevels.length <= 2) {
+    return position === 0 ? 'low' : 'high';
+  } else if (sortedLevels.length <= 3) {
+    if (position === 0) return 'low';
+    if (position === 1) return 'medium';
+    return 'high';
+  } else {
+    if (position === 0) return 'low';
+    if (position === sortedLevels.length - 1) return 'critical';
+    if (position <= Math.floor(sortedLevels.length / 2)) return 'medium';
     return 'high';
   }
 }
@@ -51,61 +66,63 @@ export function mapPositionToRiskLevel(position: number, sortedLevels: RiskScale
  * @returns The index in the sorted array
  */
 export function mapRiskLevelToIndex(value: RiskLevel, sortedLevels: RiskScaleLevel[]): number {
-  const levelIndex = sortedLevels.findIndex(level => {
-    // First try to find by name (case insensitive)
-    if (level.name.toLowerCase() === value.toLowerCase()) {
-      return true;
-    }
-    
-    // Match by partial name for better recognition
+  // First attempt: exact match based on level strings
+  for (let i = 0; i < sortedLevels.length; i++) {
+    const level = sortedLevels[i];
     const levelName = level.name.toLowerCase();
-    if (value === 'low' && (
-      levelName.includes('faibl') || 
-      levelName.includes('néglig') || 
-      levelName.includes('peu probable')
-    )) {
-      return true;
-    }
-    if (value === 'medium' && (
-      levelName.includes('moyen') || 
-      levelName.includes('modér') || 
-      levelName.includes('signif') || 
-      levelName.includes('relativement')
-    )) {
-      return true;
-    }
-    if (value === 'high' && (
-      levelName.includes('élev') || 
-      levelName.includes('haut') || 
-      levelName.includes('import')
-    )) {
-      return true;
-    }
-    if (value === 'critical' && (
-      levelName.includes('critique') || 
-      levelName.includes('critic') || 
-      levelName.includes('majeur') || 
-      levelName.includes('certain')
-    )) {
-      return true;
+    
+    // Direct match for risk level
+    if (value === 'low' && (levelName === 'low' || levelName === 'bas' || levelName === 'basse' || 
+                           levelName === 'faible' || levelName === 'négligeable' || levelName === 'rare')) {
+      return i;
     }
     
-    // Try to match by level value as fallback
-    if (value === 'low' && (level.levelValue === 1 || level.level_value === 1)) {
-      return true;
-    }
-    if (value === 'medium' && (level.levelValue === 2 || level.level_value === 2)) {
-      return true;
-    }
-    if (value === 'high' && (level.levelValue === 3 || level.level_value === 3)) {
-      return true;
-    }
-    if (value === 'critical' && (level.levelValue === 4 || level.level_value === 4)) {
-      return true;
+    if (value === 'medium' && (levelName === 'medium' || levelName === 'moyen' || levelName === 'moyenne' || 
+                              levelName === 'modéré' || levelName === 'modérée' || levelName === 'significatif')) {
+      return i;
     }
     
-    return false;
-  });
+    if (value === 'high' && (levelName === 'high' || levelName === 'haut' || levelName === 'haute' || 
+                            levelName === 'élevé' || levelName === 'élevée' || levelName === 'important')) {
+      return i;
+    }
+    
+    if (value === 'critical' && (levelName === 'critical' || levelName === 'critique' || 
+                                levelName === 'majeur' || levelName === 'certain' || levelName === 'extrême')) {
+      return i;
+    }
+  }
+
+  // Second attempt: partial match
+  for (let i = 0; i < sortedLevels.length; i++) {
+    const level = sortedLevels[i];
+    const levelName = level.name.toLowerCase();
+    
+    if (value === 'low' && (levelName.includes('faibl') || levelName.includes('néglig') || 
+                           levelName.includes('peu probable') || levelName.includes('bas'))) {
+      return i;
+    }
+    
+    if (value === 'medium' && (levelName.includes('moyen') || levelName.includes('modér') || 
+                              levelName.includes('signif') || levelName.includes('relativement'))) {
+      return i;
+    }
+    
+    if (value === 'high' && (levelName.includes('élev') || levelName.includes('haut') || 
+                            levelName.includes('import') || levelName.includes('fort'))) {
+      return i;
+    }
+    
+    if (value === 'critical' && (levelName.includes('critique') || levelName.includes('critic') || 
+                                levelName.includes('majeur') || levelName.includes('certain') || 
+                                levelName.includes('extrême'))) {
+      return i;
+    }
+  }
   
-  return levelIndex >= 0 ? levelIndex : 0;
+  // Third attempt: position-based based on level values
+  if (value === 'low') return 0;
+  if (value === 'critical' && sortedLevels.length > 3) return sortedLevels.length - 1;
+  if (value === 'high') return Math.min(sortedLevels.length - 1, 2);
+  return Math.min(sortedLevels.length - 2, 1);
 }

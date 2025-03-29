@@ -34,19 +34,15 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     ? [...levels].sort((a, b) => (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0))
     : [];
   
-  // Map risk level to slider position - memoized to avoid recalculations
-  const initializeSliderPosition = useCallback(() => {
+  // Initialiser la valeur du slider lorsque le composant est chargé
+  useEffect(() => {
     if (sortedLevels.length > 0 && value) {
       const index = mapRiskLevelToIndex(value, sortedLevels);
+      console.log(`RiskScaleSlider (${name}): Initializing slider to position ${index} for value ${value}`);
       setSliderValue(index);
       setIsInitialized(true);
     }
-  }, [value, sortedLevels]);
-  
-  // Initialize slider position when values change
-  useEffect(() => {
-    initializeSliderPosition();
-  }, [initializeSliderPosition, value]); // Add value as dependency
+  }, [value, sortedLevels, name]);
   
   // Handle slider value change
   const handleSliderChange = useCallback((newValue: number[]) => {
@@ -56,23 +52,24 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     
     // Only update if position has actually changed
     if (position !== sliderValue && sortedLevels[position]) {
+      console.log(`RiskScaleSlider (${name}): Slider changed to position ${position}`);
       setSliderValue(position);
       const riskLevel = mapPositionToRiskLevel(position, sortedLevels);
-      console.log(`Slider changed to position ${position}, level: ${riskLevel}`);
+      console.log(`RiskScaleSlider (${name}): Setting risk level to: ${riskLevel}`);
       onChange(riskLevel);
     }
-  }, [sliderValue, sortedLevels, onChange]);
+  }, [sliderValue, sortedLevels, onChange, name]);
   
   // Handle label click
   const handleLabelClick = useCallback((index: number) => {
     if (!sortedLevels.length || index < 0 || index >= sortedLevels.length) return;
     
-    console.log(`Label clicked in RiskScaleSlider: ${index}, current: ${sliderValue}`);
+    console.log(`RiskScaleSlider (${name}): Label clicked: ${index}, current: ${sliderValue}`);
     setSliderValue(index);
     const riskLevel = mapPositionToRiskLevel(index, sortedLevels);
-    console.log(`Setting risk level to: ${riskLevel}`);
+    console.log(`RiskScaleSlider (${name}): Setting risk level to: ${riskLevel}`);
     onChange(riskLevel);
-  }, [sortedLevels, onChange]);
+  }, [sortedLevels, onChange, sliderValue, name]);
   
   // Get current level from slider value
   const currentLevel = sortedLevels[sliderValue] || null;

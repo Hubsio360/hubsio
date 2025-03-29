@@ -56,12 +56,29 @@ export const useRiskAssessment = (
       setImpactScales(impacts);
       setLikelihoodScale(likelihood || null);
       
+      // Initialize impact scale ratings if not already set
+      const currentRatings = form.getValues('impactScaleRatings') || {};
+      const initialRatings = { ...currentRatings };
+      let hasNewRatings = false;
+      
+      impacts.forEach(scale => {
+        if (!initialRatings[scale.id]) {
+          initialRatings[scale.id] = 'low';
+          hasNewRatings = true;
+        }
+      });
+      
+      if (hasNewRatings) {
+        form.setValue('impactScaleRatings', initialRatings);
+      }
+      
       // Set the first impact scale as active if there is one and no active scale is set
       if (impacts.length > 0 && !activeImpactScale) {
+        console.log("Setting first impact scale as active:", impacts[0].id);
         setActiveImpactScale(impacts[0].id);
       }
     }
-  }, [companyRiskScales, activeImpactScale]);
+  }, [companyRiskScales, activeImpactScale, form]);
 
   // Calculate main impact level based on the maximum value from all scale ratings
   useEffect(() => {
@@ -84,6 +101,8 @@ export const useRiskAssessment = (
       if (maxImpactValue === 3) maxImpactLevel = 'high';
       if (maxImpactValue === 4) maxImpactLevel = 'critical';
       
+      console.log(`Setting rawImpact to ${maxImpactLevel} based on impact scale ratings:`, impactScaleRatings);
+      
       // Set the main impact value (which will be stored in the database)
       form.setValue('rawImpact', maxImpactLevel);
       form.setValue('impactLevel', maxImpactLevel);
@@ -92,7 +111,7 @@ export const useRiskAssessment = (
 
   // Handle change for a specific impact scale
   const handleImpactScaleChange = useCallback((scaleId: string, value: RiskLevel) => {
-    console.log(`Updating impact scale ${scaleId} to ${value}`);
+    console.log(`useRiskAssessment: Updating impact scale ${scaleId} to ${value}`);
     const newRatings = { ...impactScaleRatings };
     newRatings[scaleId] = value;
     form.setValue('impactScaleRatings', newRatings);
