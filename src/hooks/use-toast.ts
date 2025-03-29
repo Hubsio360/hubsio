@@ -6,8 +6,8 @@ import type {
   ToastProps,
 } from "@/components/ui/toast"
 
-const TOAST_LIMIT = 5 // Increased from 1 to 5 to allow multiple toasts
-const TOAST_REMOVE_DELAY = 1000 // Changed from 3000 to 2000 ms (2 secondes)
+const TOAST_LIMIT = 1 // Limité à 1 seul toast à la fois
+const TOAST_REMOVE_DELAY = 1000 // 1 seconde avant disparition
 
 type ToasterToast = ToastProps & {
   id: string
@@ -75,9 +75,26 @@ const addToRemoveQueue = (toastId: string) => {
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
-      return {
-        ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+      // Si on a déjà un toast, on le supprime d'abord
+      if (state.toasts.length > 0) {
+        state.toasts.forEach((toast) => {
+          addToRemoveQueue(toast.id)
+        })
+      }
+      
+      // On n'ajoute le toast que s'il s'agit d'une erreur
+      if (action.toast.variant === "destructive") {
+        return {
+          ...state,
+          toasts: [action.toast],
+        }
+      } else {
+        // Pour les messages non-erreur, on les affiche en console uniquement
+        if (action.toast.title || action.toast.description) {
+          console.log(`NOTIFICATION: ${action.toast.title || ''} - ${action.toast.description || ''}`)
+        }
+        // On ne change pas l'état pour les toasts non-erreur
+        return state
       }
 
     case "UPDATE_TOAST":
@@ -91,7 +108,6 @@ export const reducer = (state: State, action: Action): State => {
     case "DISMISS_TOAST": {
       const { toastId } = action
 
-      // Only dismiss the specified toast or all toasts if toastId is undefined
       if (toastId) {
         addToRemoveQueue(toastId)
       } else {
@@ -140,6 +156,17 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
+  // Si ce n'est pas une erreur, on l'affiche uniquement en console
+  if (props.variant !== "destructive") {
+    console.log(`NOTIFICATION: ${props.title || ''} - ${props.description || ''}`)
+    return { id: "", dismiss: () => {}, update: () => {} }
+  }
+  
+  // Si on a déjà des toasts, on les supprime tous d'abord
+  if (memoryState.toasts.length > 0) {
+    dispatch({ type: "REMOVE_TOAST" })
+  }
+  
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -148,7 +175,6 @@ function toast({ ...props }: Toast) {
       toast: { ...props, id },
     })
   
-  // Only dismiss this specific toast
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id })
 
   dispatch({
@@ -186,7 +212,6 @@ function useToast() {
   return {
     ...state,
     toast,
-    // Only dismiss the specified toast
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }

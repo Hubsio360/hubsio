@@ -13,7 +13,7 @@ export function Toaster() {
   const { toasts } = useToast()
 
   return (
-    <ToastProvider swipeDirection="right">
+    <ToastProvider>
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
@@ -24,10 +24,7 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose onClick={(e) => {
-              // Empêche la propagation du clic aux éléments parents
-              e.stopPropagation()
-            }} />
+            <ToastClose />
           </Toast>
         )
       })}
