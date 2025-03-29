@@ -6,6 +6,7 @@ import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { BusinessProcess, SuggestedScenario, RiskScenarioCreate } from './types';
 import { useData } from '@/contexts/DataContext';
 import { createErrorHandler } from '@/contexts/data/utils/auditErrorUtils';
+import { RiskScope } from '@/types';
 
 export function useRiskScenarios(companyId: string) {
   const { toast } = useToast();
@@ -309,7 +310,7 @@ export function useRiskScenarios(companyId: string) {
             name: scenario.name,
             description: scenario.description,
             status: 'identified',
-            scope: 'technical',
+            scope: 'technical' as RiskScope, // Cast to RiskScope type
             riskLevel: 'medium',
             impactLevel: 'medium',
             likelihood: 'medium',
@@ -392,7 +393,7 @@ export function useRiskScenarios(companyId: string) {
             name: scenario.name,
             description: scenario.description,
             status: 'identified',
-            scope: 'technical',
+            scope: 'technical' as RiskScope, // Cast to RiskScope type
             riskLevel: 'medium',
             impactLevel: 'medium',
             likelihood: 'medium',
