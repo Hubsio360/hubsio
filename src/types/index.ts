@@ -1,9 +1,17 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
   referenceCode: string;
   title: string;
   standardId: string;
+  description?: string;
+}
+
+// Réajout de l'interface AuditTheme qui a été supprimée par erreur
+export interface AuditTheme {
+  id: string;
+  name: string;
   description?: string;
 }
 

@@ -1,198 +1,238 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { RiskScaleType, RiskScaleLevel } from '@/types';
 
 /**
- * Creates risk scales for a company from the templates
+ * Crée les échelles de risque par défaut pour une entreprise donnée
  */
-export const createRiskScalesFromTemplates = async (companyId: string): Promise<boolean> => {
+export const ensureCompanyHasRequiredScales = async (companyId: string): Promise<boolean> => {
+  if (!companyId) return false;
+
   try {
-    console.log("Creating risk scales from templates for company:", companyId);
+    console.log("Vérification des échelles de risque requises pour:", companyId);
     
-    // Get all templates
-    const { data: templates, error: templatesError } = await supabase
-      .from('risk_scales_template')
-      .select('*');
-    
-    if (templatesError) {
-      console.error("Error fetching scale templates:", templatesError);
+    // Appel à la fonction côté base de données pour créer les échelles par défaut
+    const { data, error } = await supabase.rpc('create_default_company_risk_scales', {
+      company_id: companyId
+    });
+
+    if (error) {
+      console.error("Erreur lors de la création des échelles de risque:", error);
       return false;
     }
-    
-    if (!templates || templates.length === 0) {
-      console.error("No scale templates found");
-      return false;
-    }
-    
-    // Check if company already has risk scales
-    const { data: existingScales, error: checkError } = await supabase
-      .from('company_risk_scales')
-      .select('id, scale_type_id')
-      .eq('company_id', companyId);
-    
-    if (checkError) {
-      console.error("Error checking existing scales:", checkError);
-      return false;
-    }
-    
-    // Create a map of existing scale type IDs to avoid duplicates
-    const existingScaleTypeIds = new Set(
-      existingScales?.map(scale => scale.scale_type_id) || []
-    );
-    
-    // Process each template
-    for (const template of templates) {
-      // Check if this scale type already exists for the company
-      const { data: existingTypes, error: typesError } = await supabase
-        .from('risk_scale_types')
-        .select('id')
-        .eq('name', template.name)
-        .eq('category', template.category);
-      
-      if (typesError) {
-        console.error(`Error checking if scale type ${template.name} exists:`, typesError);
-        continue;
-      }
-      
-      let scaleTypeId;
-      
-      // Create or use existing scale type
-      if (!existingTypes || existingTypes.length === 0) {
-        // Create scale type
-        const { data: newType, error: createTypeError } = await supabase
-          .from('risk_scale_types')
-          .insert({
-            name: template.name,
-            description: template.description,
-            category: template.category
-          })
-          .select()
-          .single();
-        
-        if (createTypeError) {
-          console.error(`Error creating scale type ${template.name}:`, createTypeError);
-          continue;
-        }
-        
-        scaleTypeId = newType.id;
-      } else {
-        scaleTypeId = existingTypes[0].id;
-        
-        // Skip if this company already has a scale of this type
-        if (existingScaleTypeIds.has(scaleTypeId)) {
-          console.log(`Company already has scale type ${template.name}, skipping`);
-          continue;
-        }
-      }
-      
-      // Create company risk scale
-      const { data: companyScale, error: scaleError } = await supabase
-        .from('company_risk_scales')
-        .insert({
-          company_id: companyId,
-          scale_type_id: scaleTypeId,
-          is_active: true
-        })
-        .select()
-        .single();
-      
-      if (scaleError) {
-        console.error(`Error creating company scale for ${template.name}:`, scaleError);
-        continue;
-      }
-      
-      // Get template levels
-      const { data: templateLevels, error: levelsError } = await supabase
-        .from('risk_scale_level_templates')
-        .select('*')
-        .eq('risk_scale_template_id', template.id);
-      
-      if (levelsError || !templateLevels) {
-        console.error(`Error fetching levels for template ${template.name}:`, levelsError);
-        continue;
-      }
-      
-      // Create levels for the company scale
-      if (templateLevels.length > 0) {
-        const levelsToInsert = templateLevels.map(level => ({
-          company_risk_scale_id: companyScale.id,
-          name: level.name,
-          description: level.description,
-          level_value: level.level_value,
-          color: level.color
-        }));
-        
-        const { error: insertLevelsError } = await supabase
-          .from('risk_scale_levels')
-          .insert(levelsToInsert);
-        
-        if (insertLevelsError) {
-          console.error(`Error creating levels for scale ${template.name}:`, insertLevelsError);
-          continue;
-        }
-      }
-      
-      console.log(`Successfully created scale ${template.name} for company ${companyId}`);
-    }
-    
+
+    console.log("Échelles de risque créées avec succès:", data);
     return true;
-  } catch (error) {
-    console.error("Error in createRiskScalesFromTemplates:", error);
+  } catch (err) {
+    console.error("Exception lors de la création des échelles de risque:", err);
     return false;
   }
 };
 
 /**
- * Checks if a company has the required risk scales, and creates them if not
+ * Vérifie si une entreprise a l'échelle de probabilité configurée
  */
-export const ensureCompanyHasRequiredScales = async (companyId: string): Promise<boolean> => {
+export const setupLikelihoodScale = async (companyId: string): Promise<boolean> => {
+  if (!companyId) return false;
+
   try {
-    // Check if company has at least one likelihood scale and the 5 impact scales
-    const { data: existingScales, error: checkError } = await supabase
-      .from('company_risk_scales')
-      .select(`
-        id,
-        scale_type: scale_type_id (
-          id,
-          name,
-          category
-        )
-      `)
-      .eq('company_id', companyId);
-    
-    if (checkError) {
-      console.error("Error checking existing scales:", checkError);
+    // Recherche du type d'échelle 'likelihood'
+    const { data: scaleTypes, error: typesError } = await supabase
+      .from('risk_scale_types')
+      .select('*')
+      .eq('category', 'likelihood')
+      .single();
+
+    if (typesError || !scaleTypes) {
+      console.error("Échelle de type 'likelihood' non trouvée:", typesError);
       return false;
     }
-    
-    // Check if required scales exist
-    const hasLikelihoodScale = existingScales?.some(scale => 
-      scale.scale_type?.category === 'likelihood'
-    );
-    
-    const requiredImpactTypes = [
-      'financial_impact',
-      'regulatory_impact', 
-      'individual_impact', 
-      'reputational_impact', 
-      'productivity_impact'
-    ];
-    
-    const missingImpactTypes = requiredImpactTypes.filter(requiredType => 
-      !existingScales?.some(scale => scale.scale_type?.name === requiredType)
-    );
-    
-    // If all required scales exist, we're done
-    if (hasLikelihoodScale && missingImpactTypes.length === 0) {
-      console.log("Company already has all required scales");
+
+    // Vérification si l'entreprise a déjà cette échelle
+    const { data: existingScale, error: scaleError } = await supabase
+      .from('company_risk_scales')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('scale_type_id', scaleTypes.id)
+      .maybeSingle();
+
+    if (scaleError) {
+      console.error("Erreur lors de la vérification de l'échelle de probabilité:", scaleError);
+      return false;
+    }
+
+    // Si l'échelle existe déjà, on ne fait rien
+    if (existingScale) {
+      console.log("L'échelle de probabilité existe déjà pour cette entreprise");
       return true;
     }
-    
-    // Create missing scales from templates
-    console.log("Company is missing some required scales, creating from templates");
-    return await createRiskScalesFromTemplates(companyId);
-  } catch (error) {
-    console.error("Error in ensureCompanyHasRequiredScales:", error);
+
+    // Création de l'échelle de probabilité
+    const { data: newScale, error: createError } = await supabase
+      .from('company_risk_scales')
+      .insert({
+        company_id: companyId,
+        scale_type_id: scaleTypes.id,
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (createError || !newScale) {
+      console.error("Erreur lors de la création de l'échelle de probabilité:", createError);
+      return false;
+    }
+
+    // Création des niveaux pour l'échelle de probabilité
+    const levels = [
+      {
+        company_risk_scale_id: newScale.id,
+        level_value: 1,
+        name: 'Faible',
+        description: 'Probabilité d\'occurrence faible (1 fois tous les 3 ans ou moins)',
+        color: '#4CAF50'
+      },
+      {
+        company_risk_scale_id: newScale.id,
+        level_value: 2,
+        name: 'Moyen',
+        description: 'Probabilité d\'occurrence moyenne (1 fois par an)',
+        color: '#FFA726'
+      },
+      {
+        company_risk_scale_id: newScale.id,
+        level_value: 3,
+        name: 'Élevé',
+        description: 'Probabilité d\'occurrence élevée (plusieurs fois par an)',
+        color: '#9C27B0'
+      },
+      {
+        company_risk_scale_id: newScale.id,
+        level_value: 4,
+        name: 'Critique',
+        description: 'Probabilité d\'occurrence très élevée (mensuel ou plus)',
+        color: '#F44336'
+      }
+    ];
+
+    const { error: levelsError } = await supabase
+      .from('risk_scale_levels')
+      .insert(levels);
+
+    if (levelsError) {
+      console.error("Erreur lors de la création des niveaux de probabilité:", levelsError);
+      return false;
+    }
+
+    console.log("Échelle de probabilité créée avec succès");
+    return true;
+  } catch (err) {
+    console.error("Exception lors de la création de l'échelle de probabilité:", err);
+    return false;
+  }
+};
+
+/**
+ * Cette fonction vérifie si toutes les échelles d'impact requises existent
+ * et crée celles qui sont manquantes
+ */
+export const ensureImpactScalesExist = async (companyId: string): Promise<boolean> => {
+  if (!companyId) return false;
+
+  try {
+    // Récupération des types d'échelles d'impact requis
+    const { data: impactTypes, error: typesError } = await supabase
+      .from('risk_scale_types')
+      .select('*')
+      .eq('category', 'impact');
+
+    if (typesError || !impactTypes) {
+      console.error("Erreur lors de la récupération des types d'échelles d'impact:", typesError);
+      return false;
+    }
+
+    // Récupération des échelles d'impact existantes pour l'entreprise
+    const { data: existingScales, error: scalesError } = await supabase
+      .from('company_risk_scales')
+      .select('*, risk_scale_types!inner(*)')
+      .eq('company_id', companyId)
+      .eq('risk_scale_types.category', 'impact');
+
+    if (scalesError) {
+      console.error("Erreur lors de la récupération des échelles d'impact existantes:", scalesError);
+      return false;
+    }
+
+    // Création des échelles manquantes
+    const existingTypeIds = existingScales?.map(scale => scale.scale_type_id) || [];
+    const missingTypes = impactTypes.filter(type => !existingTypeIds.includes(type.id));
+
+    if (missingTypes.length === 0) {
+      console.log("Toutes les échelles d'impact requises existent déjà");
+      return true;
+    }
+
+    // Création des échelles manquantes
+    for (const type of missingTypes) {
+      const { data: newScale, error: createError } = await supabase
+        .from('company_risk_scales')
+        .insert({
+          company_id: companyId,
+          scale_type_id: type.id,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (createError || !newScale) {
+        console.error(`Erreur lors de la création de l'échelle d'impact "${type.name}":`, createError);
+        continue;
+      }
+
+      // Création des niveaux pour cette échelle
+      const levels = [
+        {
+          company_risk_scale_id: newScale.id,
+          level_value: 1,
+          name: 'Faible',
+          description: `Impact ${type.name} faible`,
+          color: '#4CAF50'
+        },
+        {
+          company_risk_scale_id: newScale.id,
+          level_value: 2,
+          name: 'Moyen',
+          description: `Impact ${type.name} moyen`,
+          color: '#FFA726'
+        },
+        {
+          company_risk_scale_id: newScale.id,
+          level_value: 3,
+          name: 'Élevé',
+          description: `Impact ${type.name} élevé`,
+          color: '#9C27B0'
+        },
+        {
+          company_risk_scale_id: newScale.id,
+          level_value: 4,
+          name: 'Critique',
+          description: `Impact ${type.name} critique`,
+          color: '#F44336'
+        }
+      ];
+
+      const { error: levelsError } = await supabase
+        .from('risk_scale_levels')
+        .insert(levels);
+
+      if (levelsError) {
+        console.error(`Erreur lors de la création des niveaux pour l'échelle "${type.name}":`, levelsError);
+      }
+    }
+
+    console.log(`${missingTypes.length} échelles d'impact créées avec succès`);
+    return true;
+  } catch (err) {
+    console.error("Exception lors de la création des échelles d'impact:", err);
     return false;
   }
 };

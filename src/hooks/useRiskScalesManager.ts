@@ -71,19 +71,17 @@ export const useRiskScalesManager = (companyId: string) => {
       
       if (result) {
         console.log("Échelles de risque par défaut créées avec succès");
+        
+        const likelihoodResult = await setupLikelihoodScale(companyId);
+        
+        const impactResult = await ensureImpactScalesExist(companyId);
+        
         await Promise.all([
           fetchRiskScaleTypes(),
           fetchCompanyRiskScales(companyId)
         ]);
         
-        const hasLikelihoodScale = companyRiskScales?.some(
-          scale => scale.scaleType?.category === 'likelihood'
-        );
-        
-        if (!hasLikelihoodScale) {
-          console.log("Création de l'échelle de probabilité manquante");
-          await setupLikelihoodScale(companyId);
-        }
+        return result && likelihoodResult && impactResult;
       }
       
       return result;
@@ -97,7 +95,7 @@ export const useRiskScalesManager = (companyId: string) => {
       });
       return false;
     }
-  }, [companyId, ensureDefaultScalesExistApi, fetchRiskScaleTypes, fetchCompanyRiskScales, toast, companyRiskScales, setupLikelihoodScale]);
+  }, [companyId, ensureDefaultScalesExistApi, fetchRiskScaleTypes, fetchCompanyRiskScales, toast, setupLikelihoodScale]);
 
   const loadData = useCallback(async () => {
     if (!companyId) return;
