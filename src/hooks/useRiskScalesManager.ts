@@ -39,11 +39,15 @@ export const useRiskScalesManager = (companyId: string) => {
 
   const ensureWithLevels = (scale: CompanyRiskScale): RiskScaleWithLevels => {
     const scaleTypeId = scale.scale_type_id || '';
-    const scaleType = riskScaleTypes?.find(type => type.id === scaleTypeId) || {
+    const foundType = riskScaleTypes?.find(type => type.id === scaleTypeId);
+    
+    const scaleType: RiskScaleType = foundType || {
       id: '',
       name: 'Type inconnu',
       description: '',
-      category: 'impact'
+      category: 'impact',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
     
     if (scaleType.name && scaleNameMapping[scaleType.name]) {

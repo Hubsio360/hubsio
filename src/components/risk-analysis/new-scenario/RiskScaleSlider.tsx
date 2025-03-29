@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -32,9 +31,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   // Sort levels by level_value
   const sortedLevels = Array.isArray(levels) 
     ? [...levels].sort((a, b) => {
-        const aValue = a.levelValue !== undefined ? a.levelValue : (a.level_value || 0);
-        const bValue = b.levelValue !== undefined ? b.levelValue : (b.level_value || 0);
-        return aValue - bValue;
+        return a.level_value - b.level_value;
       })
     : [];
   

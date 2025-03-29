@@ -53,20 +53,27 @@ export const useCompanyRiskScales = () => {
           
           if (levelsError) {
             console.error('Error fetching risk scale levels:', levelsError);
-            return mapToRiskScaleWithLevels(scale, [], scale.risk_scale_types || {
+            const defaultScaleType: RiskScaleType = {
               id: '',
               name: 'Type inconnu',
               description: '',
-              category: 'impact'
-            });
+              category: 'impact',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            return mapToRiskScaleWithLevels(scale, [], scale.risk_scale_types || defaultScaleType);
           }
           
-          return mapToRiskScaleWithLevels(scale, levels || [], scale.risk_scale_types || {
+          const scaleType: RiskScaleType = scale.risk_scale_types || {
             id: '',
             name: 'Type inconnu',
             description: '',
-            category: 'impact'
-          });
+            category: 'impact',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          return mapToRiskScaleWithLevels(scale, levels || [], scaleType);
         })
       );
       
@@ -157,7 +164,9 @@ export const useCompanyRiskScales = () => {
         id: scaleTypeId,
         name: 'Type inconnu',
         description: '',
-        category: 'impact'
+        category: 'impact',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
       
       const newScaleWithLevels: RiskScaleWithLevels = {
@@ -183,7 +192,7 @@ export const useCompanyRiskScales = () => {
       if (updatedData.name !== undefined) updates.name = updatedData.name;
       if (updatedData.description !== undefined) updates.description = updatedData.description;
       if (updatedData.color !== undefined) updates.color = updatedData.color;
-      if (updatedData.levelValue !== undefined) updates.level_value = updatedData.levelValue;
+      if (updatedData.level_value !== undefined) updates.level_value = updatedData.level_value;
       
       const { data, error } = await supabase
         .from('risk_scale_levels')

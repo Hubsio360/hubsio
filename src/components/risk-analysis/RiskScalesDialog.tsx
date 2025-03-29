@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -43,13 +42,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   onOpenChange,
   companyId,
 }) => {
-  // Définir les fonctions helper AVANT leur utilisation
   const getScaleType = (scaleTypeId: string, scaleTypes: RiskScaleType[]): RiskScaleType => {
-    return scaleTypes.find(type => type.id === scaleTypeId) || {
+    const foundType = scaleTypes.find(type => type.id === scaleTypeId);
+    if (foundType) return foundType;
+    
+    return {
       id: '',
       name: 'Type inconnu',
       description: '',
-      category: 'impact'
+      category: 'impact',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
   };
 
@@ -84,7 +87,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
 
-  // Logging for debugging
   useEffect(() => {
     if (open) {
       console.log("RiskScalesDialog: companyId =", companyId);
@@ -94,7 +96,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   }, [open, companyId, companyRiskScales, riskScaleTypes, isLoading]);
 
-  // Séparation explicite des échelles de probabilité et d'impact
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
       const scaleType = getScaleType(getScaleTypeId(scale), riskScaleTypes);
@@ -109,7 +110,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   );
 
-  // Initialiser les échelles par défaut si nécessaire, mais avec un debounce
   useEffect(() => {
     let mounted = true;
     
@@ -158,7 +158,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const handleAddCustomScale = async () => {
     const category = activeTab as 'impact' | 'likelihood';
     
-    // Si on est dans l'onglet de probabilité et qu'une échelle existe déjà
     if (category === 'likelihood' && likelihoodScales.length > 0) {
       toast({
         variant: "destructive",
@@ -242,7 +241,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return scale?.levels || [];
   };
 
-  // Prevent flickering - only show dialog content when fully loaded
   const isContentReady = !isLoading && !isInitializing && initialLoadComplete;
   
   return (

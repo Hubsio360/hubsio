@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useData } from '@/contexts/DataContext';
@@ -30,7 +29,7 @@ export const useRiskAssessment = (
     };
   }, []);
 
-  // Chargement initial des échelles et initialisation
+  // Initial loading of scales and initialization
   useEffect(() => {
     let isEffectActive = true;
     
@@ -60,7 +59,7 @@ export const useRiskAssessment = (
     };
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
 
-  // Separation des échelles d'impact et de probabilité
+  // Separation of impact and probability scales
   useEffect(() => {
     if (!isMounted.current || !companyRiskScales) return;
     
@@ -68,7 +67,7 @@ export const useRiskAssessment = (
     
     if (companyRiskScales.length > 0 && isEffectActive) {
       // Filter active scales by category
-      const activeScales = companyRiskScales.filter(scale => scale.isActive || scale.is_active);
+      const activeScales = companyRiskScales.filter(scale => scale.is_active);
       
       // Get impact scales
       const impacts = activeScales.filter(scale => {

@@ -75,44 +75,49 @@ const RiskScenarioDetail = () => {
         }
 
         if (scenarioData) {
-          // Properly map fields from snake_case in the database to camelCase in our application
           scenario = {
             id: scenarioData.id,
             companyId: scenarioData.company_id,
+            company_id: scenarioData.company_id,
             name: scenarioData.name,
             description: scenarioData.description,
             impactDescription: scenarioData.impact_description,
+            impact_description: scenarioData.impact_description,
             impactLevel: scenarioData.impact_level as RiskLevel,
+            impact_level: scenarioData.impact_level as RiskLevel,
             likelihood: scenarioData.likelihood as RiskLevel,
             riskLevel: scenarioData.risk_level as RiskLevel,
+            risk_level: scenarioData.risk_level as RiskLevel,
             status: scenarioData.status,
             scope: scenarioData.scope,
-            // Map the raw fields to their camelCase equivalents with appropriate defaults
             rawImpact: scenarioData.impact_level as RiskLevel,
             rawLikelihood: scenarioData.likelihood as RiskLevel,
             rawRiskLevel: scenarioData.risk_level as RiskLevel,
-            // These fields come from the database in snake_case and need to be mapped to camelCase
             residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
+            residual_impact: scenarioData.residual_impact as RiskLevel || 'low',
             residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
+            residual_likelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
             residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
+            residual_risk_level: scenarioData.residual_risk_level as RiskLevel || 'low',
             threatId: scenarioData.threat_id,
+            threat_id: scenarioData.threat_id,
             vulnerabilityId: scenarioData.vulnerability_id,
+            vulnerability_id: scenarioData.vulnerability_id,
             securityMeasures: scenarioData.security_measures || '',
+            security_measures: scenarioData.security_measures || '',
             measureEffectiveness: scenarioData.measure_effectiveness || '',
+            measure_effectiveness: scenarioData.measure_effectiveness || '',
             impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' 
               ? scenarioData.impact_scale_ratings as Record<string, RiskLevel>
               : {},
+            impact_scale_ratings: scenarioData.impact_scale_ratings,
             createdAt: scenarioData.created_at,
+            created_at: scenarioData.created_at,
             updatedAt: scenarioData.updated_at,
-            // Keep the original snake_case fields for consistency
-            residual_impact: scenarioData.residual_impact,
-            residual_likelihood: scenarioData.residual_likelihood,
-            residual_risk_level: scenarioData.residual_risk_level,
-            security_measures: scenarioData.security_measures,
-            measure_effectiveness: scenarioData.measure_effectiveness
+            updated_at: scenarioData.updated_at,
           };
 
-          await fetchRiskScenariosByCompanyId(scenario.companyId);
+          await fetchRiskScenariosByCompanyId(scenario.company_id);
         }
       }
       

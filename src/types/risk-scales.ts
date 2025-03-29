@@ -33,6 +33,10 @@ export interface CompanyRiskScale {
 export interface RiskScaleWithLevels extends CompanyRiskScale {
   levels: RiskScaleLevel[];
   scaleType: RiskScaleType;
+  // Add backward compatibility aliases
+  isActive?: boolean;
+  scaleTypeId?: string;
+  companyId?: string;
 }
 
 export interface RiskAssessment {
