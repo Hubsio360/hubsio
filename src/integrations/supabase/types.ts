@@ -800,6 +800,7 @@ export type Database = {
           id: string
           impact_description: string | null
           impact_level: Database["public"]["Enums"]["risk_level"]
+          impact_scale_ratings: Json | null
           likelihood: Database["public"]["Enums"]["risk_level"]
           name: string
           risk_level: Database["public"]["Enums"]["risk_level"]
@@ -816,6 +817,7 @@ export type Database = {
           id?: string
           impact_description?: string | null
           impact_level: Database["public"]["Enums"]["risk_level"]
+          impact_scale_ratings?: Json | null
           likelihood: Database["public"]["Enums"]["risk_level"]
           name: string
           risk_level: Database["public"]["Enums"]["risk_level"]
@@ -832,6 +834,7 @@ export type Database = {
           id?: string
           impact_description?: string | null
           impact_level?: Database["public"]["Enums"]["risk_level"]
+          impact_scale_ratings?: Json | null
           likelihood?: Database["public"]["Enums"]["risk_level"]
           name?: string
           risk_level?: Database["public"]["Enums"]["risk_level"]
