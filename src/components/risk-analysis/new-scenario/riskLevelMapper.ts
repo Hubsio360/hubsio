@@ -2,7 +2,12 @@
 import { RiskScaleLevel } from '@/types/risk-scales';
 import { RiskLevel } from '@/types';
 
-// Maps a slider position to a risk level
+/**
+ * Maps a slider position to a risk level
+ * @param position Current position on the slider
+ * @param levels Available risk scale levels
+ * @returns The corresponding risk level
+ */
 export const mapPositionToRiskLevel = (position: number, levels: RiskScaleLevel[]): RiskLevel => {
   if (!levels.length) return 'medium';
   
@@ -32,7 +37,12 @@ export const mapPositionToRiskLevel = (position: number, levels: RiskScaleLevel[
   }
 };
 
-// Maps a risk level to a slider position
+/**
+ * Maps a risk level to a slider position
+ * @param riskLevel The risk level to map
+ * @param levels Available risk scale levels
+ * @returns The corresponding index position
+ */
 export const mapRiskLevelToIndex = (riskLevel: RiskLevel, levels: RiskScaleLevel[]): number => {
   if (!levels.length) return 0;
   

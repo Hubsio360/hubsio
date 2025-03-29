@@ -808,6 +808,8 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          full_desc: string | null
+          full_name: string | null
           id: string
           name: string
           updated_at: string
@@ -816,6 +818,8 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
+          full_desc?: string | null
+          full_name?: string | null
           id?: string
           name: string
           updated_at?: string
@@ -824,6 +828,8 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          full_desc?: string | null
+          full_name?: string | null
           id?: string
           name?: string
           updated_at?: string
