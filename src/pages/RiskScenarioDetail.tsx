@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
-import { RiskScenario } from '@/types';
+import { RiskScenario, RiskLevel } from '@/types';
 import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -49,7 +49,6 @@ const RiskScenarioDetail = () => {
   const dataContext = useData();
   const { toast } = useToast();
 
-  // Use useCallback to prevent recreation of this function on each render
   const fetchScenarioData = useCallback(async () => {
     if (!id) return;
     
@@ -90,14 +89,15 @@ const RiskScenarioDetail = () => {
             rawImpact: scenarioData.impact_level,
             rawLikelihood: scenarioData.likelihood,
             rawRiskLevel: scenarioData.risk_level,
-            residualImpact: scenarioData.residual_impact || 'low',
-            residualLikelihood: scenarioData.residual_likelihood || 'low',
-            residualRiskLevel: scenarioData.residual_risk_level || 'low',
+            residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
+            residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
+            residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
             threatId: scenarioData.threat_id,
             vulnerabilityId: scenarioData.vulnerability_id,
-            securityMeasures: scenarioData.security_measures,
-            measureEffectiveness: scenarioData.measure_effectiveness,
-            impactScaleRatings: scenarioData.impact_scale_ratings || {},
+            securityMeasures: scenarioData.security_measures as string || '',
+            measureEffectiveness: scenarioData.measure_effectiveness as string || '',
+            impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' ? 
+              scenarioData.impact_scale_ratings as Record<string, RiskLevel> : {},
             createdAt: scenarioData.created_at,
             updatedAt: scenarioData.updated_at
           };
