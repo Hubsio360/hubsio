@@ -15,7 +15,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position="top-right"
       expand
       closeButton
-      duration={8000}
+      duration={2000} // Modifié de 8000 à 2000ms
       toastOptions={{
         classNames: {
           toast:

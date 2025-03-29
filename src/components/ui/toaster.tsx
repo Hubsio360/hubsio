@@ -24,7 +24,10 @@ export function Toaster() {
               )}
             </div>
             {action}
-            <ToastClose />
+            <ToastClose onClick={(e) => {
+              // Empêche la propagation du clic aux éléments parents
+              e.stopPropagation()
+            }} />
           </Toast>
         )
       })}
