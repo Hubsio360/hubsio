@@ -15,47 +15,52 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
   }
 
   return (
-    <div className="mt-6 flex relative h-14">
-      {levels.map((level, index) => {
-        const isSelected = selectedIndex === index;
-        
-        // Position each label precisely
-        const segmentWidth = 100 / levels.length;
-        const leftPosition = index * segmentWidth;
-        
-        return (
-          <TooltipProvider key={level.id || index}>
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <div
-                  className="absolute text-center cursor-pointer"
+    <div className="relative pt-6 w-full">
+      <div className="flex justify-between relative pb-2 px-[12px]">
+        {levels.map((level, index) => {
+          const isSelected = selectedIndex === index;
+          
+          return (
+            <TooltipProvider key={level.id || index}>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <div className="relative flex flex-col items-center">
+                    {/* Dot indicator for each level */}
+                    <div 
+                      className={`w-5 h-5 rounded-full transition-all ${
+                        isSelected ? 'scale-125 ring-2 ring-white/20 ring-offset-1 shadow-glow' : ''
+                      }`}
+                      style={{ 
+                        backgroundColor: level.color || '#e2e8f0',
+                        boxShadow: isSelected ? `0 0 12px ${level.color}40` : 'none'
+                      }}
+                    />
+                    
+                    {/* Label below the dot */}
+                    <div className={`mt-2 text-xs truncate max-w-[80px] text-center ${
+                      isSelected ? 'font-medium text-white' : 'text-muted-foreground'
+                    }`}>
+                      {level.name}
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent 
+                  side="top" 
+                  className="z-50"
                   style={{ 
-                    left: `${leftPosition}%`,
-                    width: `${segmentWidth}%`
+                    backgroundColor: `${level.color}E0`,
+                    color: level.color ? (level.color === '#4CAF50' ? '#000' : '#fff') : '#000',
+                    borderColor: level.color
                   }}
                 >
-                  {/* Dot indicator for each level */}
-                  <div 
-                    className={`w-4 h-4 rounded-full mx-auto mb-2 transition-all ${isSelected ? 'scale-125 ring-2 ring-primary ring-offset-1' : ''}`}
-                    style={{ backgroundColor: level.color || '#e2e8f0' }}
-                  ></div>
-                  
-                  {/* Always show abbreviated labels, selected one is bold */}
-                  <div className={`text-xs ${isSelected ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
-                    {level.name && level.name.length > 8 
-                      ? `${level.name.substring(0, 8)}...` 
-                      : level.name || 'Niveau'}
-                  </div>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="z-50">
-                <p>{level.name}</p>
-                {level.description && <p className="text-xs text-muted-foreground">{level.description}</p>}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      })}
+                  <p className="font-semibold">{level.name}</p>
+                  {level.description && <p className="text-xs opacity-90">{level.description}</p>}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        })}
+      </div>
     </div>
   );
 };

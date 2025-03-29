@@ -59,6 +59,21 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   // Get current level from slider value
   const currentLevel = sortedLevels[sliderValue] || null;
   
+  // Custom styles to match slider track with the dot colors
+  const getSliderTrackStyle = () => {
+    if (!sortedLevels.length) return {};
+    
+    // Create a gradient based on the colors of the levels
+    const colors = sortedLevels.map(level => level.color || '#e2e8f0');
+    const steps = colors.map((color, index) => 
+      `${color} ${index * (100 / (colors.length - 1))}%`
+    ).join(', ');
+    
+    return {
+      background: `linear-gradient(to right, ${steps})`
+    };
+  };
+  
   if (!sortedLevels || !sortedLevels.length) {
     return (
       <FormItem>
@@ -91,19 +106,25 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   
   return (
     <FormItem>
-      <FormLabel>{label}</FormLabel>
-      {description && <FormDescription>{description}</FormDescription>}
+      <FormLabel className="text-lg font-medium mb-1">{label}</FormLabel>
+      {description && <FormDescription className="mb-4">{description}</FormDescription>}
       
-      <div className="space-y-6 pt-1">
+      <div className="space-y-4 pt-1">
         <FormControl>
-          <div className="relative pt-2">
+          <div className="relative pt-4 px-3">
+            {/* Custom track styling */}
+            <div 
+              className="absolute h-2 w-[calc(100%-24px)] top-[22px] left-[12px] rounded-full overflow-hidden"
+              style={getSliderTrackStyle()}
+            />
+            
             {/* Slider component with larger clickable area */}
             <Slider
               value={[sliderValue]}
               max={sortedLevels.length - 1}
               step={1}
               onValueChange={handleSliderChange}
-              className="my-6 h-4"
+              className="my-4"
               data-testid={`${name}-slider`}
               aria-label={label}
             />
@@ -115,11 +136,12 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         
         {/* Description of selected level shown below the slider */}
         {currentLevel && (
-          <div className="mt-2">
+          <div className="mt-6">
             <RiskLevelIndicator level={currentLevel} />
           </div>
         )}
       </div>
+      
       <FormMessage />
     </FormItem>
   );

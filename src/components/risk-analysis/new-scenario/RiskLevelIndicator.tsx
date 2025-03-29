@@ -8,16 +8,19 @@ interface RiskLevelIndicatorProps {
 }
 
 const RiskLevelIndicator: React.FC<RiskLevelIndicatorProps> = ({ level }) => {
+  if (!level) return null;
+  
   return (
     <div 
-      className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-8"
+      className="px-6 py-4 rounded-xl text-sm transition-all shadow-lg mt-6 border"
       style={{ 
-        backgroundColor: level?.color || '#e2e8f0',
-        color: getContrastColor(level?.color || '#e2e8f0')
+        backgroundColor: `${level.color}20`,
+        borderColor: `${level.color}40`,
+        color: level.color || '#e2e8f0'
       }}
     >
-      <div className="font-semibold mb-1">{level?.name || 'Niveau non défini'}</div>
-      <div className="text-sm">{level?.description || 'Description non disponible'}</div>
+      <div className="font-semibold text-base mb-2" style={{ color: level.color }}>{level.name || 'Niveau non défini'}</div>
+      <div className="text-sm opacity-90">{level.description || 'Description non disponible'}</div>
     </div>
   );
 };
