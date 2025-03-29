@@ -70,14 +70,14 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
       
       <div className="space-y-6 pt-1">
         <FormControl>
-          <div className="relative pt-6">
-            {/* Slider component */}
+          <div className="relative pt-2">
+            {/* Slider component with larger clickable area */}
             <Slider
               value={[sliderValue]}
               max={sortedLevels.length - 1}
               step={1}
               onValueChange={handleSliderChange}
-              className="my-2"
+              className="my-6 h-4"
               data-testid={`${name}-slider`}
               aria-label={label}
             />
@@ -88,7 +88,9 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         </FormControl>
         
         {/* Description of selected level shown below the slider */}
-        <RiskLevelIndicator level={currentLevel} />
+        <div className="mt-2">
+          <RiskLevelIndicator level={currentLevel} />
+        </div>
       </div>
       <FormMessage />
     </FormItem>

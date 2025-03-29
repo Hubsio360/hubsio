@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { RiskScaleLevel } from '@/types/risk-scales';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SliderLabelsProps {
   levels: RiskScaleLevel[];
@@ -9,7 +10,7 @@ interface SliderLabelsProps {
 
 const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) => {
   return (
-    <div className="mt-2 flex relative">
+    <div className="mt-4 flex relative h-12">
       {levels.map((level, index) => {
         const isSelected = selectedIndex === index;
         
@@ -18,27 +19,33 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
         const leftPosition = index * segmentWidth;
         
         return (
-          <div
-            key={level.id}
-            className="absolute text-center"
-            style={{ 
-              left: `${leftPosition}%`,
-              width: `${segmentWidth}%`
-            }}
-          >
-            {/* Dot indicator for each level */}
-            <div 
-              className={`w-3 h-3 rounded-full mx-auto mb-2 transition-all ${isSelected ? 'scale-125' : ''}`}
-              style={{ backgroundColor: level.color || '#e2e8f0' }}
-            ></div>
-            
-            {/* Show text label of selected level and abbreviated labels for others */}
-            {isSelected ? (
-              <div className="text-xs font-medium text-primary mt-1">{level.name}</div>
-            ) : (
-              <div className="text-xs text-muted-foreground invisible">.</div>
-            )}
-          </div>
+          <TooltipProvider key={level.id}>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <div
+                  className="absolute text-center cursor-pointer"
+                  style={{ 
+                    left: `${leftPosition}%`,
+                    width: `${segmentWidth}%`
+                  }}
+                >
+                  {/* Dot indicator for each level */}
+                  <div 
+                    className={`w-4 h-4 rounded-full mx-auto mb-2 transition-all ${isSelected ? 'scale-125 ring-2 ring-primary ring-offset-1' : ''}`}
+                    style={{ backgroundColor: level.color || '#e2e8f0' }}
+                  ></div>
+                  
+                  {/* Always show abbreviated labels, selected one is bold */}
+                  <div className={`text-xs ${isSelected ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
+                    {level.name.substring(0, 8)}{level.name.length > 8 ? '...' : ''}
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{level.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         );
       })}
     </div>
