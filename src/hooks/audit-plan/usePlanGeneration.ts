@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useData } from '@/contexts/DataContext';
 import { PlanGenerationOptions } from './types';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
 
 export const usePlanGeneration = (
   auditId: string,
@@ -28,7 +28,11 @@ export const usePlanGeneration = (
     
     if (!auditId) {
       console.error("ID d'audit manquant lors de la génération du plan");
-      toast.error("ID d'audit manquant");
+      uiToast({
+        title: "Erreur",
+        description: "ID d'audit manquant",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -48,25 +52,41 @@ export const usePlanGeneration = (
         console.log(`Utilisation de ${topicsToUse.length} thématiques par défaut:`, topicsToUse);
         
         if (topicsToUse.length === 0) {
-          toast.error("Impossible de trouver des thématiques. Veuillez contacter l'administrateur.");
+          uiToast({
+            title: "Erreur",
+            description: "Impossible de trouver des thématiques. Veuillez contacter l'administrateur.",
+            variant: "destructive",
+          });
           return;
         }
       } catch (error) {
         console.error("Impossible de charger les thématiques:", error);
-        toast.error("Impossible de charger les thématiques. Veuillez réessayer.");
+        uiToast({
+          title: "Erreur",
+          description: "Impossible de charger les thématiques. Veuillez réessayer.",
+          variant: "destructive",
+        });
         return;
       }
     }
 
     if (selectedDays.length === 0) {
       console.error("Aucun jour sélectionné pour le plan d'audit");
-      toast.error("Veuillez sélectionner au moins un jour pour les interviews");
+      uiToast({
+        title: "Erreur",
+        description: "Veuillez sélectionner au moins un jour pour les interviews",
+        variant: "destructive",
+      });
       return;
     }
 
     if (selectedDays.length < requiredDays) {
       console.error(`Nombre de jours insuffisant: ${selectedDays.length} < ${requiredDays}`);
-      toast.error(`Vous avez besoin d'au moins ${requiredDays} jours pour couvrir toutes les thématiques sélectionnées`);
+      uiToast({
+        title: "Erreur",
+        description: `Vous avez besoin d'au moins ${requiredDays} jours pour couvrir toutes les thématiques sélectionnées`,
+        variant: "destructive",
+      });
       return;
     }
 
@@ -114,7 +134,8 @@ export const usePlanGeneration = (
             throw new Error("Aucune interview générée");
           }
           
-          toast.success(`Plan d'audit généré avec ${interviews.length} interviews planifiées`);
+          // Suppression du toast de succès pour éviter l'empilement
+          console.log(`Plan d'audit généré avec ${interviews.length} interviews planifiées`);
 
           if (onPlanGenerated) {
             // Explicitement rediriger vers l'onglet steps (étapes) après génération
@@ -131,7 +152,11 @@ export const usePlanGeneration = (
       }
     } catch (error) {
       console.error("Error generating audit plan:", error);
-      toast.error("Impossible de générer le plan d'audit. Consultez les détails dans la console.");
+      uiToast({
+        title: "Erreur",
+        description: "Impossible de générer le plan d'audit. Consultez les détails dans la console.",
+        variant: "destructive",
+      });
       
       // Afficher un message détaillé dans l'UI en supplément
       uiToast({

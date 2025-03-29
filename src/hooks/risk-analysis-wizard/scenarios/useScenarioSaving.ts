@@ -124,6 +124,7 @@ export function useScenarioSaving(companyId: string) {
       
       if (hasErrors) {
         if (savedAssetsCount > 0 || savedScenariosCount > 0) {
+          // Toast de succès partiel seulement en cas d'erreur
           toast({
             title: "Succès partiel",
             description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés. Certaines entrées n'ont pas pu être sauvegardées.`,
@@ -137,10 +138,12 @@ export function useScenarioSaving(companyId: string) {
           });
         }
       } else {
-        toast({
-          title: "Succès",
-          description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés`,
-        });
+        // Suppression du toast de succès complet pour éviter l'empilement
+        // toast({
+        //   title: "Succès",
+        //   description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés`,
+        // });
+        console.log("Sauvegarde réussie:", `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés`);
       }
       
       setLoading(false);
@@ -193,6 +196,11 @@ export function useScenarioSaving(companyId: string) {
           });
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
+          toast({
+            title: "Erreur",
+            description: `Erreur lors de l'enregistrement du scénario: ${scenario.name}`,
+            variant: "destructive",
+          });
         }
       }
       

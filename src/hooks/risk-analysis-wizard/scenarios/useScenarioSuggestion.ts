@@ -3,8 +3,10 @@ import { useState } from 'react';
 import { BusinessProcess, SuggestedScenario } from '../types';
 import { useScenarioGeneration } from './useScenarioGeneration';
 import { CompanyInfo } from '../types';
+import { useToast } from '@/hooks/use-toast';
 
 export function useScenarioSuggestion() {
+  const { toast } = useToast();
   const {
     generatingScenarios,
     generationProgress,
@@ -42,6 +44,11 @@ export function useScenarioSuggestion() {
       return generatedScenarios;
     } catch (error) {
       console.error("Erreur lors de la génération des scénarios:", error);
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Erreur lors de la génération des scénarios",
+        variant: "destructive",
+      });
       return [];
     }
   };
