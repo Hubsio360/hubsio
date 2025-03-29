@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Service, ConsultingProject, RssiService } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './useAuth';
+import { useAuth } from './useAuth.tsx';
 
 export const useServices = () => {
   const [services, setServices] = useState<Service[]>([]);

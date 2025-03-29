@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
@@ -13,7 +14,7 @@ import { useAuditInterviews } from './data/hooks/useAuditInterviews';
 import { useThemes } from './data/hooks/useThemes';
 import { useStandardClauses } from './data/hooks/useStandardClauses';
 import { useUsers } from './data/hooks/useUsers';
-import { useAuth } from './data/hooks/useAuth';
+import { useAuth } from './data/hooks/useAuth.tsx'; // Fix the import by adding .tsx extension
 import { useRiskAnalysis } from './data/hooks/useRiskAnalysis';
 import { useServices } from './data/hooks/useServices';
 import { useRiskScales } from './data/hooks/useRiskScales';

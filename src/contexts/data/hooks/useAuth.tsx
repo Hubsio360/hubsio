@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { User, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
+// Export the hook as a named export
 export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -118,3 +119,6 @@ export const useAuth = () => {
     logout,
   };
 };
+
+// Add a default export that re-exports the named export
+export default useAuth;

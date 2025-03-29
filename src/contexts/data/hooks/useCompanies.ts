@@ -1,9 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Company } from '@/types';
 import { supabase, checkAuth } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './useAuth';
+import { useAuth } from './useAuth.tsx';
 
 export const useCompanies = () => {
   const [companies, setCompanies] = useState<Company[]>([]);

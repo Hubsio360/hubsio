@@ -3,7 +3,7 @@ import { User } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { useAuth as useAuthHook } from '@/contexts/data/hooks/useAuth';
+import { useAuth as useAuthHook } from '@/contexts/data/hooks/useAuth.tsx';
 
 interface AuthContextProps {
   user: User | null;
