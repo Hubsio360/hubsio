@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -94,7 +93,6 @@ const RiskScenarioDetail = () => {
             rawImpact: scenarioData.impact_level as RiskLevel,
             rawLikelihood: scenarioData.likelihood as RiskLevel,
             rawRiskLevel: scenarioData.risk_level as RiskLevel,
-            // Add residual fields if they exist in the database
             residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
             residual_impact: scenarioData.residual_impact as RiskLevel || 'low',
             residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',

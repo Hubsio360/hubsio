@@ -27,7 +27,7 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
   } = useRiskAssessment(form, companyId);
 
   // If no scales are available, show a loading message
-  if ((loading && loading.companyRiskScales) || (!impactScales.length && !likelihoodScale)) {
+  if (loading || (!impactScales.length && !likelihoodScale)) {
     return <RiskAssessmentLoading />;
   }
 

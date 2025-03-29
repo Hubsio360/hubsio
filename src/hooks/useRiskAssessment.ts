@@ -117,6 +117,6 @@ export const useRiskAssessment = (
     setActiveImpactScale,
     impactScaleRatings,
     handleImpactScaleChange,
-    loading: loading.companyRiskScales
+    loading
   };
 };

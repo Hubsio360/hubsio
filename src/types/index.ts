@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -212,6 +213,7 @@ export type Json =
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type RiskScope = 'technical' | 'organizational' | 'human' | 'physical' | 'environmental';
 export type RiskStatus = 'identified' | 'analyzed' | 'treated' | 'accepted' | 'monitored';
+export type RiskTreatmentStrategy = 'reduce' | 'maintain' | 'avoid' | 'share';
 
 export interface RiskAsset {
   id: string;
