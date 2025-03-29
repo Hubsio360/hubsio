@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,14 +74,19 @@ export function RiskScenariosStep({
     
     setSaving(true);
     try {
+      console.log("Début de la sauvegarde et fermeture");
       const success = await onSaveAndClose();
       if (success) {
         toast({
           title: "Succès",
           description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
         });
+      } else {
+        // Si onSaveAndClose retourne false, c'est qu'il y a eu une erreur déjà gérée
+        console.log("Sauvegarde échouée selon la valeur de retour");
       }
     } catch (error) {
+      console.error("Erreur lors de la sauvegarde:", error);
       toast({
         title: "Erreur",
         description: "Impossible d'enregistrer les scénarios",

@@ -5,9 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { BusinessProcess, SuggestedScenario, RiskScenarioCreate } from './types';
 import { useData } from '@/contexts/DataContext';
+import { createErrorHandler } from '@/contexts/data/utils/auditErrorUtils';
 
 export function useRiskScenarios(companyId: string) {
   const { toast } = useToast();
+  const handleError = createErrorHandler(toast);
   const { createRiskScenario, addRiskAsset } = useData();
   const [loading, setLoading] = useState(false);
   const [suggestedScenarios, setSuggestedScenarios] = useState<SuggestedScenario[]>([]);
@@ -221,47 +223,69 @@ export function useRiskScenarios(companyId: string) {
 
     setLoading(true);
     try {
-      // 1. Enregistrer chaque scénario sélectionné
-      for (const scenario of selectedScenarios) {
-        await createRiskScenario({
-          companyId,
-          name: scenario.name,
-          description: scenario.description,
-          status: 'identified',
-          scope: 'technical',
-          riskLevel: 'medium',
-          impactLevel: 'medium',
-          likelihood: 'medium',
-          // Valeurs par défaut pour les autres champs
-          rawImpact: 'medium',
-          rawLikelihood: 'medium',
-          rawRiskLevel: 'medium',
-          residualImpact: 'low',
-          residualLikelihood: 'low',
-          residualRiskLevel: 'low'
-        });
+      console.log('Début de sauvegarde des scénarios et des processus métier');
+      console.log('ID entreprise:', companyId);
+      console.log('Nombre de scénarios à sauvegarder:', selectedScenarios.length);
+
+      // 1. Enregistrer les processus métier comme actifs
+      console.log('Sauvegarde des processus métier:', businessProcesses.length);
+      for (const process of businessProcesses) {
+        try {
+          console.log('Enregistrement du processus:', process.name);
+          await addRiskAsset({
+            companyId,
+            name: process.name,
+            description: process.description || `Processus métier: ${process.name}`,
+            category: 'processus',
+            value: 'high',
+            owner: ''
+          });
+        } catch (processError) {
+          console.error(`Erreur lors de l'enregistrement du processus ${process.name}:`, processError);
+        }
       }
       
-      // 2. Enregistrer les processus métier comme actifs
-      for (const process of businessProcesses) {
-        await addRiskAsset({
-          companyId,
-          name: process.name,
-          description: process.description || `Processus métier: ${process.name}`,
-          category: 'processus',
-          value: 'high',
-          owner: ''
-        });
+      // 2. Enregistrer chaque scénario sélectionné
+      console.log('Sauvegarde des scénarios de risque');
+      for (const scenario of selectedScenarios) {
+        try {
+          console.log('Enregistrement du scénario:', scenario.name);
+          await createRiskScenario({
+            companyId,
+            name: scenario.name,
+            description: scenario.description,
+            status: 'identified',
+            scope: 'technical',
+            riskLevel: 'medium',
+            impactLevel: 'medium',
+            likelihood: 'medium',
+            // Valeurs par défaut pour les autres champs
+            rawImpact: 'medium',
+            rawLikelihood: 'medium',
+            rawRiskLevel: 'medium',
+            residualImpact: 'low',
+            residualLikelihood: 'low',
+            residualRiskLevel: 'low'
+          });
+        } catch (scenarioError) {
+          console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
+          // Ne pas lancer d'erreur ici, continuer avec les autres scénarios
+        }
       }
+      
+      toast({
+        title: "Succès",
+        description: `${selectedScenarios.length} scénario(s) et ${businessProcesses.length} processus métier enregistrés`,
+      });
       
       setLoading(false);
       return true;
     } catch (error) {
-      console.error("Erreur lors de l'enregistrement des données:", error);
+      console.error("Erreur détaillée lors de l'enregistrement des données:", error);
       setLoading(false);
       toast({
         title: "Erreur",
-        description: "Impossible d'enregistrer les données",
+        description: "Impossible d'enregistrer les données. Veuillez vérifier vos droits d'accès.",
         variant: "destructive",
       });
       return false;
@@ -285,23 +309,27 @@ export function useRiskScenarios(companyId: string) {
     try {
       // Enregistrer chaque scénario sélectionné
       for (const scenario of selectedScenarios) {
-        await createRiskScenario({
-          companyId,
-          name: scenario.name,
-          description: scenario.description,
-          status: 'identified',
-          scope: 'technical',
-          riskLevel: 'medium',
-          impactLevel: 'medium',
-          likelihood: 'medium',
-          // Valeurs par défaut pour les autres champs
-          rawImpact: 'medium',
-          rawLikelihood: 'medium',
-          rawRiskLevel: 'medium',
-          residualImpact: 'low',
-          residualLikelihood: 'low',
-          residualRiskLevel: 'low'
-        });
+        try {
+          await createRiskScenario({
+            companyId,
+            name: scenario.name,
+            description: scenario.description,
+            status: 'identified',
+            scope: 'technical',
+            riskLevel: 'medium',
+            impactLevel: 'medium',
+            likelihood: 'medium',
+            // Valeurs par défaut pour les autres champs
+            rawImpact: 'medium',
+            rawLikelihood: 'medium',
+            rawRiskLevel: 'medium',
+            residualImpact: 'low',
+            residualLikelihood: 'low',
+            residualRiskLevel: 'low'
+          });
+        } catch (scenarioError) {
+          console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
+        }
       }
       
       setLoading(false);
