@@ -26,7 +26,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
   handleImpactScaleChange
 }) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
         <FormField
           control={form.control}
@@ -46,14 +46,14 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
 
       {/* Impact Scales */}
       {impactScales.length > 0 && (
-        <div className="space-y-4">
-          <FormLabel>Impact</FormLabel>
-          <div className="flex flex-wrap gap-2 mb-4">
+        <div className="space-y-6 pt-2">
+          <FormLabel className="text-lg font-medium">Impact</FormLabel>
+          <div className="flex flex-wrap gap-2 mb-6">
             {impactScales.map(scale => (
               <Badge 
                 key={scale.id}
                 variant={activeImpactScale === scale.id ? "default" : "outline"}
-                className="cursor-pointer"
+                className="cursor-pointer py-1.5 px-3 text-sm"
                 onClick={() => setActiveImpactScale(scale.id)}
               >
                 {scale.scaleType?.name}
@@ -71,20 +71,13 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
                   
                   return (
                     <div key={scale.id}>
-                      <FormField
-                        control={form.control}
-                        // Using `impactScaleRatings` path with the scale ID for proper form registration
-                        name={`impactScaleRatings.${scale.id}` as any}
-                        render={() => (
-                          <RiskScaleSlider
-                            name={`impactScale_${scale.id}`}
-                            label={`Impact - ${scale.scaleType?.name}`}
-                            description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
-                            levels={scale.levels}
-                            value={scaleValue as RiskLevel}
-                            onChange={(value) => handleImpactScaleChange(scale.id, value)}
-                          />
-                        )}
+                      <RiskScaleSlider
+                        name={`impactScale_${scale.id}`}
+                        label={`Impact - ${scale.scaleType?.name}`}
+                        description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
+                        levels={scale.levels}
+                        value={scaleValue as RiskLevel}
+                        onChange={(value) => handleImpactScaleChange(scale.id, value)}
                       />
                     </div>
                   );
@@ -97,7 +90,7 @@ const RawRiskAssessment: React.FC<RawRiskAssessmentProps> = ({
       )}
       
       <FormItem className="pt-2">
-        <FormLabel>Niveau de risque brut</FormLabel>
+        <FormLabel className="text-lg font-medium">Niveau de risque brut</FormLabel>
         <div className="flex items-center mt-2">
           <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
             {form.watch('rawRiskLevel').toUpperCase()}

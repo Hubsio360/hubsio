@@ -15,8 +15,8 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
   }
 
   return (
-    <div className="relative pt-6 w-full">
-      <div className="flex justify-between relative pb-2 px-[12px]">
+    <div className="relative w-full">
+      <div className="flex justify-between relative pb-2 px-3 mt-6">
         {levels.map((level, index) => {
           const isSelected = selectedIndex === index;
           
@@ -24,7 +24,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
             <TooltipProvider key={level.id || index}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <div className="relative flex flex-col items-center">
+                  <div className="relative flex flex-col items-center" style={{ width: '40px' }}>
                     {/* Dot indicator for each level */}
                     <div 
                       className={`w-5 h-5 rounded-full transition-all ${
@@ -37,9 +37,9 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
                     />
                     
                     {/* Label below the dot */}
-                    <div className={`mt-2 text-xs truncate max-w-[80px] text-center ${
+                    <div className={`mt-2 text-xs text-center ${
                       isSelected ? 'font-medium text-white' : 'text-muted-foreground'
-                    }`}>
+                    }`} style={{ maxWidth: '60px' }}>
                       {level.name}
                     </div>
                   </div>
@@ -49,7 +49,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
                   className="z-50"
                   style={{ 
                     backgroundColor: `${level.color}E0`,
-                    color: level.color ? (level.color === '#4CAF50' ? '#000' : '#fff') : '#000',
+                    color: '#fff',
                     borderColor: level.color
                   }}
                 >

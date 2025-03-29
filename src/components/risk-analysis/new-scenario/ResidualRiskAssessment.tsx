@@ -29,7 +29,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         name="securityMeasures"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Mesures de sécurité</FormLabel>
+            <FormLabel className="text-lg font-medium">Mesures de sécurité</FormLabel>
             <FormDescription>
               Décrivez les mesures de sécurité mises en place pour réduire ce risque
             </FormDescription>
@@ -49,7 +49,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         name="measureEffectiveness"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Efficacité des mesures</FormLabel>
+            <FormLabel className="text-lg font-medium">Efficacité des mesures</FormLabel>
             <FormDescription>
               Évaluez l'efficacité des mesures de sécurité mises en place
             </FormDescription>
@@ -64,9 +64,9 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         )}
       />
       
-      <Separator className="my-4" />
+      <Separator className="my-6" />
       
-      <div className="space-y-4">
+      <div className="space-y-8">
         {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
           <FormField
             control={form.control}
@@ -86,14 +86,14 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
 
         {/* Residual Impact Scales */}
         {impactScales.length > 0 && (
-          <div className="space-y-4">
-            <FormLabel>Impact résiduel</FormLabel>
-            <div className="flex flex-wrap gap-2 mb-4">
+          <div className="space-y-6">
+            <FormLabel className="text-lg font-medium">Impact résiduel</FormLabel>
+            <div className="flex flex-wrap gap-2 mb-6">
               {impactScales.map(scale => (
                 <Badge 
                   key={scale.id}
                   variant={activeImpactScale === scale.id ? "default" : "outline"}
-                  className="cursor-pointer"
+                  className="cursor-pointer py-1.5 px-3 text-sm"
                   onClick={() => setActiveImpactScale(scale.id)}
                 >
                   {scale.scaleType?.name}
@@ -133,7 +133,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         )}
         
         <FormItem className="pt-2">
-          <FormLabel>Niveau de risque résiduel</FormLabel>
+          <FormLabel className="text-lg font-medium">Niveau de risque résiduel</FormLabel>
           <div className="flex items-center mt-2">
             <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
               {form.watch('residualRiskLevel').toUpperCase()}

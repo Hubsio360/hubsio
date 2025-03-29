@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Slider } from "@/components/ui/slider";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RiskScaleLevel } from '@/types/risk-scales';
@@ -34,33 +34,39 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     ? [...levels].sort((a, b) => (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0))
     : [];
   
-  // Map risk level to slider position
-  useEffect(() => {
-    if (sortedLevels.length > 0) {
+  // Map risk level to slider position - memoized to avoid recalculations
+  const initializeSliderPosition = useCallback(() => {
+    if (sortedLevels.length > 0 && value) {
       const index = mapRiskLevelToIndex(value, sortedLevels);
       setSliderValue(index);
       setIsInitialized(true);
     }
   }, [value, sortedLevels]);
   
+  // Initialize slider position when values change
+  useEffect(() => {
+    initializeSliderPosition();
+  }, [initializeSliderPosition]);
+  
   // Handle slider value change
-  const handleSliderChange = (newValue: number[]) => {
+  const handleSliderChange = useCallback((newValue: number[]) => {
     if (!sortedLevels.length) return;
     
     const position = Math.round(newValue[0]); // Ensure the position is an integer
     
+    // Only update if position has actually changed
     if (position !== sliderValue && sortedLevels[position]) {
       setSliderValue(position);
       const riskLevel = mapPositionToRiskLevel(position, sortedLevels);
       onChange(riskLevel);
     }
-  };
+  }, [sliderValue, sortedLevels, onChange]);
   
   // Get current level from slider value
   const currentLevel = sortedLevels[sliderValue] || null;
   
   // Custom styles to match slider track with the dot colors
-  const getSliderTrackStyle = () => {
+  const getSliderTrackStyle = useCallback(() => {
     if (!sortedLevels.length) return {};
     
     // Create a gradient based on the colors of the levels
@@ -72,7 +78,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     return {
       background: `linear-gradient(to right, ${steps})`
     };
-  };
+  }, [sortedLevels]);
   
   if (!sortedLevels || !sortedLevels.length) {
     return (
