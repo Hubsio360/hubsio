@@ -4,6 +4,7 @@ import { Slider } from "@/components/ui/slider";
 import { FormControl, FormDescription, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RiskScaleLevel } from '@/types/risk-scales';
 import { RiskLevel } from '@/types';
+import { Skeleton } from '@/components/ui/skeleton';
 import RiskLevelIndicator from './RiskLevelIndicator';
 import SliderLabels from './SliderLabels';
 import { mapPositionToRiskLevel, mapRiskLevelToIndex } from './riskLevelMapper';
@@ -26,20 +27,26 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   description
 }) => {
   const [sliderValue, setSliderValue] = useState<number>(0);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Sort levels by level_value
-  const sortedLevels = [...levels].sort((a, b) => 
-    (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0)
-  );
+  const sortedLevels = Array.isArray(levels) 
+    ? [...levels].sort((a, b) => (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0))
+    : [];
   
   // Map risk level to slider position
   useEffect(() => {
-    const index = mapRiskLevelToIndex(value, sortedLevels);
-    setSliderValue(index);
+    if (sortedLevels.length > 0) {
+      const index = mapRiskLevelToIndex(value, sortedLevels);
+      setSliderValue(index);
+      setIsInitialized(true);
+    }
   }, [value, sortedLevels]);
   
   // Handle slider value change
   const handleSliderChange = (newValue: number[]) => {
+    if (!sortedLevels.length) return;
+    
     const position = Math.round(newValue[0]); // Ensure the position is an integer
     
     if (position !== sliderValue && sortedLevels[position]) {
@@ -50,7 +57,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   };
   
   // Get current level from slider value
-  const currentLevel = sortedLevels[sliderValue];
+  const currentLevel = sortedLevels[sliderValue] || null;
   
   if (!sortedLevels || !sortedLevels.length) {
     return (
@@ -59,6 +66,25 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         <FormDescription>
           Échelle de risque non configurée. Veuillez configurer les échelles de risque.
         </FormDescription>
+        
+        <div className="space-y-6 pt-1">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      </FormItem>
+    );
+  }
+  
+  if (!isInitialized) {
+    return (
+      <FormItem>
+        <FormLabel>{label}</FormLabel>
+        {description && <FormDescription>{description}</FormDescription>}
+        
+        <div className="space-y-6 pt-1">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
       </FormItem>
     );
   }
@@ -88,9 +114,11 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
         </FormControl>
         
         {/* Description of selected level shown below the slider */}
-        <div className="mt-2">
-          <RiskLevelIndicator level={currentLevel} />
-        </div>
+        {currentLevel && (
+          <div className="mt-2">
+            <RiskLevelIndicator level={currentLevel} />
+          </div>
+        )}
       </div>
       <FormMessage />
     </FormItem>

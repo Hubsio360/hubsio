@@ -24,6 +24,7 @@ import { RiskScaleType } from '@/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -42,6 +43,20 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   onOpenChange,
   companyId,
 }) => {
+  // Définir les fonctions helper AVANT leur utilisation
+  const getScaleType = (scaleTypeId: string, scaleTypes: RiskScaleType[]): RiskScaleType => {
+    return scaleTypes.find(type => type.id === scaleTypeId) || {
+      id: '',
+      name: 'Type inconnu',
+      description: '',
+      category: 'impact'
+    };
+  };
+
+  const getScaleTypeId = (scale: any): string => {
+    return scale.scaleTypeId || scale.scale_type_id || '';
+  };
+
   const [activeTab, setActiveTab] = useState('likelihood');
   const [newScaleDialogOpen, setNewScaleDialogOpen] = useState(false);
   const [newScaleType, setNewScaleType] = useState<RiskScaleType | null>(null);
@@ -51,6 +66,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -68,56 +84,56 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
 
-  // Définir les fonctions helper AVANT leur utilisation
-  const getScaleType = (scaleTypeId: string): RiskScaleType => {
-    return riskScaleTypes.find(type => type.id === scaleTypeId) || {
-      id: '',
-      name: 'Type inconnu',
-      description: '',
-      category: 'impact'
-    };
-  };
-
-  const getScaleTypeId = (scale: any): string => {
-    return scale.scaleTypeId || scale.scale_type_id || '';
-  };
-
   // Séparation explicite des échelles de probabilité et d'impact
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
-      const scaleType = getScaleType(getScaleTypeId(scale));
+      const scaleType = getScaleType(getScaleTypeId(scale), riskScaleTypes);
       return scaleType.category === 'likelihood';
     }
   );
   
   const impactScales = companyRiskScales.filter(
     (scale) => {
-      const scaleType = getScaleType(getScaleTypeId(scale));
+      const scaleType = getScaleType(getScaleTypeId(scale), riskScaleTypes);
       return scaleType.category === 'impact';
     }
   );
 
-  // Initialiser les échelles par défaut si nécessaire
+  // Initialiser les échelles par défaut si nécessaire, mais avec un debounce
   useEffect(() => {
-    if (open && !isLoading && !isRefreshing) {
+    let mounted = true;
+    
+    if (open && !isLoading && !isRefreshing && !initialLoadComplete) {
       setIsInitializing(true);
+      
       ensureDefaultScalesExist()
         .then(() => {
-          refreshData();
+          if (mounted) {
+            return refreshData();
+          }
         })
         .catch(err => {
-          console.error("Erreur lors de l'initialisation des échelles:", err);
-          toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible d'initialiser les échelles de risque",
-          });
+          if (mounted) {
+            console.error("Erreur lors de l'initialisation des échelles:", err);
+            toast({
+              variant: "destructive",
+              title: "Erreur",
+              description: "Impossible d'initialiser les échelles de risque",
+            });
+          }
         })
         .finally(() => {
-          setIsInitializing(false);
+          if (mounted) {
+            setIsInitializing(false);
+            setInitialLoadComplete(true);
+          }
         });
     }
-  }, [open, isLoading, isRefreshing, companyId, ensureDefaultScalesExist, refreshData, toast]);
+    
+    return () => {
+      mounted = false;
+    };
+  }, [open, isLoading, isRefreshing, companyId, ensureDefaultScalesExist, refreshData, toast, initialLoadComplete]);
 
   const form = useForm<ScaleFormValues>({
     defaultValues: {
@@ -214,10 +230,9 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return scale?.levels || [];
   };
 
-  const stopPropagation = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
+  // Prevent flickering - only show dialog content when fully loaded
+  const isContentReady = !isLoading && !isInitializing && initialLoadComplete;
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
@@ -235,11 +250,17 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
           </Alert>
         )}
 
-        {isLoading || isInitializing ? (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Chargement des échelles de risque...</p>
+        {(!isContentReady) ? (
+          <div className="flex-1 flex flex-col space-y-4 p-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-8 w-10" />
+            </div>
+            <Skeleton className="h-10 w-60" />
+            <div className="flex-1 space-y-6">
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
+              <Skeleton className="h-40 w-full" />
             </div>
           </div>
         ) : (
@@ -293,7 +314,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                       <div key={scale.id} className="relative">
                         <RiskScaleCard
                           companyScale={scale}
-                          scaleType={getScaleType(getScaleTypeId(scale))}
+                          scaleType={getScaleType(getScaleTypeId(scale), riskScaleTypes)}
                           levels={getLevelsForScale(scale.id)}
                           isLoading={isLoading}
                           onToggleActive={toggleActive}
@@ -324,7 +345,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                       <div key={scale.id} className="relative">
                         <RiskScaleCard
                           companyScale={scale}
-                          scaleType={getScaleType(getScaleTypeId(scale))}
+                          scaleType={getScaleType(getScaleTypeId(scale), riskScaleTypes)}
                           levels={getLevelsForScale(scale.id)}
                           isLoading={isLoading}
                           onToggleActive={toggleActive}

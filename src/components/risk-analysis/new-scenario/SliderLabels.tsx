@@ -9,8 +9,13 @@ interface SliderLabelsProps {
 }
 
 const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) => {
+  // Don't render anything if no levels are provided
+  if (!levels || levels.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="mt-4 flex relative h-12">
+    <div className="mt-6 flex relative h-14">
       {levels.map((level, index) => {
         const isSelected = selectedIndex === index;
         
@@ -19,7 +24,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
         const leftPosition = index * segmentWidth;
         
         return (
-          <TooltipProvider key={level.id}>
+          <TooltipProvider key={level.id || index}>
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <div
@@ -37,12 +42,15 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex }) =>
                   
                   {/* Always show abbreviated labels, selected one is bold */}
                   <div className={`text-xs ${isSelected ? 'font-medium text-primary' : 'text-muted-foreground'}`}>
-                    {level.name.substring(0, 8)}{level.name.length > 8 ? '...' : ''}
+                    {level.name && level.name.length > 8 
+                      ? `${level.name.substring(0, 8)}...` 
+                      : level.name || 'Niveau'}
                   </div>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="bottom">
+              <TooltipContent side="bottom" className="z-50">
                 <p>{level.name}</p>
+                {level.description && <p className="text-xs text-muted-foreground">{level.description}</p>}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

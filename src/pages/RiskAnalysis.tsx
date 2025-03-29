@@ -39,21 +39,37 @@ const RiskAnalysis = () => {
   const [openScalesDialog, setOpenScalesDialog] = useState(false);
   const [openAnalysisWizard, setOpenAnalysisWizard] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [dataFetchedOnce, setDataFetchedOnce] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (id && !dataFetchedOnce) {
       setIsLoading(true);
-      Promise.all([
-        fetchRiskAssetsByCompanyId(id),
-        fetchRiskThreatsByCompanyId(id),
-        fetchRiskVulnerabilitiesByCompanyId(id),
-        fetchRiskScenariosByCompanyId(id),
-        fetchCompanyRiskScales(id)
-      ]).finally(() => {
-        setIsLoading(false);
-      });
+      
+      const fetchData = async () => {
+        try {
+          await Promise.all([
+            fetchRiskAssetsByCompanyId(id),
+            fetchRiskThreatsByCompanyId(id),
+            fetchRiskVulnerabilitiesByCompanyId(id),
+            fetchRiskScenariosByCompanyId(id),
+            fetchCompanyRiskScales(id)
+          ]);
+          setDataFetchedOnce(true);
+        } catch (error) {
+          console.error("Error fetching initial data:", error);
+          toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Une erreur est survenue lors du chargement des données",
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      fetchData();
     }
-  }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId, fetchCompanyRiskScales]);
+  }, [id, fetchRiskAssetsByCompanyId, fetchRiskThreatsByCompanyId, fetchRiskVulnerabilitiesByCompanyId, fetchRiskScenariosByCompanyId, fetchCompanyRiskScales, dataFetchedOnce, toast]);
 
   const refreshData = () => {
     if (id) {
@@ -123,7 +139,11 @@ const RiskAnalysis = () => {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setOpenScalesDialog(true)}>
+          <Button 
+            variant="outline" 
+            onClick={() => setOpenScalesDialog(true)}
+            disabled={isLoading || loading.companyRiskScales}
+          >
             <Settings className="mr-2 h-4 w-4" />
             Échelles de risque
           </Button>
@@ -210,19 +230,21 @@ const RiskAnalysis = () => {
         </TabsContent>
       </Tabs>
 
-      <OrganizationContextDialog 
-        open={openContextDialog}
-        onOpenChange={setOpenContextDialog}
-        companyId={id}
-        companyName={company.name}
-        onEnrichSuccess={() => {
-          toast({
-            title: "Succès",
-            description: "Le contexte de l'organisation a été enrichi avec succès",
-            variant: "default",
-          });
-        }}
-      />
+      {openContextDialog && (
+        <OrganizationContextDialog 
+          open={openContextDialog}
+          onOpenChange={setOpenContextDialog}
+          companyId={id}
+          companyName={company.name}
+          onEnrichSuccess={() => {
+            toast({
+              title: "Succès",
+              description: "Le contexte de l'organisation a été enrichi avec succès",
+              variant: "default",
+            });
+          }}
+        />
+      )}
 
       {openScalesDialog && (
         <RiskScalesDialog
@@ -232,15 +254,17 @@ const RiskAnalysis = () => {
         />
       )}
 
-      <AnalysisWizard 
-        open={openAnalysisWizard}
-        onOpenChange={setOpenAnalysisWizard}
-        companyId={id}
-        companyName={company.name}
-        onComplete={() => {
-          refreshData();
-        }}
-      />
+      {openAnalysisWizard && (
+        <AnalysisWizard 
+          open={openAnalysisWizard}
+          onOpenChange={setOpenAnalysisWizard}
+          companyId={id}
+          companyName={company.name}
+          onComplete={() => {
+            refreshData();
+          }}
+        />
+      )}
     </div>
   );
 };
