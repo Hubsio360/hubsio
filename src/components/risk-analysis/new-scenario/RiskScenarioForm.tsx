@@ -80,6 +80,17 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
     });
 
     useEffect(() => {
+      /**
+       * Calcule le niveau de risque en fonction de l'impact et de la probabilité
+       * Méthode de calcul :
+       * 1. Convertit les niveaux d'impact et de probabilité en valeurs numériques
+       * 2. Multiplie ces valeurs pour obtenir un score
+       * 3. Détermine le niveau de risque selon les seuils suivants :
+       *    - Faible : score <= 2
+       *    - Moyen : 2 < score <= 6
+       *    - Élevé : 6 < score <= 9
+       *    - Critique : score > 9
+       */
       const calculateRiskLevel = (impact: RiskLevel, likelihood: RiskLevel): RiskLevel => {
         const impactValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
         const likelihoodValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
