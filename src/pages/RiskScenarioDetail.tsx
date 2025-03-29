@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -31,12 +30,14 @@ import {
   ChevronLeft,
   ArrowLeft,
   FileText,
-  Loader2
+  Loader2,
+  Wand2
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
 import { RiskScenario } from '@/types';
 import { EditRiskScenarioDialog } from '@/components/risk-analysis/EditRiskScenarioDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const RiskScenarioDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -44,44 +45,34 @@ const RiskScenarioDetail = () => {
   const [currentScenario, setCurrentScenario] = useState<RiskScenario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [generatingImpact, setGeneratingImpact] = useState(false);
   const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
   const { toast } = useToast();
 
-  // Fetch the risk scenario data
   useEffect(() => {
     const fetchScenarioData = async () => {
       if (!id) return;
       
       try {
         setIsLoading(true);
-        // Since fetchRiskScenarioById isn't available, we'll need to get all scenarios for the company
-        // and filter for the one we need
-        
-        // First check if we already have the scenario
         if (currentScenario) {
-          // We already have the scenario data, no need to fetch it again
           setIsLoading(false);
           return;
         }
         
         if (id) {
-          // Get all scenarios and find the one with matching ID
           const { riskScenarios, fetchRiskScenariosByCompanyId } = useData();
           
-          // Try to find the scenario in current state first
           let scenario = riskScenarios.find(s => s.id === id);
           
           if (!scenario && currentScenario?.companyId) {
-            // If we don't have it, fetch scenarios for this company
             await fetchRiskScenariosByCompanyId(currentScenario.companyId);
-            // Try again after fetching
             scenario = riskScenarios.find(s => s.id === id);
           }
           
           if (scenario) {
             setCurrentScenario(scenario);
           } else {
-            // As a last resort, try to navigate back to the scenarios list
             console.error("Could not find scenario with ID:", id);
             toast({
               title: "Erreur",
@@ -113,7 +104,6 @@ const RiskScenarioDetail = () => {
     if (!currentScenario || !id) return false;
     
     try {
-      // Convert "none" values to null or empty string based on your backend requirements
       const processedData = {
         ...data,
         threatId: data.threatId === "none" ? null : data.threatId,
@@ -154,6 +144,54 @@ const RiskScenarioDetail = () => {
         description: "Impossible de supprimer le scénario",
         variant: "destructive",
       });
+    }
+  };
+
+  const generateImpactDescription = async () => {
+    if (!currentScenario || !currentScenario.description) {
+      toast({
+        title: "Erreur",
+        description: "La description du scénario est requise pour générer un impact",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingImpact(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-impact-description', {
+        body: { scenarioDescription: currentScenario.description },
+      });
+
+      if (error) throw error;
+
+      if (data.impactDescription) {
+        const success = await updateRiskScenario(currentScenario.id, {
+          impactDescription: data.impactDescription
+        });
+
+        if (success) {
+          setCurrentScenario({
+            ...currentScenario,
+            impactDescription: data.impactDescription
+          });
+
+          toast({
+            title: "Succès",
+            description: "Description de l'impact générée avec succès",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de la génération de la description de l'impact:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer la description de l'impact",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImpact(false);
     }
   };
 
@@ -284,7 +322,27 @@ const RiskScenarioDetail = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-medium mb-2">Description de l'impact</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-medium">Description de l'impact</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={generateImpactDescription}
+                disabled={generatingImpact || !currentScenario.description}
+              >
+                {generatingImpact ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Génération...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Générer avec IA
+                  </>
+                )}
+              </Button>
+            </div>
             <p className="text-gray-700 dark:text-gray-300">
               {currentScenario.impactDescription || "Aucune description d'impact fournie."}
             </p>
@@ -323,7 +381,6 @@ const RiskScenarioDetail = () => {
             </div>
           </div>
           
-          {/* Risk Assessment Tabs */}
           <Tabs defaultValue="raw" className="mt-6">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="raw">Évaluation brute</TabsTrigger>
@@ -415,7 +472,6 @@ const RiskScenarioDetail = () => {
         </CardContent>
       </Card>
       
-      {/* Edit Dialog */}
       <EditRiskScenarioDialog
         open={isEditing}
         onOpenChange={setIsEditing}

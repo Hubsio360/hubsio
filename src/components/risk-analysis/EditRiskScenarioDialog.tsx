@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -29,7 +28,6 @@ export function EditRiskScenarioDialog({
   const { toast } = useToast();
   const { companyRiskScales } = useData();
   
-  // Form reference to access the form's methods
   const formRef = React.useRef<any>(null);
 
   const handleSubmit = async (values: any) => {
@@ -38,7 +36,6 @@ export function EditRiskScenarioDialog({
     setSaving(true);
     
     try {
-      // Process any "none" values to null or empty string depending on backend requirements
       const updatedScenario: Partial<RiskScenario> = {
         name: values.name,
         description: values.description,
@@ -48,7 +45,6 @@ export function EditRiskScenarioDialog({
         riskLevel: values.riskLevel,
         scope: values.scope,
         status: values.status,
-        // Add assessment data
         rawImpact: values.rawImpact,
         rawLikelihood: values.rawLikelihood,
         rawRiskLevel: values.rawRiskLevel,
@@ -57,7 +53,7 @@ export function EditRiskScenarioDialog({
         residualRiskLevel: values.residualRiskLevel,
         securityMeasures: values.securityMeasures,
         measureEffectiveness: values.measureEffectiveness,
-        // Handle any "none" values for IDs
+        impactScaleRatings: values.impactScaleRatings,
         threatId: values.threatId === "none" ? null : values.threatId,
         vulnerabilityId: values.vulnerabilityId === "none" ? null : values.vulnerabilityId
       };
@@ -117,7 +113,8 @@ export function EditRiskScenarioDialog({
               securityMeasures: scenario.securityMeasures || '',
               measureEffectiveness: scenario.measureEffectiveness || '',
               threatId: scenario.threatId || 'none',
-              vulnerabilityId: scenario.vulnerabilityId || 'none'
+              vulnerabilityId: scenario.vulnerabilityId || 'none',
+              impactScaleRatings: scenario.impactScaleRatings || {},
             }}
             saveButtonText="Enregistrer les modifications"
             isSaving={saving}

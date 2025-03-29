@@ -31,6 +31,7 @@ export interface RiskScenarioFormValues {
   measureEffectiveness: string;
   threatId?: string;
   vulnerabilityId?: string;
+  impactScaleRatings?: Record<string, RiskLevel>;
 }
 
 interface RiskScenarioFormProps {

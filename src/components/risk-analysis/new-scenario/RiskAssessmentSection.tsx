@@ -24,6 +24,9 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
   const [activeImpactScale, setActiveImpactScale] = useState<string | null>(null);
 
+  // Get the current values of all impact scale ratings
+  const impactScaleRatings = form.watch('impactScaleRatings') || {};
+
   useEffect(() => {
     const loadScales = async () => {
       // Ensure default scales exist for this company
@@ -64,6 +67,32 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
     }
   }, [companyRiskScales, activeImpactScale]);
 
+  // Calculate main impact level based on the maximum value from all scale ratings
+  useEffect(() => {
+    if (Object.keys(impactScaleRatings).length > 0) {
+      const impactValues = { 'low': 1, 'medium': 2, 'high': 3, 'critical': 4 };
+      let maxImpactValue = 1; // Default to low
+      
+      // Find the maximum impact level from all scales
+      Object.values(impactScaleRatings).forEach(level => {
+        const impactValue = impactValues[level] || 1;
+        if (impactValue > maxImpactValue) {
+          maxImpactValue = impactValue;
+        }
+      });
+      
+      // Convert back to string value
+      let maxImpactLevel = 'low';
+      if (maxImpactValue === 2) maxImpactLevel = 'medium';
+      if (maxImpactValue === 3) maxImpactLevel = 'high';
+      if (maxImpactValue === 4) maxImpactLevel = 'critical';
+      
+      // Set the main impact value (which will be stored in the database)
+      form.setValue('rawImpact', maxImpactLevel);
+      form.setValue('impactLevel', maxImpactLevel);
+    }
+  }, [impactScaleRatings, form]);
+
   // If no scales are available, show a message
   if ((loading && loading.companyRiskScales) || (!impactScales.length && !likelihoodScale)) {
     return (
@@ -80,6 +109,12 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
       </Card>
     );
   }
+
+  // Handle change for a specific impact scale
+  const handleImpactScaleChange = (scaleId: string, value: string) => {
+    const newRatings = { ...impactScaleRatings, [scaleId]: value };
+    form.setValue('impactScaleRatings', newRatings);
+  };
 
   return (
     <div className="space-y-6">
@@ -119,7 +154,7 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                   />
                 )}
 
-                {/* Impact Scales Tabs */}
+                {/* Impact Scales */}
                 {impactScales.length > 0 && (
                   <div className="space-y-4">
                     <FormLabel>Impact</FormLabel>
@@ -136,24 +171,27 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                       ))}
                     </div>
                     
-                    {/* Active impact scale */}
+                    {/* Active impact scale - each scale now gets its own slider with its own stored value */}
                     {activeImpactScale && (
                       <div className="pt-2">
                         {impactScales.map(scale => {
                           if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                            // Get the current value for this specific scale
+                            const scaleValue = impactScaleRatings[scale.id] || form.watch('rawImpact') || 'low';
+                            
                             return (
                               <div key={scale.id}>
                                 <FormField
                                   control={form.control}
-                                  name="rawImpact"
-                                  render={({ field }) => (
+                                  name={`impactScale_${scale.id}`} // This is just for form registration
+                                  render={() => (
                                     <RiskScaleSlider
-                                      name="rawImpact"
+                                      name={`impactScale_${scale.id}`}
                                       label={`Impact - ${scale.scaleType?.name}`}
                                       description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
                                       levels={scale.levels}
-                                      value={field.value}
-                                      onChange={field.onChange}
+                                      value={scaleValue}
+                                      onChange={(value) => handleImpactScaleChange(scale.id, value)}
                                     />
                                   )}
                                 />
