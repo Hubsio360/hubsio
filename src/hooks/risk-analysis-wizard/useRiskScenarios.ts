@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
@@ -16,6 +16,24 @@ export function useRiskScenarios(companyId: string) {
   const [generatingScenarios, setGeneratingScenarios] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
   const [businessProcesses, setBusinessProcesses] = useState<BusinessProcess[]>([]);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+
+  // Vérifier la session au montage du composant
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session) {
+        setSessionError("Session d'authentification invalide. Veuillez vous reconnecter.");
+        toast({
+          title: "Erreur d'authentification",
+          description: "Veuillez vous reconnecter pour continuer",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    checkSession();
+  }, [toast]);
 
   // Store business processes for later use
   const storeBusinessProcesses = (processes: BusinessProcess[]) => {
@@ -221,6 +239,18 @@ export function useRiskScenarios(companyId: string) {
       return false;
     }
 
+    // Vérification de session avant toute opération
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session) {
+      console.error("Erreur d'authentification:", sessionError || "Aucune session active");
+      toast({
+        title: "Erreur d'authentification",
+        description: "Veuillez vous reconnecter pour enregistrer les données",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setLoading(true);
     let hasErrors = false;
     let savedAssetsCount = 0;
@@ -238,32 +268,31 @@ export function useRiskScenarios(companyId: string) {
         throw new Error("ID d'entreprise invalide");
       }
 
-      // Vérifier la session Supabase
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Erreur d'authentification:", sessionError);
-        throw new Error("Erreur d'authentification. Veuillez vous reconnecter.");
-      }
-      
       console.log('Session Supabase valide:', !!sessionData.session);
+      console.log('User ID:', sessionData.session?.user?.id);
 
       // 1. Enregistrer les processus métier comme actifs
       console.log('Sauvegarde des processus métier:', businessProcesses.length);
       for (const process of businessProcesses) {
         try {
           console.log('Tentative d\'enregistrement du processus:', process.name);
-          await addRiskAsset({
+          // Ajout d'informations supplémentaires pour le debugging
+          const processData = {
             companyId,
             name: process.name,
             description: process.description || `Processus métier: ${process.name}`,
             category: 'processus',
             value: 'high',
             owner: ''
-          });
+          };
+          console.log('Données du processus à enregistrer:', processData);
+          
+          await addRiskAsset(processData);
           savedAssetsCount++;
           console.log(`Processus enregistré avec succès: ${process.name}`);
         } catch (processError) {
           console.error(`Erreur lors de l'enregistrement du processus ${process.name}:`, processError);
+          console.error('Détails de l\'erreur:', JSON.stringify(processError));
           hasErrors = true;
           // Continuer avec les autres processus malgré l'erreur
         }
@@ -274,7 +303,8 @@ export function useRiskScenarios(companyId: string) {
       for (const scenario of selectedScenarios) {
         try {
           console.log('Tentative d\'enregistrement du scénario:', scenario.name);
-          await createRiskScenario({
+          // Ajout d'informations supplémentaires pour le debugging
+          const scenarioData = {
             companyId,
             name: scenario.name,
             description: scenario.description,
@@ -283,18 +313,21 @@ export function useRiskScenarios(companyId: string) {
             riskLevel: 'medium',
             impactLevel: 'medium',
             likelihood: 'medium',
-            // Valeurs par défaut pour les autres champs
             rawImpact: 'medium',
             rawLikelihood: 'medium',
             rawRiskLevel: 'medium',
             residualImpact: 'low',
             residualLikelihood: 'low',
             residualRiskLevel: 'low'
-          });
+          };
+          console.log('Données du scénario à enregistrer:', scenarioData);
+          
+          await createRiskScenario(scenarioData);
           savedScenariosCount++;
           console.log(`Scénario enregistré avec succès: ${scenario.name}`);
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
+          console.error('Détails de l\'erreur:', JSON.stringify(scenarioError));
           hasErrors = true;
           // Continuer avec les autres scénarios malgré l'erreur
         }
@@ -325,6 +358,7 @@ export function useRiskScenarios(companyId: string) {
       return savedScenariosCount > 0 || savedAssetsCount > 0;
     } catch (error) {
       console.error("Erreur détaillée lors de l'enregistrement des données:", error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace available');
       setLoading(false);
       toast({
         title: "Erreur",
@@ -394,6 +428,7 @@ export function useRiskScenarios(companyId: string) {
     suggestedScenarios,
     generatingScenarios,
     generationProgress,
+    sessionError,
     generateRiskScenarios,
     generateAdditionalScenarios,
     handleTemplateSelect,
