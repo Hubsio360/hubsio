@@ -57,12 +57,6 @@ export function AnalysisWizard({
     }
   };
 
-  // Create a wrapper function that ignores the return value
-  const handleSaveAndClose = async () => {
-    await saveAndClose();
-    // No return value needed
-  };
-
   return (
     <>
       <Dialog open={open} onOpenChange={handleModalClose}>
@@ -116,7 +110,7 @@ export function AnalysisWizard({
               onComplete={goToNextStep}
               onPrevious={goToPreviousStep}
               onGenerateMoreScenarios={generateAdditionalScenarios}
-              onSaveAndClose={handleSaveAndClose} // Use the wrapper function here instead
+              onSaveAndClose={saveAndClose}
             />
           )}
         </DialogContent>

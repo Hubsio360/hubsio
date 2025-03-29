@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Plus, Save, Filter, Search, Database, Check } from 'lucide-react';
+import { Loader2, CheckCircle, Plus, Database, Search, Filter, Check } from 'lucide-react';
 import ScenarioTemplateSelect from '../ScenarioTemplateSelect';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { useToast } from '@/hooks/use-toast';
@@ -116,12 +116,35 @@ export function RiskScenariosStep({
   );
 
   return (
-    <div className="flex flex-col h-[600px]"> {/* Fixed height container */}
+    <div className="flex flex-col h-[600px]">
       <DialogHeader className="pb-4 border-b flex-shrink-0">
-        <DialogTitle className="text-xl font-bold">Étape 3 : Scénarios de risque</DialogTitle>
-        <DialogDescription className="text-base">
-          Sélectionnez les scénarios de risque pertinents pour votre analyse
-        </DialogDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <DialogTitle className="text-xl font-bold">Étape 3 : Scénarios de risque</DialogTitle>
+            <DialogDescription className="text-base">
+              Sélectionnez les scénarios de risque pertinents pour votre analyse
+            </DialogDescription>
+          </div>
+          
+          {/* Bouton Valider déplacé en haut à droite */}
+          <Button 
+            onClick={handleSaveAndClose}
+            disabled={loading || saving || selectedCount === 0}
+            className="ml-auto"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Database className="mr-2 h-4 w-4" />
+                Valider
+              </>
+            )}
+          </Button>
+        </div>
       </DialogHeader>
       
       <div className="flex flex-col gap-5 py-6 flex-grow overflow-hidden">
@@ -240,36 +263,18 @@ export function RiskScenariosStep({
         </div>
       </div>
 
-      <DialogFooter className="pt-4 border-t flex flex-col sm:flex-row sm:justify-between gap-3 flex-shrink-0">
-        <Button variant="outline" onClick={onPrevious} className="w-full sm:w-auto">
-          Retour
-        </Button>
-        <div className="flex gap-2 w-full sm:w-auto justify-end">
+      <DialogFooter className="pt-4 border-t flex-shrink-0">
+        <div className="flex w-full justify-between gap-3">
+          <Button variant="outline" onClick={onPrevious}>
+            Retour
+          </Button>
           <Button 
             variant="secondary"
             onClick={handleComplete}
             disabled={loading || selectedCount === 0}
-            className="flex-1 sm:flex-auto"
           >
             <CheckCircle className="mr-2 h-4 w-4" />
             Continuer
-          </Button>
-          <Button 
-            onClick={handleSaveAndClose}
-            disabled={loading || saving || selectedCount === 0}
-            className="flex-1 sm:flex-auto"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
-              </>
-            ) : (
-              <>
-                <Database className="mr-2 h-4 w-4" />
-                Valider
-              </>
-            )}
           </Button>
         </div>
       </DialogFooter>
