@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +29,7 @@ interface RiskScenariosStepProps {
   onComplete: () => void;
   onPrevious: () => void;
   onGenerateMoreScenarios: () => Promise<void>;
-  onSaveAndClose: () => Promise<void>;
+  onSaveAndClose: () => Promise<boolean>;
 }
 
 export function RiskScenariosStep({
@@ -74,11 +73,13 @@ export function RiskScenariosStep({
     
     setSaving(true);
     try {
-      await onSaveAndClose();
-      toast({
-        title: "Succès",
-        description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
-      });
+      const success = await onSaveAndClose();
+      if (success) {
+        toast({
+          title: "Succès",
+          description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
+        });
+      }
     } catch (error) {
       toast({
         title: "Erreur",
@@ -126,7 +127,6 @@ export function RiskScenariosStep({
             </DialogDescription>
           </div>
           
-          {/* Bouton Valider déplacé en haut à droite */}
           <Button 
             onClick={handleSaveAndClose}
             disabled={loading || saving || selectedCount === 0}
@@ -148,7 +148,6 @@ export function RiskScenariosStep({
       </DialogHeader>
       
       <div className="flex flex-col gap-5 py-6 flex-grow overflow-hidden">
-        {/* Header with search and actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
           <div className="relative w-full md:w-auto md:flex-1 min-w-[250px]">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -185,7 +184,6 @@ export function RiskScenariosStep({
           </div>
         </div>
         
-        {/* Selection counter */}
         <div className="bg-muted/30 rounded-lg p-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center">
             <span className="font-medium">Scénarios disponibles:</span>
@@ -200,7 +198,6 @@ export function RiskScenariosStep({
           )}
         </div>
         
-        {/* Scenarios list with explicit ScrollArea */}
         <div className="flex-grow overflow-hidden">
           <ScrollArea className="h-full w-full pr-4">
             <div className="bg-card rounded-lg border shadow-sm">
