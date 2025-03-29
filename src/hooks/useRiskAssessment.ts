@@ -14,6 +14,7 @@ export const useRiskAssessment = (
   const [impactScales, setImpactScales] = useState<RiskScaleWithLevels[]>([]);
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
   const [activeImpactScale, setActiveImpactScale] = useState<string | null>(null);
+  const [processedScaleIds, setProcessedScaleIds] = useState<Set<string>>(new Set());
 
   // Get the current values of all impact scale ratings
   const impactScaleRatings = form.watch('impactScaleRatings') || {};
@@ -56,20 +57,27 @@ export const useRiskAssessment = (
       setImpactScales(impacts);
       setLikelihoodScale(likelihood || null);
       
+      // Track which scales we've already processed to avoid duplicate initializations
+      const newProcessedIds = new Set(processedScaleIds);
+      
       // Initialize impact scale ratings if not already set
       const currentRatings = form.getValues('impactScaleRatings') || {};
       const initialRatings = { ...currentRatings };
       let hasNewRatings = false;
       
       impacts.forEach(scale => {
-        if (!initialRatings[scale.id]) {
+        // Only set default value if we haven't processed this scale before
+        if (!processedScaleIds.has(scale.id) && !initialRatings[scale.id]) {
           initialRatings[scale.id] = 'low';
           hasNewRatings = true;
+          newProcessedIds.add(scale.id);
         }
       });
       
       if (hasNewRatings) {
+        console.log("Setting initial impact scale ratings:", initialRatings);
         form.setValue('impactScaleRatings', initialRatings);
+        setProcessedScaleIds(newProcessedIds);
       }
       
       // Set the first impact scale as active if there is one and no active scale is set
@@ -78,7 +86,7 @@ export const useRiskAssessment = (
         setActiveImpactScale(impacts[0].id);
       }
     }
-  }, [companyRiskScales, activeImpactScale, form]);
+  }, [companyRiskScales, activeImpactScale, form, processedScaleIds]);
 
   // Calculate main impact level based on the maximum value from all scale ratings
   useEffect(() => {

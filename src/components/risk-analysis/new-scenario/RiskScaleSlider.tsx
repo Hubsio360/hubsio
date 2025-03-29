@@ -31,10 +31,14 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   
   // Sort levels by level_value
   const sortedLevels = Array.isArray(levels) 
-    ? [...levels].sort((a, b) => (a.levelValue || a.level_value || 0) - (b.levelValue || b.level_value || 0))
+    ? [...levels].sort((a, b) => {
+        const aValue = a.levelValue !== undefined ? a.levelValue : (a.level_value || 0);
+        const bValue = b.levelValue !== undefined ? b.levelValue : (b.level_value || 0);
+        return aValue - bValue;
+      })
     : [];
   
-  // Initialiser la valeur du slider lorsque le composant est chargé
+  // Initialize slider value when component is loaded
   useEffect(() => {
     if (sortedLevels.length > 0 && value) {
       const index = mapRiskLevelToIndex(value, sortedLevels);
@@ -51,7 +55,7 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     const position = Math.round(newValue[0]); // Ensure the position is an integer
     
     // Only update if position has actually changed
-    if (position !== sliderValue && sortedLevels[position]) {
+    if (position !== sliderValue && position >= 0 && position < sortedLevels.length) {
       console.log(`RiskScaleSlider (${name}): Slider changed to position ${position}`);
       setSliderValue(position);
       const riskLevel = mapPositionToRiskLevel(position, sortedLevels);

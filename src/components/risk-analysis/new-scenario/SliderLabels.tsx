@@ -33,12 +33,13 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
             <TooltipProvider key={level.id || index}>
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
-                  <button 
-                    type="button"
+                  <div 
                     className="relative flex flex-col items-center cursor-pointer group focus:outline-none" 
                     style={{ width: '40px' }}
                     onClick={() => handleLabelClick(index)}
                     aria-selected={isSelected}
+                    role="button"
+                    tabIndex={0}
                     aria-label={`Sélectionner le niveau ${level.name}`}
                   >
                     {/* Dot indicator for each level */}
@@ -58,7 +59,7 @@ const SliderLabels: React.FC<SliderLabelsProps> = ({ levels, selectedIndex, onLa
                     }`} style={{ maxWidth: '60px' }}>
                       {level.name}
                     </div>
-                  </button>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent 
                   side="top" 
