@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,11 +6,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, AlertTriangle, PlusCircle } from 'lucide-react';
+import { Shield, AlertTriangle, PlusCircle, Loader2, Check } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { EnhancedTemplate } from '@/hooks/useScenarioTemplates';
 import { RiskLevel, RiskScope, RiskStatus } from '@/types';
 import RiskAssessmentSection from './RiskAssessmentSection';
+import { useData } from '@/contexts/DataContext';
 
 export interface RiskScenarioFormValues {
   name: string;
@@ -33,29 +35,44 @@ export interface RiskScenarioFormValues {
 interface RiskScenarioFormProps {
   onSubmit: (values: RiskScenarioFormValues) => void;
   companyId: string;
+  isEditMode?: boolean;
+  initialValues?: Partial<RiskScenarioFormValues>;
+  saveButtonText?: string;
+  isSaving?: boolean;
+  onCancel?: () => void;
 }
 
 export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: EnhancedTemplate) => void }, RiskScenarioFormProps>(
-  ({ onSubmit, companyId }, ref) => {
+  ({ 
+    onSubmit, 
+    companyId, 
+    isEditMode = false, 
+    initialValues = {}, 
+    saveButtonText = "Créer le scénario",
+    isSaving = false,
+    onCancel
+  }, ref) => {
+    const { companyRiskScales } = useData();
+    
     // Form setup with react-hook-form
     const form = useForm<RiskScenarioFormValues>({
       defaultValues: {
-        name: '',
-        description: '',
-        riskLevel: 'medium',
-        impactLevel: 'medium',
-        likelihood: 'medium',
-        status: 'identified',
-        scope: 'technical',
-        impactDescription: '',
-        rawImpact: 'medium',
-        rawLikelihood: 'medium',
-        rawRiskLevel: 'medium',
-        residualImpact: 'low',
-        residualLikelihood: 'low',
-        residualRiskLevel: 'low',
-        securityMeasures: '',
-        measureEffectiveness: '',
+        name: initialValues.name || '',
+        description: initialValues.description || '',
+        riskLevel: initialValues.riskLevel || 'medium',
+        impactLevel: initialValues.impactLevel || 'medium',
+        likelihood: initialValues.likelihood || 'medium',
+        status: initialValues.status || 'identified',
+        scope: initialValues.scope || 'technical',
+        impactDescription: initialValues.impactDescription || '',
+        rawImpact: initialValues.rawImpact || 'medium',
+        rawLikelihood: initialValues.rawLikelihood || 'medium',
+        rawRiskLevel: initialValues.rawRiskLevel || 'medium',
+        residualImpact: initialValues.residualImpact || 'low',
+        residualLikelihood: initialValues.residualLikelihood || 'low',
+        residualRiskLevel: initialValues.residualRiskLevel || 'low',
+        securityMeasures: initialValues.securityMeasures || '',
+        measureEffectiveness: initialValues.measureEffectiveness || '',
       },
     });
 
@@ -108,9 +125,9 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Définir un scénario de risque</CardTitle>
+          <CardTitle>{isEditMode ? "Modifier le scénario de risque" : "Définir un scénario de risque"}</CardTitle>
           <CardDescription>
-            Créez un nouveau scénario de risque en définissant ses caractéristiques
+            {isEditMode ? "Modifiez les caractéristiques du scénario et l'évaluation des impacts" : "Créez un nouveau scénario de risque en définissant ses caractéristiques"}
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -220,16 +237,30 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
                 />
               </div>
               
-              {/* Risk Assessment Section */}
+              {/* Risk Assessment Section with Multiple Impact Scales */}
               <RiskAssessmentSection form={form} companyId={companyId} />
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Button variant="outline" type="button">
+              <Button variant="outline" type="button" onClick={onCancel}>
                 Annuler
               </Button>
-              <Button type="submit">
-                <Shield className="mr-2 h-4 w-4" />
-                Créer le scénario
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : isEditMode ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    {saveButtonText}
+                  </>
+                ) : (
+                  <>
+                    <Shield className="mr-2 h-4 w-4" />
+                    {saveButtonText}
+                  </>
+                )}
               </Button>
             </CardFooter>
           </form>

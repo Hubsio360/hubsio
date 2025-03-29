@@ -1,376 +1,311 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  FormControl, 
-  FormLabel, 
-  FormItem, 
-  FormField, 
-  FormMessage 
-} from '@/components/ui/form';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FormField, FormItem, FormLabel, FormControl, FormDescription } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { RiskScaleLevel, RiskScaleWithLevels } from '@/types/risk-scales';
 import { UseFormReturn } from 'react-hook-form';
 import { useData } from '@/contexts/DataContext';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Loader2 } from "lucide-react";
 import RiskScaleSlider from './RiskScaleSlider';
-import { RiskScaleWithLevels } from '@/types/risk-scales';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+import { Shield, Gauge } from 'lucide-react';
+import { RiskScenarioFormValues } from './RiskScenarioForm';
 
 interface RiskAssessmentSectionProps {
-  form: UseFormReturn<any>;
+  form: UseFormReturn<RiskScenarioFormValues>;
   companyId: string;
 }
 
 const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, companyId }) => {
-  const { companyRiskScales, fetchCompanyRiskScales, ensureDefaultScalesExist } = useData();
-  const [isLoading, setIsLoading] = useState(true);
-  const [initializing, setInitializing] = useState(false);
-  const [impactScale, setImpactScale] = useState<RiskScaleWithLevels | null>(null);
+  const { companyRiskScales, loading, fetchCompanyRiskScales, ensureDefaultScalesExist } = useData();
+  const [impactScales, setImpactScales] = useState<RiskScaleWithLevels[]>([]);
   const [likelihoodScale, setLikelihoodScale] = useState<RiskScaleWithLevels | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
-  
-  // Fonction pour vérifier les tables d'échelles dans la base de données
-  const checkScaleTablesExist = useCallback(async () => {
-    try {
-      const { data: tables, error } = await supabase
-        .from('company_risk_scales')
-        .select('id')
-        .eq('company_id', companyId)
-        .limit(1);
-      
-      if (error) {
-        console.error("Erreur lors de la vérification des tables d'échelles:", error);
-        return false;
-      }
-      
-      return tables && tables.length > 0;
-    } catch (err) {
-      console.error("Exception lors de la vérification des tables d'échelles:", err);
-      return false;
-    }
-  }, [companyId]);
-  
-  // Force initialize risk scales with more robust error handling
-  const initializeScales = useCallback(async () => {
-    if (!companyId) return;
-    
-    setInitializing(true);
-    setError(null);
-    
-    try {
-      console.log("Initialisation des échelles pour l'entreprise:", companyId);
-      
-      // Vérifier si les tables d'échelles existent
-      const tablesExist = await checkScaleTablesExist();
-      console.log("Les tables d'échelles existent:", tablesExist);
-      
-      // Forcer la création des échelles par défaut
-      const success = await ensureDefaultScalesExist(companyId);
-      console.log("Résultat de l'initialisation des échelles:", success);
-      
-      if (success) {
-        // Récupérer les échelles mises à jour
-        const scales = await fetchCompanyRiskScales(companyId);
-        console.log("Échelles récupérées après initialisation:", scales?.length || 0);
-        
-        if (!scales || !Array.isArray(scales) || scales.length === 0) {
-          setError("Aucune échelle de risque n'a pu être initialisée pour cette entreprise");
-          return;
-        }
-        
-        // Identifier les échelles actives
-        const activeImpactScale = scales.find(
-          s => s.isActive && s.scaleType?.category === 'impact'
-        );
-        
-        const activeLikelihoodScale = scales.find(
-          s => s.isActive && s.scaleType?.category === 'likelihood'
-        );
-        
-        console.log("Échelle d'impact active:", activeImpactScale?.id);
-        console.log("Échelle de probabilité active:", activeLikelihoodScale?.id);
-        
-        setImpactScale(activeImpactScale || null);
-        setLikelihoodScale(activeLikelihoodScale || null);
-        
-        toast({
-          title: "Échelles initialisées",
-          description: "Les échelles de risque ont été correctement initialisées",
-        });
-      } else {
-        setError("Erreur lors de l'initialisation des échelles de risque");
-        console.error("L'appel à ensureDefaultScalesExist a échoué");
-      }
-    } catch (error) {
-      console.error('Erreur détaillée lors de l\'initialisation des échelles:', error);
-      setError("Erreur technique lors de l'initialisation des échelles de risque");
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'initialiser les échelles de risque",
-      });
-    } finally {
-      setInitializing(false);
-    }
-  }, [companyId, ensureDefaultScalesExist, fetchCompanyRiskScales, toast, checkScaleTablesExist]);
-  
-  // Load risk scales for this company with improved error handling
+  const [activeImpactScale, setActiveImpactScale] = useState<string | null>(null);
+
   useEffect(() => {
-    const loadRiskScales = async () => {
-      if (!companyId) return;
+    const loadScales = async () => {
+      // Ensure default scales exist for this company
+      await ensureDefaultScalesExist(companyId);
       
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        console.log("Chargement des échelles pour l'entreprise:", companyId);
-        
-        // Forcer la création des échelles par défaut
-        await ensureDefaultScalesExist(companyId);
-        
-        // Récupérer les échelles
-        const scales = await fetchCompanyRiskScales(companyId);
-        console.log("Échelles récupérées:", scales?.length || 0);
-        
-        if (!scales || !Array.isArray(scales) || scales.length === 0) {
-          console.error("Aucune échelle trouvée après le chargement");
-          setError("Aucune échelle de risque n'a pu être chargée");
-          return;
-        }
-        
-        // Débogage: lister toutes les échelles et leurs catégories
-        scales.forEach(scale => {
-          console.log(`Échelle ${scale.id}: type=${scale.scaleType?.name}, catégorie=${scale.scaleType?.category}, active=${scale.isActive || scale.is_active}`);
-          console.log(`Niveaux: ${scale.levels?.length || 0}`);
-        });
-        
-        // Identifier les échelles actives
-        const activeImpactScale = scales.find(
-          s => (s.isActive || s.is_active) && s.scaleType?.category === 'impact'
-        );
-        
-        const activeLikelihoodScale = scales.find(
-          s => (s.isActive || s.is_active) && s.scaleType?.category === 'likelihood'
-        );
-        
-        console.log("Échelle d'impact active:", activeImpactScale?.id);
-        console.log("Échelle de probabilité active:", activeLikelihoodScale?.id);
-        
-        // Si aucune échelle active n'est trouvée, utiliser la première échelle de chaque catégorie
-        const fallbackImpactScale = !activeImpactScale ? scales.find(s => s.scaleType?.category === 'impact') : null;
-        const fallbackLikelihoodScale = !activeLikelihoodScale ? scales.find(s => s.scaleType?.category === 'likelihood') : null;
-        
-        if (fallbackImpactScale) {
-          console.log("Utilisation de l'échelle d'impact de secours:", fallbackImpactScale.id);
-        }
-        
-        if (fallbackLikelihoodScale) {
-          console.log("Utilisation de l'échelle de probabilité de secours:", fallbackLikelihoodScale.id);
-        }
-        
-        setImpactScale(activeImpactScale || fallbackImpactScale || null);
-        setLikelihoodScale(activeLikelihoodScale || fallbackLikelihoodScale || null);
-        
-        if (!activeImpactScale && !fallbackImpactScale) {
-          console.error("Aucune échelle d'impact trouvée");
-        }
-        
-        if (!activeLikelihoodScale && !fallbackLikelihoodScale) {
-          console.error("Aucune échelle de probabilité trouvée");
-        }
-      } catch (error) {
-        console.error('Erreur détaillée lors du chargement des échelles:', error);
-        setError("Erreur technique lors du chargement des échelles de risque");
-      } finally {
-        setIsLoading(false);
-      }
+      // Fetch company risk scales
+      await fetchCompanyRiskScales(companyId);
     };
     
-    if (companyId) {
-      loadRiskScales();
-    }
+    loadScales();
   }, [companyId, fetchCompanyRiskScales, ensureDefaultScalesExist]);
-  
+
+  useEffect(() => {
+    if (companyRiskScales && companyRiskScales.length > 0) {
+      // Filter active scales by category
+      const activeScales = companyRiskScales.filter(scale => scale.isActive || scale.is_active);
+      
+      // Get impact scales
+      const impacts = activeScales.filter(scale => {
+        const category = scale.scaleType?.category || '';
+        return category.includes('impact') || 
+               !category.includes('likelihood'); // Consider scales without specific category as impact
+      });
+      
+      // Get likelihood scale
+      const likelihood = activeScales.find(scale => {
+        const category = scale.scaleType?.category || '';
+        return category.includes('likelihood');
+      });
+      
+      setImpactScales(impacts);
+      setLikelihoodScale(likelihood || null);
+      
+      // Set the first impact scale as active if there is one and no active scale is set
+      if (impacts.length > 0 && !activeImpactScale) {
+        setActiveImpactScale(impacts[0].id);
+      }
+    }
+  }, [companyRiskScales, activeImpactScale]);
+
+  // If no scales are available, show a message
+  if ((loading && loading.companyRiskScales) || (!impactScales.length && !likelihoodScale)) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Gauge className="mr-2 h-5 w-5" />
+            Évaluation du risque
+          </CardTitle>
+          <CardDescription>
+            Chargement des échelles de risque...
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
-    <div className="space-y-6 mt-6">
-      <div>
-        <h3 className="text-lg font-medium mb-2">Évaluation du risque brut</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Évaluez le risque sans tenir compte (ou en tenant compte de façon minimale) des mesures de sécurité existantes.
-        </p>
-        
-        {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-            <p>Chargement des échelles de risque...</p>
-          </div>
-        ) : error ? (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Erreur</AlertTitle>
-            <AlertDescription>
-              {error}
-              <div className="mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={initializeScales}
-                  disabled={initializing}
-                >
-                  {initializing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Initialisation...
-                    </>
-                  ) : (
-                    "Réinitialiser les échelles"
-                  )}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        ) : (!impactScale || !likelihoodScale) ? (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Échelles de risque manquantes</AlertTitle>
-            <AlertDescription>
-              Les échelles de risque ne sont pas correctement configurées pour cette entreprise.
-              <div className="mt-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={initializeScales}
-                  disabled={initializing}
-                >
-                  {initializing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Initialisation...
-                    </>
-                  ) : (
-                    "Initialiser les échelles"
-                  )}
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="rawLikelihood"
-              render={({ field }) => (
-                <RiskScaleSlider
-                  levels={likelihoodScale.levels || []}
-                  value={field.value}
-                  onChange={field.onChange}
-                  name={field.name}
-                  label="Probabilité brute"
-                  description="Évaluez la probabilité sans considérer les mesures de sécurité"
-                />
-              )}
-            />
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Gauge className="mr-2 h-5 w-5" />
+            Évaluation du risque
+          </CardTitle>
+          <CardDescription>
+            Évaluez les niveaux d'impact et de probabilité pour ce scénario
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="raw" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="raw">Risque brut</TabsTrigger>
+              <TabsTrigger value="residual">Risque résiduel</TabsTrigger>
+            </TabsList>
             
-            <FormField
-              control={form.control}
-              name="rawImpact"
-              render={({ field }) => (
-                <RiskScaleSlider
-                  levels={impactScale.levels || []}
-                  value={field.value}
-                  onChange={field.onChange}
-                  name={field.name}
-                  label="Impact brut"
-                  description="Évaluez l'impact sans considérer les mesures de sécurité"
-                />
-              )}
-            />
-          </div>
-        )}
-        
-        <FormField
-          control={form.control}
-          name="securityMeasures"
-          render={({ field }) => (
-            <FormItem className="mt-4">
-              <FormLabel>Mesures de sécurité existantes ou planifiées</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Décrivez les mesures de sécurité actuelles ou planifiées"
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-      
-      <Separator />
-      
-      <div>
-        <h3 className="text-lg font-medium mb-2">Évaluation du risque résiduel</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Évaluez le risque après prise en compte des mesures de sécurité actuelles ou planifiées.
-        </p>
-        
-        <FormField
-          control={form.control}
-          name="measureEffectiveness"
-          render={({ field }) => (
-            <FormItem className="mb-4">
-              <FormLabel>Efficacité des mesures</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Évaluez l'efficacité des mesures de sécurité"
-                  className="min-h-[80px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        {!isLoading && !error && (impactScale && likelihoodScale) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="residualLikelihood"
-              render={({ field }) => (
-                <RiskScaleSlider
-                  levels={likelihoodScale.levels || []}
-                  value={field.value}
-                  onChange={field.onChange}
-                  name={field.name}
-                  label="Probabilité résiduelle"
-                  description="Évaluez la probabilité après application des mesures de sécurité"
-                />
-              )}
-            />
+            <TabsContent value="raw" className="space-y-6 pt-4">
+              <div className="space-y-4">
+                {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="rawLikelihood"
+                    render={({ field }) => (
+                      <RiskScaleSlider
+                        name="rawLikelihood"
+                        label="Probabilité"
+                        description="Évaluez la probabilité que ce scénario de risque se produise"
+                        levels={likelihoodScale.levels}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                )}
+
+                {/* Impact Scales Tabs */}
+                {impactScales.length > 0 && (
+                  <div className="space-y-4">
+                    <FormLabel>Impact</FormLabel>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {impactScales.map(scale => (
+                        <Badge 
+                          key={scale.id}
+                          variant={activeImpactScale === scale.id ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => setActiveImpactScale(scale.id)}
+                        >
+                          {scale.scaleType?.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    {/* Active impact scale */}
+                    {activeImpactScale && (
+                      <div className="pt-2">
+                        {impactScales.map(scale => {
+                          if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                            return (
+                              <div key={scale.id}>
+                                <FormField
+                                  control={form.control}
+                                  name="rawImpact"
+                                  render={({ field }) => (
+                                    <RiskScaleSlider
+                                      name="rawImpact"
+                                      label={`Impact - ${scale.scaleType?.name}`}
+                                      description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
+                                      levels={scale.levels}
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                    />
+                                  )}
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <FormItem className="pt-2">
+                  <FormLabel>Niveau de risque brut</FormLabel>
+                  <div className="flex items-center mt-2">
+                    <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
+                      {form.watch('rawRiskLevel').toUpperCase()}
+                    </Badge>
+                    <FormDescription className="ml-4">
+                      Niveau calculé automatiquement à partir de l'impact et de la probabilité
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              </div>
+            </TabsContent>
             
-            <FormField
-              control={form.control}
-              name="residualImpact"
-              render={({ field }) => (
-                <RiskScaleSlider
-                  levels={impactScale.levels || []}
-                  value={field.value}
-                  onChange={field.onChange}
-                  name={field.name}
-                  label="Impact résiduel"
-                  description="Évaluez l'impact après application des mesures de sécurité"
-                />
-              )}
-            />
-          </div>
-        )}
-      </div>
+            <TabsContent value="residual" className="space-y-6 pt-4">
+              <FormField
+                control={form.control}
+                name="securityMeasures"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mesures de sécurité</FormLabel>
+                    <FormDescription>
+                      Décrivez les mesures de sécurité mises en place pour réduire ce risque
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Chiffrement des données, formation des utilisateurs..."
+                        className="min-h-[100px]"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="measureEffectiveness"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Efficacité des mesures</FormLabel>
+                    <FormDescription>
+                      Évaluez l'efficacité des mesures de sécurité mises en place
+                    </FormDescription>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Niveau d'efficacité, limites éventuelles..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-4">
+                {likelihoodScale && likelihoodScale.levels && likelihoodScale.levels.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="residualLikelihood"
+                    render={({ field }) => (
+                      <RiskScaleSlider
+                        name="residualLikelihood"
+                        label="Probabilité résiduelle"
+                        description="Évaluez la probabilité résiduelle après application des mesures"
+                        levels={likelihoodScale.levels}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+                  />
+                )}
+
+                {/* Residual Impact Scales */}
+                {impactScales.length > 0 && (
+                  <div className="space-y-4">
+                    <FormLabel>Impact résiduel</FormLabel>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {impactScales.map(scale => (
+                        <Badge 
+                          key={scale.id}
+                          variant={activeImpactScale === scale.id ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => setActiveImpactScale(scale.id)}
+                        >
+                          {scale.scaleType?.name}
+                        </Badge>
+                      ))}
+                    </div>
+                    
+                    {/* Active residual impact scale */}
+                    {activeImpactScale && (
+                      <div className="pt-2">
+                        {impactScales.map(scale => {
+                          if (scale.id === activeImpactScale && scale.levels && scale.levels.length > 0) {
+                            return (
+                              <div key={scale.id}>
+                                <FormField
+                                  control={form.control}
+                                  name="residualImpact"
+                                  render={({ field }) => (
+                                    <RiskScaleSlider
+                                      name="residualImpact"
+                                      label={`Impact résiduel - ${scale.scaleType?.name}`}
+                                      description={`Évaluez l'impact résiduel après application des mesures (${scale.scaleType?.description || ""})`}
+                                      levels={scale.levels}
+                                      value={field.value}
+                                      onChange={field.onChange}
+                                    />
+                                  )}
+                                />
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                <FormItem className="pt-2">
+                  <FormLabel>Niveau de risque résiduel</FormLabel>
+                  <div className="flex items-center mt-2">
+                    <Badge variant="outline" className="text-lg px-3 py-1.5 h-auto">
+                      {form.watch('residualRiskLevel').toUpperCase()}
+                    </Badge>
+                    <FormDescription className="ml-4">
+                      Niveau calculé automatiquement à partir de l'impact et de la probabilité résiduels
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
