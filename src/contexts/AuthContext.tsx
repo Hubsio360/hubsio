@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
@@ -17,13 +16,20 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-const mapSupabaseUser = (supabaseUser: SupabaseUser): User => ({
-  id: supabaseUser.id,
-  email: supabaseUser.email || '',
-  name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
-  role: supabaseUser.user_metadata?.role || 'auditor',
-  avatar: supabaseUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.email || 'User')}&background=random`,
-});
+const mapSupabaseUser = (supabaseUser: SupabaseUser): User => {
+  // Map "reviewer" role to "viewer"
+  const role = supabaseUser.user_metadata?.role === 'reviewer' 
+    ? 'viewer' 
+    : (supabaseUser.user_metadata?.role || 'auditor');
+
+  return {
+    id: supabaseUser.id,
+    email: supabaseUser.email || '',
+    name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'Utilisateur',
+    role: role as UserRole,
+    avatar: supabaseUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(supabaseUser.email || 'User')}&background=random`,
+  };
+};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -31,11 +37,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { toast } = useToast();
 
-  // Check authentication status and set up listener
   useEffect(() => {
     const setupAuth = async () => {
       try {
-        // Set up auth state change listener
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           console.log('Auth state changed:', _event, !!session);
           if (session?.user) {
@@ -48,7 +52,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           setIsLoading(false);
         });
 
-        // Get initial session
         const { data } = await supabase.auth.getSession();
         if (data.session?.user) {
           setUser(mapSupabaseUser(data.session.user));
@@ -71,10 +74,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setupAuth();
   }, []);
 
-  // Get users function
   const getUsers = async (): Promise<User[]> => {
     try {
-      // Vérifier d'abord l'authentification
       if (!isAuthenticated) {
         console.log('Tentative de récupération des utilisateurs sans authentification');
         return [];
@@ -86,13 +87,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         
       if (error) throw error;
       
-      // Make sure to map the users to include the role property and handle the "reviewer" role mapping
       return (data || []).map(user => {
-        // Convert "reviewer" to "viewer" to match UserRole type
-        let mappedRole = user.role;
-        if (user.role === 'reviewer') {
-          mappedRole = 'viewer';
-        }
+        let mappedRole: UserRole = user.role === 'reviewer' ? 'viewer' : user.role;
         
         return {
           id: user.id,
@@ -205,17 +201,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       
       setIsLoading(true);
       
-      // Standard signOut method
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Standard logout error:', error.message);
       }
       
-      // Clear any localStorage session data
       localStorage.removeItem('supabase-auth');
       localStorage.removeItem('supabase.auth.token');
       
-      // Clear any cookies related to auth
       document.cookie.split(';').forEach(c => {
         document.cookie = c
           .replace(/^ +/, '')
@@ -227,7 +220,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(null);
       setIsAuthenticated(false);
       
-      // Browser reload as last resort to clear all state
       setTimeout(() => {
         window.location.href = '/login';
       }, 100);
