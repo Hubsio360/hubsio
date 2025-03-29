@@ -1,8 +1,10 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+import { ensureImpactScalesExist } from '@/utils/riskScalesUtils';
 
 const scaleNameMapping: Record<string, string> = {
   'financial_impact': 'Impact financier',

@@ -255,6 +255,8 @@ export interface RiskScenario {
   description?: string;
   companyId: string;
   company_id?: string; // Alias for DB compatibility
+  impactDescription?: string;
+  impact_description?: string; // Alias for DB compatibility
   impactLevel: RiskLevel;
   impact_level?: RiskLevel; // Alias for DB compatibility
   likelihood: RiskLevel;
@@ -266,8 +268,6 @@ export interface RiskScenario {
   threat_id?: string; // Alias for DB compatibility
   vulnerabilityId?: string;
   vulnerability_id?: string; // Alias for DB compatibility
-  impactDescription?: string;
-  impact_description?: string; // Alias for DB compatibility
   createdAt?: string;
   updatedAt?: string;
   created_at?: string; // Alias for DB compatibility
