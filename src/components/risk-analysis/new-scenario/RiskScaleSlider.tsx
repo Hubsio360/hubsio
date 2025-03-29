@@ -136,11 +136,8 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     }
   };
   
-  // Handle direct level click - move to that position
-  const handleLevelClick = (index: number) => {
-    setSliderValue(index);
-    handleSliderChange([index]);
-  };
+  // Get current level from slider value
+  const currentLevel = sortedLevels[sliderValue];
   
   if (!sortedLevels || !sortedLevels.length) {
     return (
@@ -153,51 +150,55 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
     );
   }
   
-  // Get current level from slider value
-  const currentLevel = sortedLevels[sliderValue];
-  
   return (
     <FormItem>
       <FormLabel>{label}</FormLabel>
       {description && <FormDescription>{description}</FormDescription>}
       
-      <div className="space-y-4 py-6">
+      <div className="space-y-6 pt-1">
         <FormControl>
-          <div className="relative">
-            {/* Slider amélioré avec un step entier et snap */}
+          <div className="relative pt-6">
+            {/* Updated slider with better step control */}
             <Slider
               value={[sliderValue]}
               max={sortedLevels.length - 1}
               step={1}
               onValueChange={handleSliderChange}
-              className="py-4 my-3"
+              className="my-2"
               data-testid={`${name}-slider`}
               aria-label={label}
             />
             
-            {/* Labels sous le slider - simplifiés pour éviter les chevauchements */}
-            <div className="flex mt-6 justify-between relative">
+            {/* Improved labels under the slider - with better spacing */}
+            <div className="mt-2 flex relative">
               {sortedLevels.map((level, index) => {
-                const width = 100 / sortedLevels.length;
-                const centerPosition = index * width + (width / 2);
+                const isSelected = sliderValue === index;
+                
+                // Position each label precisely
+                const segmentWidth = 100 / sortedLevels.length;
+                const leftPosition = index * segmentWidth;
                 
                 return (
                   <div
                     key={level.id}
-                    className={`absolute text-center cursor-pointer transition-colors ${sliderValue === index ? 'font-semibold text-primary' : 'font-normal text-muted-foreground'}`}
+                    className="absolute text-center"
                     style={{ 
-                      width: `${width}%`,
-                      left: `${index * width}%`
+                      left: `${leftPosition}%`,
+                      width: `${segmentWidth}%`
                     }}
-                    onClick={() => handleLevelClick(index)}
                   >
+                    {/* Dot indicator for each level */}
                     <div 
-                      className={`w-4 h-4 rounded-full mx-auto mb-2 cursor-pointer ${sliderValue === index ? 'scale-125' : 'scale-100'}`}
+                      className={`w-3 h-3 rounded-full mx-auto mb-2 transition-all ${isSelected ? 'scale-125' : ''}`}
                       style={{ backgroundColor: level.color || '#e2e8f0' }}
                     ></div>
-                    <div className="text-xs overflow-hidden text-ellipsis whitespace-nowrap px-1">
-                      {level.name}
-                    </div>
+                    
+                    {/* Only show text label of selected level and abbreviated labels for others */}
+                    {isSelected ? (
+                      <div className="text-xs font-medium text-primary mt-1">{level.name}</div>
+                    ) : (
+                      <div className="text-xs text-muted-foreground invisible">.</div>
+                    )}
                   </div>
                 );
               })}
@@ -205,9 +206,9 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
           </div>
         </FormControl>
         
-        {/* Description du niveau sélectionné affichée sous la barre */}
+        {/* Description of selected level shown below the slider */}
         <div 
-          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-10"
+          className="px-4 py-3 rounded-md text-sm transition-all shadow-sm mt-8"
           style={{ 
             backgroundColor: currentLevel?.color || '#e2e8f0',
             color: getContrastColor(currentLevel?.color || '#e2e8f0')
