@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { RiskScaleWithLevels } from '@/types/risk-scales';
 import RiskScaleSlider from './RiskScaleSlider';
+import { RiskLevel } from '@/types';
 
 interface ResidualRiskAssessmentProps {
   form: any;
@@ -13,6 +14,8 @@ interface ResidualRiskAssessmentProps {
   impactScales: RiskScaleWithLevels[];
   activeImpactScale: string | null;
   setActiveImpactScale: (id: string) => void;
+  impactScaleRatings?: Record<string, RiskLevel>;
+  handleImpactScaleChange?: (scaleId: string, value: RiskLevel) => void;
 }
 
 const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
@@ -20,7 +23,9 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
   likelihoodScale,
   impactScales,
   activeImpactScale,
-  setActiveImpactScale
+  setActiveImpactScale,
+  impactScaleRatings = {},
+  handleImpactScaleChange
 }) => {
   return (
     <div className="space-y-6 pt-4">

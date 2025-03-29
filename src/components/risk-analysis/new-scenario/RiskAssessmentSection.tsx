@@ -69,6 +69,8 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                 impactScales={impactScales}
                 activeImpactScale={activeImpactScale}
                 setActiveImpactScale={setActiveImpactScale}
+                impactScaleRatings={impactScaleRatings}
+                handleImpactScaleChange={handleImpactScaleChange}
               />
             </TabsContent>
           </Tabs>

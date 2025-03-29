@@ -21,6 +21,7 @@ export const useRiskAssessment = (
   useEffect(() => {
     const loadScales = async () => {
       try {
+        console.log("Ensuring default scales exist for company:", companyId);
         // Ensure default scales exist for this company
         await ensureDefaultScalesExist(companyId);
         
@@ -91,6 +92,7 @@ export const useRiskAssessment = (
 
   // Handle change for a specific impact scale
   const handleImpactScaleChange = (scaleId: string, value: RiskLevel) => {
+    console.log(`Updating impact scale ${scaleId} to ${value}`);
     const newRatings = { ...impactScaleRatings };
     newRatings[scaleId] = value;
     form.setValue('impactScaleRatings', newRatings);
