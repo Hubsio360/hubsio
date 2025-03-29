@@ -1,8 +1,19 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
+
+// Mapping of english scale names to French
+const scaleNameMapping: Record<string, string> = {
+  'financial_impact': 'Impact financier',
+  'reputational_impact': 'Impact réputationnel',
+  'individual_impact': 'Impact individuel',
+  'regulatory_impact': 'Impact réglementaire',
+  'productivity_impact': 'Impact sur la productivité',
+  'likelihood': 'Probabilité'
+};
 
 export const useRiskScalesManager = (companyId: string) => {
   const { 
@@ -36,6 +47,11 @@ export const useRiskScalesManager = (companyId: string) => {
       description: '',
       category: 'impact'
     };
+    
+    // Translate scale type name to French if it exists in our mapping
+    if (scaleType.name && scaleNameMapping[scaleType.name]) {
+      scaleType.name = scaleNameMapping[scaleType.name];
+    }
     
     return {
       ...scale,
@@ -365,8 +381,14 @@ export const useRiskScalesManager = (companyId: string) => {
   useEffect(() => {
     if (Array.isArray(companyRiskScales) && Array.isArray(riskScaleTypes) && 
         !loading.riskScaleTypes && !loading.companyRiskScales) {
+      // Apply French names to scale types
+      const translatedTypes = riskScaleTypes.map(type => ({
+        ...type,
+        name: scaleNameMapping[type.name] || type.name
+      }));
+      
       setCachedScales(companyRiskScales.map(ensureWithLevels));
-      setCachedTypes(riskScaleTypes);
+      setCachedTypes(translatedTypes);
     }
   }, [companyRiskScales, riskScaleTypes, loading.companyRiskScales, loading.riskScaleTypes]);
 

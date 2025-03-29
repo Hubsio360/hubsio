@@ -84,6 +84,16 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
 
+  // Logging for debugging
+  useEffect(() => {
+    if (open) {
+      console.log("RiskScalesDialog: companyId =", companyId);
+      console.log("RiskScalesDialog: companyRiskScales =", companyRiskScales);
+      console.log("RiskScalesDialog: riskScaleTypes =", riskScaleTypes);
+      console.log("RiskScalesDialog: isLoading =", isLoading);
+    }
+  }, [open, companyId, companyRiskScales, riskScaleTypes, isLoading]);
+
   // Séparation explicite des échelles de probabilité et d'impact
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
@@ -105,6 +115,8 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     
     if (open && !isLoading && !isRefreshing && !initialLoadComplete) {
       setIsInitializing(true);
+      
+      console.log("RiskScalesDialog: Initializing default scales for company:", companyId);
       
       ensureDefaultScalesExist()
         .then(() => {
@@ -285,6 +297,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
                 variant="outline" 
                 onClick={() => {
                   setIsInitializing(true);
+                  console.log("Initializing default scales for company:", companyId);
                   ensureDefaultScalesExist()
                     .then(() => refreshData())
                     .finally(() => setIsInitializing(false));
