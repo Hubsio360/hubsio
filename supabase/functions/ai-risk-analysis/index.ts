@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -171,19 +172,20 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
     ${processesText}
     
     Pour chaque scénario:
-    1. Donne un titre court et descriptif (5-10 mots maximum)
-    2. Fournis une description détaillée qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
+    1. Donne un titre court et descriptif en français (5-10 mots maximum)
+    2. Fournis une description détaillée en français qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
     3. Assure-toi que les scénarios couvrent un large éventail de risques: technologiques, opérationnels, humains, liés à la sécurité de l'information, etc.
     4. Chaque scénario doit être réaliste et spécifique au contexte de l'entreprise et de ses processus métier
     5. Évite les doublons et les descriptions trop génériques
+    6. TRÈS IMPORTANT: Tous les titres et descriptions doivent être UNIQUEMENT en français
     
     Réponds au format JSON strict avec une liste d'objets, chacun ayant:
     - "id": un identifiant unique (format "scenario-X" où X est un nombre)
-    - "name": le titre court du scénario
-    - "description": la description détaillée
+    - "name": le titre court du scénario en français
+    - "description": la description détaillée en français
     - "selected": true (tous les scénarios seront présélectionnés)
     
-    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre.
+    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre. Utilise UNIQUEMENT le français pour tous les contenus.
   `;
 
   try {
@@ -196,7 +198,7 @@ async function generateRiskScenarios(companyName: string, businessProcesses: str
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en JSON valide sans aucun texte supplémentaire.' },
+          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en français et en JSON valide sans aucun texte supplémentaire.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -281,19 +283,20 @@ async function generateAdditionalScenarios(existingScenarios: string[]) {
     ${existingNamesText}
     
     Pour chaque nouveau scénario:
-    1. Donne un titre court et descriptif (5-10 mots maximum)
-    2. Fournis une description détaillée qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
+    1. Donne un titre court et descriptif en français (5-10 mots maximum)
+    2. Fournis une description détaillée en français qui explique la nature du risque, ses causes potentielles et ses impacts (3-5 phrases)
     3. Assure-toi que les scénarios couvrent un large éventail de risques: technologiques, opérationnels, humains, liés à la sécurité de l'information, etc.
     4. Chaque scénario doit être réaliste et spécifique au contexte de l'entreprise
     5. Évite absolument toute ressemblance avec les scénarios existants
+    6. TRÈS IMPORTANT: Tous les titres et descriptions doivent être UNIQUEMENT en français
     
     Réponds au format JSON strict avec une liste d'objets, chacun ayant:
     - "id": un identifiant unique (format "scenario-X" où X est un nombre)
-    - "name": le titre court du scénario
-    - "description": la description détaillée
+    - "name": le titre court du scénario en français
+    - "description": la description détaillée en français
     - "selected": false (les nouveaux scénarios ne sont pas présélectionnés)
     
-    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre.
+    IMPORTANT: Ta réponse doit être un tableau JSON valide et rien d'autre. Utilise UNIQUEMENT le français pour tous les contenus.
   `;
 
   try {
@@ -306,7 +309,7 @@ async function generateAdditionalScenarios(existingScenarios: string[]) {
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en JSON valide sans aucun texte supplémentaire.' },
+          { role: 'system', content: 'Tu es un expert en analyse de risques de cybersécurité qui aide à identifier les scénarios de risque pertinents. Tu réponds UNIQUEMENT en français et en JSON valide sans aucun texte supplémentaire.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.8,
@@ -377,3 +380,4 @@ async function generateAdditionalScenarios(existingScenarios: string[]) {
     throw error;
   }
 }
+
