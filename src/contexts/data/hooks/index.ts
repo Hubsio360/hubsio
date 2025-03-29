@@ -11,7 +11,7 @@ export * from './useAuditInterviews';
 export * from './useThemes';
 export * from './useStandardClauses';
 export * from './useUsers';
-export * from './useAuth';
+// Removed useAuth import since it's now directly from AuthContext
 export * from './useRiskAnalysis';
 export * from './useServices';
 export * from './useRiskScales';

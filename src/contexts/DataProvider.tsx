@@ -14,7 +14,7 @@ import { useAuditInterviews } from './data/hooks/useAuditInterviews';
 import { useThemes } from './data/hooks/useThemes';
 import { useStandardClauses } from './data/hooks/useStandardClauses';
 import { useUsers } from './data/hooks/useUsers';
-import { useAuth } from './data/hooks/useAuth.tsx'; // Fix the import by adding .tsx extension
+import { useAuth } from '@/contexts/AuthContext'; // Update this import to use AuthContext directly
 import { useRiskAnalysis } from './data/hooks/useRiskAnalysis';
 import { useServices } from './data/hooks/useServices';
 import { useRiskScales } from './data/hooks/useRiskScales';

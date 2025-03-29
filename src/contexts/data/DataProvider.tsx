@@ -14,7 +14,7 @@ import { useAuditInterviews } from './hooks/useAuditInterviews';
 import { useThemes } from './hooks/useThemes';
 import { useStandardClauses } from './hooks/useStandardClauses';
 import { useUsers } from './hooks/useUsers';
-import { useAuth } from '@/contexts/AuthContext'; // Import from AuthContext directly
+import { useAuth } from '@/contexts/AuthContext'; // Update this import to use AuthContext directly
 import { useRiskAnalysis } from './hooks/useRiskAnalysis';
 import { useServices } from './hooks/useServices';
 import { useRiskScales } from './hooks/useRiskScales';
