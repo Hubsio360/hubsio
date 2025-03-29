@@ -12,6 +12,7 @@ import RiskScaleSlider from './RiskScaleSlider';
 import { Badge } from '@/components/ui/badge';
 import { Shield, Gauge } from 'lucide-react';
 import { RiskScenarioFormValues } from './RiskScenarioForm';
+import { RiskLevel } from '@/types';
 
 interface RiskAssessmentSectionProps {
   form: UseFormReturn<RiskScenarioFormValues>;
@@ -75,14 +76,16 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
       
       // Find the maximum impact level from all scales
       Object.values(impactScaleRatings).forEach(level => {
-        const impactValue = impactValues[level] || 1;
+        // Ensure the level is cast to RiskLevel type
+        const riskLevel = level as RiskLevel;
+        const impactValue = impactValues[riskLevel] || 1;
         if (impactValue > maxImpactValue) {
           maxImpactValue = impactValue;
         }
       });
       
       // Convert back to string value
-      let maxImpactLevel = 'low';
+      let maxImpactLevel: RiskLevel = 'low';
       if (maxImpactValue === 2) maxImpactLevel = 'medium';
       if (maxImpactValue === 3) maxImpactLevel = 'high';
       if (maxImpactValue === 4) maxImpactLevel = 'critical';
@@ -111,8 +114,9 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
   }
 
   // Handle change for a specific impact scale
-  const handleImpactScaleChange = (scaleId: string, value: string) => {
-    const newRatings = { ...impactScaleRatings, [scaleId]: value };
+  const handleImpactScaleChange = (scaleId: string, value: RiskLevel) => {
+    const newRatings: Record<string, RiskLevel> = { ...impactScaleRatings };
+    newRatings[scaleId] = value;
     form.setValue('impactScaleRatings', newRatings);
   };
 
@@ -183,14 +187,15 @@ const RiskAssessmentSection: React.FC<RiskAssessmentSectionProps> = ({ form, com
                               <div key={scale.id}>
                                 <FormField
                                   control={form.control}
-                                  name={`impactScale_${scale.id}`} // This is just for form registration
+                                  // Using `impactScaleRatings` path with the scale ID for proper form registration
+                                  name={`impactScaleRatings.${scale.id}` as any}
                                   render={() => (
                                     <RiskScaleSlider
                                       name={`impactScale_${scale.id}`}
                                       label={`Impact - ${scale.scaleType?.name}`}
                                       description={scale.scaleType?.description || "Évaluez l'impact potentiel de ce scénario de risque"}
                                       levels={scale.levels}
-                                      value={scaleValue}
+                                      value={scaleValue as RiskLevel}
                                       onChange={(value) => handleImpactScaleChange(scale.id, value)}
                                     />
                                   )}
