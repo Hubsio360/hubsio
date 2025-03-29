@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -94,14 +95,19 @@ const RiskScenarioDetail = () => {
             rawLikelihood: scenarioData.likelihood as RiskLevel,
             rawRiskLevel: scenarioData.risk_level as RiskLevel,
             residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
+            residual_impact: scenarioData.residual_impact as RiskLevel || 'low',
             residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
+            residual_likelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
             residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
+            residual_risk_level: scenarioData.residual_risk_level as RiskLevel || 'low',
             threatId: scenarioData.threat_id,
             threat_id: scenarioData.threat_id,
             vulnerabilityId: scenarioData.vulnerability_id,
             vulnerability_id: scenarioData.vulnerability_id,
             securityMeasures: scenarioData.security_measures || '',
+            security_measures: scenarioData.security_measures || '',
             measureEffectiveness: scenarioData.measure_effectiveness || '',
+            measure_effectiveness: scenarioData.measure_effectiveness || '',
             impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' 
               ? scenarioData.impact_scale_ratings as Record<string, RiskLevel>
               : {},
