@@ -77,8 +77,7 @@ const ColorScale: React.FC<ColorScaleProps> = ({
                   className={`w-6 h-6 rounded-full z-10 ${isActive ? 'ring-4 ring-opacity-30' : ''}`}
                   style={{ 
                     backgroundColor: level.color,
-                    boxShadow: isActive ? '0 0 0 4px rgba(255,255,255,0.2)' : 'none',
-                    ringColor: level.color
+                    boxShadow: isActive ? `0 0 0 4px ${level.color}33` : 'none'
                   }}
                 ></div>
                 <p className={`mt-3 text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`} style={{ color: isActive ? level.color : '' }}>

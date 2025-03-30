@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RiskScenario } from '@/types';
+import { RiskScenario, RiskLevel } from '@/types';
 import ColorScale from './ColorScale';
 
 interface ResidualRiskTabProps {
@@ -22,10 +22,10 @@ const ResidualRiskTab: React.FC<ResidualRiskTabProps> = ({ scenario }) => {
   const measureEffectiveness = getProperty<string>('measureEffectiveness', 'measure_effectiveness');
   
   // Get residual impact
-  const residualImpact = getProperty<string>('residualImpact', 'residual_impact');
+  const residualImpact = getProperty<RiskLevel>('residualImpact', 'residual_impact') || 'low';
   
   // Get residual likelihood
-  const residualLikelihood = getProperty<string>('residualLikelihood', 'residual_likelihood');
+  const residualLikelihood = getProperty<RiskLevel>('residualLikelihood', 'residual_likelihood') || 'low';
   
   // Get residual risk level
   const residualRiskLevel = getProperty<string>('residualRiskLevel', 'residual_risk_level');
@@ -50,7 +50,7 @@ const ResidualRiskTab: React.FC<ResidualRiskTabProps> = ({ scenario }) => {
       
       <div className="bg-background rounded-lg p-6 border">
         <ColorScale 
-          value={residualImpact || 'low'} 
+          value={residualImpact} 
           title="Impact résiduel" 
           description="Évaluation de l'impact potentiel après application des mesures de sécurité."
         />
@@ -58,7 +58,7 @@ const ResidualRiskTab: React.FC<ResidualRiskTabProps> = ({ scenario }) => {
       
       <div className="bg-background rounded-lg p-6 border">
         <ColorScale 
-          value={residualLikelihood || 'low'} 
+          value={residualLikelihood} 
           title="Probabilité résiduelle" 
           description="Évaluation de la probabilité après application des mesures de sécurité."
         />

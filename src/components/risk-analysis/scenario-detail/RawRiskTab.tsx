@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { RiskScenario } from '@/types';
+import { RiskScenario, RiskLevel } from '@/types';
 import ColorScale from './ColorScale';
 
 interface RawRiskTabProps {
@@ -16,10 +16,10 @@ const RawRiskTab: React.FC<RawRiskTabProps> = ({ scenario }) => {
   };
 
   // Get the raw impact value
-  const rawImpact = getProperty<string>('rawImpact', 'raw_impact');
+  const rawImpact = getProperty<RiskLevel>('rawImpact', 'raw_impact') || 'low';
   
   // Get the raw likelihood value
-  const rawLikelihood = getProperty<string>('rawLikelihood', 'raw_likelihood');
+  const rawLikelihood = getProperty<RiskLevel>('rawLikelihood', 'raw_likelihood') || 'low';
   
   // Get the raw risk level value
   const rawRiskLevel = getProperty<string>('rawRiskLevel', 'raw_risk_level');
@@ -28,7 +28,7 @@ const RawRiskTab: React.FC<RawRiskTabProps> = ({ scenario }) => {
     <div className="space-y-8">
       <div className="bg-background rounded-lg p-6 border">
         <ColorScale 
-          value={rawImpact || 'low'} 
+          value={rawImpact} 
           title="Impact brut" 
           description="Évaluation de l'impact potentiel si le risque se concrétise, sans tenir compte des mesures de protection."
         />
@@ -36,7 +36,7 @@ const RawRiskTab: React.FC<RawRiskTabProps> = ({ scenario }) => {
       
       <div className="bg-background rounded-lg p-6 border">
         <ColorScale 
-          value={rawLikelihood || 'low'} 
+          value={rawLikelihood} 
           title="Probabilité brute" 
           description="Évaluation de la probabilité que le risque se concrétise, sans tenir compte des mesures de protection."
         />
