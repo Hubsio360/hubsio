@@ -446,7 +446,7 @@ export const useRiskAnalysis = () => {
       
       const { data, error } = await supabase
         .from('risk_scenarios')
-        .insert([dbScenario])
+        .insert(dbScenario)
         .select()
         .single();
       
@@ -845,36 +845,14 @@ export const useRiskAnalysis = () => {
     }
   }, []);
 
-  return {
-    riskAssets,
-    riskThreats,
-    riskVulnerabilities,
-    riskScenarios,
-    riskTreatments,
-    fetchRiskAssetsByCompanyId,
-    fetchRiskThreatsByCompanyId,
-    fetchRiskVulnerabilitiesByCompanyId,
-    fetchRiskScenariosByCompanyId,
-    fetchRiskTreatmentsByScenarioId,
-    addRiskAsset,
-    addRiskThreat,
-    addRiskVulnerability,
-    addRiskScenario,
-    createRiskScenario,
-    addRiskTreatment,
-    updateRiskAsset,
-    updateRiskThreat,
-    updateRiskVulnerability,
-    updateRiskScenario,
-    updateRiskTreatment,
-    deleteRiskAsset,
-    deleteRiskThreat,
-    deleteRiskVulnerability,
-    deleteRiskScenario,
-    deleteRiskTreatment,
-    associateRiskScenarioWithAsset,
-    removeRiskScenarioAssetAssociation,
-    getRiskScenarioAssets,
-    loading
-  };
-};
+  // Add multiple risk scenarios - modify the batch insert function to handle arrays properly
+  const addMultipleRiskScenarios = useCallback(async (scenarios: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+    try {
+      // Convert all scenarios to database format
+      const dbScenarios = scenarios.map(scenario => ({
+        company_id: scenario.companyId,
+        name: scenario.name,
+        description: scenario.description,
+        threat_id: scenario.threatId,
+        vulnerability_id: scenario.vulnerabilityId,
+        impact_description

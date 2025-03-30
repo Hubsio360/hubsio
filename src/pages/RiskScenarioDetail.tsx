@@ -320,7 +320,7 @@ const RiskScenarioDetail = () => {
       <div className="flex justify-between items-center mb-6">
         <Button 
           variant="ghost" 
-          onClick={() => navigate(`/risk-analysis/${currentScenario.companyId}`)}
+          onClick={() => navigate(`/risk-analysis/${currentScenario?.companyId}`)}
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Retour à l'analyse
@@ -360,215 +360,219 @@ const RiskScenarioDetail = () => {
         </div>
       </div>
       
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-2xl">{currentScenario.name}</CardTitle>
-              <CardDescription>
-                Scénario de risque - ID: {currentScenario.id}
-              </CardDescription>
-            </div>
-            <div className="flex space-x-2">
-              <Badge variant="outline" className="capitalize">
-                {currentScenario.scope}
-              </Badge>
-              <Badge 
-                variant={
-                  currentScenario.riskLevel === 'low' ? 'secondary' :
-                  currentScenario.riskLevel === 'medium' ? 'outline' :
-                  currentScenario.riskLevel === 'high' ? 'default' : 'destructive'
-                }
-              >
-                {currentScenario.riskLevel === 'low' ? 'Faible' :
-                 currentScenario.riskLevel === 'medium' ? 'Moyen' :
-                 currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
-              </Badge>
-              <Badge 
-                variant="outline" 
-                className="capitalize"
-              >
-                {currentScenario.status === 'identified' ? 'Identifié' :
-                 currentScenario.status === 'analyzed' ? 'Analysé' :
-                 currentScenario.status === 'treated' ? 'Traité' :
-                 currentScenario.status === 'accepted' ? 'Accepté' : 'Surveillé'}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div>
-            <h3 className="text-lg font-medium mb-2">Description</h3>
-            <p className="text-gray-700 dark:text-gray-300">
-              {currentScenario.description || "Aucune description fournie."}
-            </p>
-          </div>
-          
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <h3 className="text-lg font-medium">Description de l'impact</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={generateImpactDescription}
-                disabled={generatingImpact || !currentScenario.description}
-              >
-                {generatingImpact ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Génération...
-                  </>
-                ) : (
-                  <>
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Générer avec IA
-                  </>
-                )}
-              </Button>
-            </div>
-            <p className="text-gray-700 dark:text-gray-300">
-              {currentScenario.impactDescription || "Aucune description d'impact fournie."}
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-background rounded-lg p-4 border">
-              <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact</h4>
-              <p className="text-xl font-semibold capitalize">
-                {currentScenario.impactLevel === 'low' ? 'Faible' :
-                 currentScenario.impactLevel === 'medium' ? 'Moyen' :
-                 currentScenario.impactLevel === 'high' ? 'Élevé' : 'Critique'}
-              </p>
-            </div>
-            
-            <div className="bg-background rounded-lg p-4 border">
-              <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité</h4>
-              <p className="text-xl font-semibold capitalize">
-                {currentScenario.likelihood === 'low' ? 'Faible' :
-                 currentScenario.likelihood === 'medium' ? 'Moyen' :
-                 currentScenario.likelihood === 'high' ? 'Élevé' : 'Critique'}
-              </p>
-            </div>
-            
-            <div className="bg-background rounded-lg p-4 border">
-              <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque</h4>
-              <p className={`text-xl font-semibold capitalize ${
-                currentScenario.riskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-                currentScenario.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                currentScenario.riskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-              }`}>
-                {currentScenario.riskLevel === 'low' ? 'Faible' :
-                 currentScenario.riskLevel === 'medium' ? 'Moyen' :
-                 currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
-              </p>
-            </div>
-          </div>
-          
-          <Tabs defaultValue="raw" className="mt-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="raw">Évaluation brute</TabsTrigger>
-              <TabsTrigger value="residual">Évaluation résiduelle</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="raw" className="space-y-4 p-4 border rounded-md mt-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact brut</h4>
-                  <p className="text-xl font-semibold capitalize">
-                    {(currentScenario.rawImpact || currentScenario.raw_impact) === 'low' ? 'Faible' :
-                     (currentScenario.rawImpact || currentScenario.raw_impact) === 'medium' ? 'Moyen' :
-                     (currentScenario.rawImpact || currentScenario.raw_impact) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
-                
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité brute</h4>
-                  <p className="text-xl font-semibold capitalize">
-                    {(currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'low' ? 'Faible' :
-                     (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'medium' ? 'Moyen' :
-                     (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
-                
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque brut</h4>
-                  <p className={`text-xl font-semibold capitalize ${
-                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
-                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {(currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'Faible' :
-                     (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'Moyen' :
-                     (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="residual" className="space-y-4 p-4 border rounded-md mt-2">
+      {currentScenario && (
+        <Card>
+          <CardHeader>
+            <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-medium mb-2">Mesures de sécurité</h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  {(currentScenario.securityMeasures || currentScenario.security_measures) || "Aucune mesure de sécurité spécifiée."}
-                </p>
-                
-                <h3 className="text-lg font-medium mb-2">Efficacité des mesures</h3>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  {(currentScenario.measureEffectiveness || currentScenario.measure_effectiveness) || "Aucune évaluation de l'efficacité des mesures."}
+                <CardTitle className="text-2xl">{currentScenario.name}</CardTitle>
+                <CardDescription>
+                  Scénario de risque - ID: {currentScenario.id}
+                </CardDescription>
+              </div>
+              <div className="flex space-x-2">
+                <Badge variant="outline" className="capitalize">
+                  {currentScenario.scope}
+                </Badge>
+                <Badge 
+                  variant={
+                    currentScenario.riskLevel === 'low' ? 'secondary' :
+                    currentScenario.riskLevel === 'medium' ? 'outline' :
+                    currentScenario.riskLevel === 'high' ? 'default' : 'destructive'
+                  }
+                >
+                  {currentScenario.riskLevel === 'low' ? 'Faible' :
+                  currentScenario.riskLevel === 'medium' ? 'Moyen' :
+                  currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
+                </Badge>
+                <Badge 
+                  variant="outline" 
+                  className="capitalize"
+                >
+                  {currentScenario.status === 'identified' ? 'Identifié' :
+                  currentScenario.status === 'analyzed' ? 'Analysé' :
+                  currentScenario.status === 'treated' ? 'Traité' :
+                  currentScenario.status === 'accepted' ? 'Accepté' : 'Surveillé'}
+                </Badge>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium mb-2">Description</h3>
+              <p className="text-gray-700 dark:text-gray-300">
+                {currentScenario.description || "Aucune description fournie."}
+              </p>
+            </div>
+            
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-medium">Description de l'impact</h3>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={generateImpactDescription}
+                  disabled={generatingImpact || !currentScenario.description}
+                >
+                  {generatingImpact ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Génération...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Générer avec IA
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300">
+                {currentScenario.impactDescription || "Aucune description d'impact fournie."}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-background rounded-lg p-4 border">
+                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact</h4>
+                <p className="text-xl font-semibold capitalize">
+                  {currentScenario.impactLevel === 'low' ? 'Faible' :
+                  currentScenario.impactLevel === 'medium' ? 'Moyen' :
+                  currentScenario.impactLevel === 'high' ? 'Élevé' : 'Critique'}
                 </p>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact résiduel</h4>
-                  <p className="text-xl font-semibold capitalize">
-                    {(currentScenario.residualImpact || currentScenario.residual_impact) === 'low' ? 'Faible' :
-                     (currentScenario.residualImpact || currentScenario.residual_impact) === 'medium' ? 'Moyen' :
-                     (currentScenario.residualImpact || currentScenario.residual_impact) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
-                
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité résiduelle</h4>
-                  <p className="text-xl font-semibold capitalize">
-                    {(currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'low' ? 'Faible' :
-                     (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'medium' ? 'Moyen' :
-                     (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
-                
-                <div className="bg-background rounded-lg p-4 border">
-                  <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque résiduel</h4>
-                  <p className={`text-xl font-semibold capitalize ${
-                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
-                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {(currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'Faible' :
-                     (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'Moyen' :
-                     (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'Élevé' : 'Critique'}
-                  </p>
-                </div>
+              <div className="bg-background rounded-lg p-4 border">
+                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité</h4>
+                <p className="text-xl font-semibold capitalize">
+                  {currentScenario.likelihood === 'low' ? 'Faible' :
+                  currentScenario.likelihood === 'medium' ? 'Moyen' :
+                  currentScenario.likelihood === 'high' ? 'Élevé' : 'Critique'}
+                </p>
               </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+              
+              <div className="bg-background rounded-lg p-4 border">
+                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque</h4>
+                <p className={`text-xl font-semibold capitalize ${
+                  currentScenario.riskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
+                  currentScenario.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                  currentScenario.riskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {currentScenario.riskLevel === 'low' ? 'Faible' :
+                  currentScenario.riskLevel === 'medium' ? 'Moyen' :
+                  currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
+                </p>
+              </div>
+            </div>
+            
+            <Tabs defaultValue="raw" className="mt-6">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="raw">Évaluation brute</TabsTrigger>
+                <TabsTrigger value="residual">Évaluation résiduelle</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="raw" className="space-y-4 p-4 border rounded-md mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact brut</h4>
+                    <p className="text-xl font-semibold capitalize">
+                      {(currentScenario.rawImpact || currentScenario.raw_impact) === 'low' ? 'Faible' :
+                      (currentScenario.rawImpact || currentScenario.raw_impact) === 'medium' ? 'Moyen' :
+                      (currentScenario.rawImpact || currentScenario.raw_impact) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité brute</h4>
+                    <p className="text-xl font-semibold capitalize">
+                      {(currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'low' ? 'Faible' :
+                      (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'medium' ? 'Moyen' :
+                      (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque brut</h4>
+                    <p className={`text-xl font-semibold capitalize ${
+                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
+                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {(currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'Faible' :
+                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'Moyen' :
+                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="residual" className="space-y-4 p-4 border rounded-md mt-2">
+                <div>
+                  <h3 className="text-lg font-medium mb-2">Mesures de sécurité</h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    {(currentScenario.securityMeasures || currentScenario.security_measures) || "Aucune mesure de sécurité spécifiée."}
+                  </p>
+                  
+                  <h3 className="text-lg font-medium mb-2">Efficacité des mesures</h3>
+                  <p className="text-gray-700 dark:text-gray-300 mb-4">
+                    {(currentScenario.measureEffectiveness || currentScenario.measure_effectiveness) || "Aucune évaluation de l'efficacité des mesures."}
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact résiduel</h4>
+                    <p className="text-xl font-semibold capitalize">
+                      {(currentScenario.residualImpact || currentScenario.residual_impact) === 'low' ? 'Faible' :
+                      (currentScenario.residualImpact || currentScenario.residual_impact) === 'medium' ? 'Moyen' :
+                      (currentScenario.residualImpact || currentScenario.residual_impact) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité résiduelle</h4>
+                    <p className="text-xl font-semibold capitalize">
+                      {(currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'low' ? 'Faible' :
+                      (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'medium' ? 'Moyen' :
+                      (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-4 border">
+                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque résiduel</h4>
+                    <p className={`text-xl font-semibold capitalize ${
+                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
+                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {(currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'Faible' :
+                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'Moyen' :
+                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'Élevé' : 'Critique'}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      )}
       
-      <EditRiskScenarioModalV2
-        open={isEditing}
-        onOpenChange={(open) => {
-          setIsEditing(open);
-          
-          // Refresh data when dialog closes to ensure we have latest state
-          if (!open) {
-            fetchScenarioData();
-          }
-        }}
-        scenario={currentScenario}
-        onSave={handleSaveScenario}
-      />
+      {currentScenario && (
+        <EditRiskScenarioModalV2
+          open={isEditing}
+          onOpenChange={(open) => {
+            setIsEditing(open);
+            
+            // Refresh data when dialog closes to ensure we have latest state
+            if (!open) {
+              fetchScenarioData();
+            }
+          }}
+          scenario={currentScenario}
+          onSave={handleSaveScenario}
+        />
+      )}
     </div>
   );
 };

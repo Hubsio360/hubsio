@@ -70,4 +70,7 @@ export interface RiskAssessment {
   residual_risk_level?: RiskLevel;
   security_measures?: string;
   measure_effectiveness?: string;
+  // Impact scale ratings field
+  impactScaleRatings?: Record<string, RiskLevel>;
+  impact_scale_ratings?: Record<string, RiskLevel>;
 }
