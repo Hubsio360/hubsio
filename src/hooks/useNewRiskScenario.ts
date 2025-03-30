@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
-import { RiskLevel, RiskStatus, RiskScope, mapRiskScenarioToDb } from '@/types';
+import { RiskLevel, RiskStatus } from '@/types';
 import { RiskScenarioScope } from '@/types/risk-scenario';
 import type { RiskScenarioFormValues } from '@/components/risk-analysis/new-scenario/RiskScenarioForm';
 import { supabase } from '@/integrations/supabase/client';

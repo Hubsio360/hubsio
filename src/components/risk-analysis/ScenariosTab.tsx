@@ -1,4 +1,3 @@
-
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import {
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import { RiskScenario, RiskLevel } from '@/types';
+import { RiskScenario, RiskLevel, RiskScenarioScope } from '@/types';
 import { getRiskLevelBadge, getRiskScopeBadge, getRiskStatusBadge } from '@/components/risk-analysis/utils/riskBadges';
 import { useData } from '@/contexts/DataContext';
 import { useState } from 'react';

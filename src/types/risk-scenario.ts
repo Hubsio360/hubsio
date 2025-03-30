@@ -1,7 +1,7 @@
 
 import { RiskLevel } from './common';
 import { Json } from './supabase';
-import { RiskScope, RiskStatus } from './risk';
+import { RiskStatus } from './risk';
 
 // Définition du scope spécifique pour les scénarios de risque, différent de RiskScope général
 export type RiskScenarioScope = 'organization' | 'system' | 'service' | 'process';

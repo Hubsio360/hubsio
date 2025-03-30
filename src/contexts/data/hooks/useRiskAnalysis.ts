@@ -5,7 +5,9 @@ import {
   RiskVulnerability, 
   RiskScenario, 
   RiskTreatment, 
-  RiskLevel 
+  RiskLevel,
+  mapDbToRiskScenario,
+  mapRiskScenarioToDb
 } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -44,10 +46,6 @@ const mapDbVulnerabilityToRiskVulnerability = (dbVuln: any): RiskVulnerability =
   updatedAt: dbVuln.updated_at
 });
 
-const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => {
-  return mapDbToRiskScenario(dbScenario);
-};
-
 const mapDbTreatmentToRiskTreatment = (dbTreatment: any): RiskTreatment => ({
   id: dbTreatment.id,
   riskScenarioId: dbTreatment.risk_scenario_id,
@@ -84,26 +82,6 @@ const mapRiskVulnerabilityToDbVulnerability = (vulnerability: Omit<RiskVulnerabi
   name: vulnerability.name,
   description: vulnerability.description,
   category: vulnerability.category
-});
-
-const mapRiskScenarioToDbScenario = (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>) => ({
-  company_id: scenario.companyId,
-  name: scenario.name,
-  description: scenario.description,
-  threat_id: scenario.threatId,
-  vulnerability_id: scenario.vulnerabilityId,
-  impact_description: scenario.impactDescription,
-  impact_level: scenario.impactLevel,
-  likelihood: scenario.likelihood,
-  risk_level: scenario.riskLevel,
-  status: scenario.status,
-  scope: scenario.scope,
-  residual_impact: scenario.residualImpact,
-  residual_likelihood: scenario.residualLikelihood,
-  residual_risk_level: scenario.residualRiskLevel,
-  security_measures: scenario.securityMeasures,
-  measure_effectiveness: scenario.measureEffectiveness,
-  impact_scale_ratings: scenario.impactScaleRatings
 });
 
 const mapRiskTreatmentToDbTreatment = (treatment: Omit<RiskTreatment, 'id' | 'createdAt' | 'updatedAt'>) => ({
@@ -390,7 +368,7 @@ export const useRiskAnalysis = () => {
   // Add a risk scenario
   const addRiskScenario = useCallback(async (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskScenario> => {
     try {
-      const dbScenario = mapRiskScenarioToDbScenario(scenario);
+      const dbScenario = mapRiskScenarioToDb(scenario);
       const { data, error } = await supabase
         .from('risk_scenarios')
         .insert([dbScenario])
@@ -402,7 +380,7 @@ export const useRiskAnalysis = () => {
         throw new Error(error.message);
       }
       
-      const newScenario = mapDbScenarioToRiskScenario(data);
+      const newScenario = mapDbToRiskScenario(data);
       setRiskScenarios(prev => [...prev, newScenario]);
       return newScenario;
     } catch (error) {

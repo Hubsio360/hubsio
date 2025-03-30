@@ -1,6 +1,7 @@
 
 import { RiskLevel } from './common';
 import { Json } from './supabase';
+import { RiskScenarioScope } from './risk-scenario';
 
 export type RiskScope = 'technical' | 'organizational' | 'human' | 'physical' | 'environmental';
 export type RiskStatus = 'identified' | 'analyzed' | 'treated' | 'accepted' | 'monitored';
@@ -100,9 +101,9 @@ export function mapDbToRiskScenario(dbScenario: any) {
     risk_level: dbScenario.risk_level,
     status: dbScenario.status,
     scope: dbScenario.scope,
-    rawImpact: dbScenario.impact_level,
-    rawLikelihood: dbScenario.likelihood,
-    rawRiskLevel: dbScenario.risk_level,
+    rawImpact: dbScenario.rawImpact || dbScenario.impact_level,
+    rawLikelihood: dbScenario.rawLikelihood || dbScenario.likelihood,
+    rawRiskLevel: dbScenario.rawRiskLevel || dbScenario.risk_level,
     residualImpact: dbScenario.residual_impact,
     residual_impact: dbScenario.residual_impact,
     residualLikelihood: dbScenario.residual_likelihood,

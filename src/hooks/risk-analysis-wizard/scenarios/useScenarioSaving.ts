@@ -1,9 +1,10 @@
+
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SuggestedScenario, BusinessProcess } from '../types';
 import { useData } from '@/contexts/DataContext';
-import { RiskScope, RiskStatus, RiskLevel, mapRiskScenarioToDb } from '@/types';
+import { RiskLevel, RiskStatus, mapRiskScenarioToDb } from '@/types';
 import { RiskScenarioScope } from '@/types/risk-scenario';
 
 export function useScenarioSaving(companyId: string) {
@@ -85,24 +86,28 @@ export function useScenarioSaving(companyId: string) {
         try {
           console.log('Tentative d\'enregistrement du scénario:', scenario.name);
           const scenarioData = {
-            companyId,
+            company_id: companyId,
             name: scenario.name,
             description: scenario.description,
             status: 'identified' as RiskStatus,
-            scope: 'technical' as RiskScope,
-            riskLevel: 'medium' as RiskLevel,
-            impactLevel: 'medium' as RiskLevel,
+            scope: 'organization' as RiskScenarioScope,
+            impact_level: 'medium' as RiskLevel,
             likelihood: 'medium' as RiskLevel,
-            rawImpact: 'medium' as RiskLevel,
-            rawLikelihood: 'medium' as RiskLevel,
-            rawRiskLevel: 'medium' as RiskLevel,
-            residualImpact: 'low' as RiskLevel,
-            residualLikelihood: 'low' as RiskLevel,
-            residualRiskLevel: 'low' as RiskLevel
+            risk_level: 'medium' as RiskLevel,
+            residual_impact: 'low' as RiskLevel,
+            residual_likelihood: 'low' as RiskLevel,
+            residual_risk_level: 'low' as RiskLevel
           };
           console.log('Données du scénario à enregistrer:', scenarioData);
           
-          await createRiskScenario(scenarioData);
+          const { data, error } = await supabase
+            .from('risk_scenarios')
+            .insert([scenarioData])
+            .select()
+            .single();
+            
+          if (error) throw error;
+          
           savedScenariosCount++;
           console.log(`Scénario enregistré avec succès: ${scenario.name}`);
         } catch (scenarioError) {
@@ -148,8 +153,8 @@ export function useScenarioSaving(companyId: string) {
     }
   };
 
-  const saveScenarios = async () => {
-    if (selectedScenarios.length === 0) {
+  const saveScenarios = async (scenariosToSave: SuggestedScenario[]) => {
+    if (scenariosToSave.length === 0) {
       toast({
         title: "Attention",
         description: "Veuillez sélectionner au moins un scénario de risque",
@@ -165,7 +170,7 @@ export function useScenarioSaving(companyId: string) {
     try {
       console.log('Début de sauvegarde des scénarios');
       
-      for (const scenario of selectedScenarios) {
+      for (const scenario of scenariosToSave) {
         try {
           const scenarioData = {
             company_id: companyId,
