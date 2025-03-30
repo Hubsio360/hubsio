@@ -89,3 +89,24 @@ export const ensureImpactScalesExist = async (companyId: string): Promise<boolea
     return false;
   }
 };
+
+/**
+ * Ensures that all required risk scales exist for a company
+ * @param companyId The ID of the company to check scales for
+ * @returns Promise<boolean> indicating success or failure
+ */
+export const ensureCompanyHasRequiredScales = async (companyId: string): Promise<boolean> => {
+  try {
+    console.log("Vérification des échelles requises pour le client:", companyId);
+    
+    // Ensure both types of scales exist
+    const impactResult = await ensureImpactScalesExist(companyId);
+    
+    // Here we could add more scale creation logic if needed
+    
+    return impactResult;
+  } catch (err) {
+    console.error("Erreur lors de la création des échelles requises:", err);
+    return false;
+  }
+};

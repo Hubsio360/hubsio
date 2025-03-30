@@ -1,4 +1,3 @@
-
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -251,10 +250,10 @@ export interface RiskVulnerability {
 
 export interface RiskScenario {
   id: string;
-  name: string;
-  description?: string;
   companyId: string;
   company_id?: string; // Alias for DB compatibility
+  name: string;
+  description?: string;
   impactDescription?: string;
   impact_description?: string; // Alias for DB compatibility
   impactLevel: RiskLevel;
