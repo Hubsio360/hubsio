@@ -47,23 +47,23 @@ const RiskScenarioDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [generatingImpact, setGeneratingImpact] = useState(false);
-  const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
+  const data = useData();
   const { toast } = useToast();
 
-  // Use useCallback to prevent recreation of this function on each render
+  // Utilisation de useCallback pour éviter la recréation de cette fonction à chaque rendu
   const fetchScenarioData = useCallback(async () => {
     if (!id) return;
     
     try {
       setIsLoading(true);
       
-      const { riskScenarios } = useData();
+      const { riskScenarios } = data;
       
       let scenario = riskScenarios.find(s => s.id === id);
       
       if (!scenario && currentScenario?.companyId) {
-        await fetchRiskScenariosByCompanyId(currentScenario.companyId);
-        scenario = riskScenarios.find(s => s.id === id);
+        await data.fetchRiskScenariosByCompanyId(currentScenario.companyId);
+        scenario = data.riskScenarios.find(s => s.id === id);
       }
       
       if (scenario) {
@@ -90,7 +90,7 @@ const RiskScenarioDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast, navigate, currentScenario?.companyId, fetchRiskScenariosByCompanyId]);
+  }, [id, toast, navigate, currentScenario?.companyId, data]);
 
   useEffect(() => {
     fetchScenarioData();
@@ -112,7 +112,7 @@ const RiskScenarioDetail = () => {
         throw new Error("Failed to update scenario");
       }
       
-      // Update local state to reflect changes
+      // Mise à jour de l'état local pour refléter les changements
       setCurrentScenario(prev => prev ? {...prev, ...processedData} : null);
       
       return true;
@@ -131,7 +131,7 @@ const RiskScenarioDetail = () => {
     if (!currentScenario) return;
     
     try {
-      await deleteRiskScenario(currentScenario.id);
+      await data.deleteRiskScenario(currentScenario.id);
       toast({
         title: "Succès",
         description: "Scénario de risque supprimé avec succès",
@@ -159,21 +159,21 @@ const RiskScenarioDetail = () => {
     setGeneratingImpact(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-impact-description', {
+      const { data: responseData, error } = await supabase.functions.invoke('generate-impact-description', {
         body: { scenarioDescription: currentScenario.description },
       });
 
       if (error) throw error;
 
-      if (data.impactDescription) {
-        const success = await updateRiskScenario(currentScenario.id, {
-          impactDescription: data.impactDescription
+      if (responseData.impactDescription) {
+        const success = await data.updateRiskScenario(currentScenario.id, {
+          impactDescription: responseData.impactDescription
         });
 
         if (success) {
           setCurrentScenario({
             ...currentScenario,
-            impactDescription: data.impactDescription
+            impactDescription: responseData.impactDescription
           });
 
           toast({
@@ -191,6 +191,80 @@ const RiskScenarioDetail = () => {
       });
     } finally {
       setGeneratingImpact(false);
+    }
+  };
+
+  const updateRiskScenario = async (id: string, scenarioData: Partial<RiskScenario>): Promise<RiskScenario | null> => {
+    try {
+      // Conversion des champs camelCase en snake_case pour la base de données
+      const updates: Record<string, any> = {};
+      if (scenarioData.name !== undefined) updates.name = scenarioData.name;
+      if (scenarioData.description !== undefined) updates.description = scenarioData.description;
+      if (scenarioData.threatId !== undefined) updates.threat_id = scenarioData.threatId;
+      if (scenarioData.vulnerabilityId !== undefined) updates.vulnerability_id = scenarioData.vulnerabilityId;
+      if (scenarioData.impactDescription !== undefined) updates.impact_description = scenarioData.impactDescription;
+      if (scenarioData.impactLevel !== undefined) updates.impact_level = scenarioData.impactLevel;
+      if (scenarioData.likelihood !== undefined) updates.likelihood = scenarioData.likelihood;
+      if (scenarioData.riskLevel !== undefined) updates.risk_level = scenarioData.riskLevel;
+      if (scenarioData.status !== undefined) updates.status = scenarioData.status;
+      if (scenarioData.scope !== undefined) updates.scope = scenarioData.scope;
+      if (scenarioData.rawImpact !== undefined) updates.raw_impact = scenarioData.rawImpact;
+      if (scenarioData.rawLikelihood !== undefined) updates.raw_likelihood = scenarioData.rawLikelihood;
+      if (scenarioData.rawRiskLevel !== undefined) updates.raw_risk_level = scenarioData.rawRiskLevel;
+      if (scenarioData.residualImpact !== undefined) updates.residual_impact = scenarioData.residualImpact;
+      if (scenarioData.residualLikelihood !== undefined) updates.residual_likelihood = scenarioData.residualLikelihood;
+      if (scenarioData.residualRiskLevel !== undefined) updates.residual_risk_level = scenarioData.residualRiskLevel;
+      if (scenarioData.securityMeasures !== undefined) updates.security_measures = scenarioData.securityMeasures;
+      if (scenarioData.measureEffectiveness !== undefined) updates.measure_effectiveness = scenarioData.measureEffectiveness;
+      if (scenarioData.impactScaleRatings !== undefined) updates.impact_scale_ratings = scenarioData.impactScaleRatings;
+      
+      const { data: updatedData, error } = await supabase
+        .from('risk_scenarios')
+        .update(updates)
+        .eq('id', id)
+        .select('*')
+        .single();
+      
+      if (error) {
+        console.error('Error updating risk scenario:', error);
+        throw new Error(error.message);
+      }
+      
+      // Conversion des données de la base de données au format de l'application
+      const updatedScenario: RiskScenario = {
+        id: updatedData.id,
+        companyId: updatedData.company_id,
+        name: updatedData.name,
+        description: updatedData.description,
+        threatId: updatedData.threat_id,
+        vulnerabilityId: updatedData.vulnerability_id,
+        impactDescription: updatedData.impact_description,
+        impactLevel: updatedData.impact_level,
+        likelihood: updatedData.likelihood,
+        riskLevel: updatedData.risk_level,
+        status: updatedData.status,
+        scope: updatedData.scope,
+        rawImpact: updatedData.raw_impact,
+        rawLikelihood: updatedData.raw_likelihood,
+        rawRiskLevel: updatedData.raw_risk_level,
+        residualImpact: updatedData.residual_impact,
+        residualLikelihood: updatedData.residual_likelihood,
+        residualRiskLevel: updatedData.residual_risk_level,
+        securityMeasures: updatedData.security_measures,
+        measureEffectiveness: updatedData.measure_effectiveness,
+        impactScaleRatings: updatedData.impact_scale_ratings,
+        createdAt: updatedData.created_at,
+        updatedAt: updatedData.updated_at,
+        // Ajout des champs en snake_case pour la compatibilité
+        company_id: updatedData.company_id,
+        created_at: updatedData.created_at,
+        updated_at: updatedData.updated_at,
+      };
+      
+      return updatedScenario;
+    } catch (error) {
+      console.error('Error updating risk scenario:', error);
+      return null;
     }
   };
 

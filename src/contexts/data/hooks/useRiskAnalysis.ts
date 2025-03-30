@@ -57,8 +57,28 @@ const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
   riskLevel: dbScenario.risk_level,
   status: dbScenario.status,
   scope: dbScenario.scope,
+  rawImpact: dbScenario.raw_impact,
+  rawLikelihood: dbScenario.raw_likelihood,
+  rawRiskLevel: dbScenario.raw_risk_level,
+  residualImpact: dbScenario.residual_impact,
+  residualLikelihood: dbScenario.residual_likelihood,
+  residualRiskLevel: dbScenario.residual_risk_level,
+  securityMeasures: dbScenario.security_measures,
+  measureEffectiveness: dbScenario.measure_effectiveness,
+  impactScaleRatings: dbScenario.impact_scale_ratings,
   createdAt: dbScenario.created_at,
-  updatedAt: dbScenario.updated_at
+  updatedAt: dbScenario.updated_at,
+  company_id: dbScenario.company_id,
+  created_at: dbScenario.created_at,
+  updated_at: dbScenario.updated_at,
+  raw_impact: dbScenario.raw_impact,
+  raw_likelihood: dbScenario.raw_likelihood,
+  raw_risk_level: dbScenario.raw_risk_level,
+  residual_impact: dbScenario.residual_impact,
+  residual_likelihood: dbScenario.residual_likelihood,
+  residual_risk_level: dbScenario.residual_risk_level,
+  security_measures: dbScenario.security_measures,
+  measure_effectiveness: dbScenario.measure_effectiveness
 });
 
 const mapDbTreatmentToRiskTreatment = (dbTreatment: any): RiskTreatment => ({

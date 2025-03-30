@@ -61,4 +61,13 @@ export interface RiskAssessment {
   residualRiskLevel: RiskLevel;
   securityMeasures: string;
   measureEffectiveness: string;
+  // Database field mappings
+  raw_likelihood?: RiskLevel;
+  raw_impact?: RiskLevel;
+  raw_risk_level?: RiskLevel;
+  residual_likelihood?: RiskLevel;
+  residual_impact?: RiskLevel;
+  residual_risk_level?: RiskLevel;
+  security_measures?: string;
+  measure_effectiveness?: string;
 }

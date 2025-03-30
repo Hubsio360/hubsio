@@ -252,10 +252,12 @@ export interface RiskScenario {
   threatId?: string;
   vulnerabilityId?: string;
   impactDescription?: string;
-  created_at?: string;
-  updated_at?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Database field mappings
+  company_id?: string;
+  created_at?: string;
+  updated_at?: string;
   // Risk Assessment fields
   rawImpact?: RiskLevel;
   rawLikelihood?: RiskLevel;
@@ -265,6 +267,15 @@ export interface RiskScenario {
   residualRiskLevel?: RiskLevel;
   securityMeasures?: string;
   measureEffectiveness?: string;
+  // Database field mappings for risk assessment
+  raw_impact?: RiskLevel;
+  raw_likelihood?: RiskLevel;
+  raw_risk_level?: RiskLevel;
+  residual_impact?: RiskLevel;
+  residual_likelihood?: RiskLevel;
+  residual_risk_level?: RiskLevel;
+  security_measures?: string;
+  measure_effectiveness?: string;
   // New field to store individual scale impact ratings
   impactScaleRatings?: Record<string, RiskLevel>;
 }
