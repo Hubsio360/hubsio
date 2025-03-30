@@ -260,6 +260,9 @@ export interface RiskScenario {
   updated_at?: string;
   impact_level?: RiskLevel;
   risk_level?: RiskLevel;
+  threat_id?: string;
+  vulnerability_id?: string;
+  impact_description?: string;
   // Risk Assessment fields
   rawImpact?: RiskLevel;
   rawLikelihood?: RiskLevel;

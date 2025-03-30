@@ -73,6 +73,9 @@ const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
   updated_at: dbScenario.updated_at,
   impact_level: dbScenario.impact_level,
   risk_level: dbScenario.risk_level,
+  threat_id: dbScenario.threat_id,
+  vulnerability_id: dbScenario.vulnerability_id,
+  impact_description: dbScenario.impact_description,
   raw_impact: dbScenario.raw_impact,
   raw_likelihood: dbScenario.raw_likelihood,
   raw_risk_level: dbScenario.raw_risk_level,
@@ -421,7 +424,7 @@ export const useRiskAnalysis = () => {
   const addRiskScenario = useCallback(async (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskScenario> => {
     try {
       // Use the mapping function to convert to database format
-      const dbScenario: Record<string, any> = {
+      const dbScenario = {
         company_id: scenario.companyId,
         name: scenario.name,
         description: scenario.description,
@@ -446,7 +449,7 @@ export const useRiskAnalysis = () => {
       
       const { data, error } = await supabase
         .from('risk_scenarios')
-        .insert(dbScenario)
+        .insert([dbScenario])
         .select()
         .single();
       
@@ -845,10 +848,10 @@ export const useRiskAnalysis = () => {
     }
   }, []);
 
-  // Add multiple risk scenarios - modify the batch insert function to handle arrays properly
-  const addMultipleRiskScenarios = useCallback(async (scenarios: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+  // Add multiple risk scenarios
+  const addMultipleRiskScenarios = useCallback(async (scenarios: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>[]): Promise<RiskScenario[]> => {
     try {
-      // Convert all scenarios to database format
+      // Map each scenario to database format
       const dbScenarios = scenarios.map(scenario => ({
         company_id: scenario.companyId,
         name: scenario.name,
