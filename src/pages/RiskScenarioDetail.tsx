@@ -163,6 +163,8 @@ const RiskScenarioDetail = () => {
     try {
       // Convert camelCase fields to snake_case for database
       const updates = {};
+      
+      // Safely map properties, checking if they exist first
       if (scenarioData.name !== undefined) updates.name = scenarioData.name;
       if (scenarioData.description !== undefined) updates.description = scenarioData.description;
       if (scenarioData.threatId !== undefined) updates.threat_id = scenarioData.threatId;
@@ -195,6 +197,7 @@ const RiskScenarioDetail = () => {
         throw new Error(error.message);
       }
       
+      // Map database fields to both camelCase and snake_case in our object for flexibility
       return {
         id: data.id,
         companyId: data.company_id,
@@ -217,8 +220,8 @@ const RiskScenarioDetail = () => {
         securityMeasures: data.security_measures,
         measureEffectiveness: data.measure_effectiveness,
         impactScaleRatings: data.impact_scale_ratings,
-        createdAt: data.created_at,
-        updatedAt: data.updated_at,
+        
+        // Include snake_case versions for backward compatibility
         company_id: data.company_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
