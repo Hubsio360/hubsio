@@ -855,4 +855,73 @@ export const useRiskAnalysis = () => {
         description: scenario.description,
         threat_id: scenario.threatId,
         vulnerability_id: scenario.vulnerabilityId,
-        impact_description
+        impact_description: scenario.impactDescription,
+        impact_level: scenario.impactLevel,
+        likelihood: scenario.likelihood,
+        risk_level: scenario.riskLevel,
+        status: scenario.status,
+        scope: scenario.scope,
+        raw_impact: scenario.rawImpact,
+        raw_likelihood: scenario.rawLikelihood,
+        raw_risk_level: scenario.rawRiskLevel,
+        residual_impact: scenario.residualImpact,
+        residual_likelihood: scenario.residualLikelihood,
+        residual_risk_level: scenario.residualRiskLevel,
+        security_measures: scenario.securityMeasures,
+        measure_effectiveness: scenario.measureEffectiveness,
+        impact_scale_ratings: scenario.impactScaleRatings
+      }));
+      
+      const { data, error } = await supabase
+        .from('risk_scenarios')
+        .insert(dbScenarios)
+        .select();
+      
+      if (error) {
+        console.error('Error adding multiple risk scenarios:', error);
+        throw new Error(error.message);
+      }
+      
+      const newScenarios = (data || []).map(mapDbScenarioToRiskScenario);
+      setRiskScenarios(prev => [...prev, ...newScenarios]);
+      return newScenarios;
+    } catch (error) {
+      console.error('Error adding multiple risk scenarios:', error);
+      return [];
+    }
+  }, []);
+
+  return {
+    riskAssets,
+    riskThreats,
+    riskVulnerabilities,
+    riskScenarios,
+    riskTreatments,
+    loading,
+    fetchRiskAssetsByCompanyId,
+    fetchRiskThreatsByCompanyId,
+    fetchRiskVulnerabilitiesByCompanyId,
+    fetchRiskScenariosByCompanyId,
+    fetchRiskTreatmentsByScenarioId,
+    addRiskAsset,
+    addRiskThreat,
+    addRiskVulnerability,
+    addRiskScenario,
+    createRiskScenario,
+    addRiskTreatment,
+    updateRiskAsset,
+    updateRiskThreat,
+    updateRiskVulnerability,
+    updateRiskScenario,
+    updateRiskTreatment,
+    deleteRiskAsset,
+    deleteRiskThreat,
+    deleteRiskVulnerability,
+    deleteRiskScenario,
+    deleteRiskTreatment,
+    associateRiskScenarioWithAsset,
+    removeRiskScenarioAssetAssociation,
+    getRiskScenarioAssets,
+    addMultipleRiskScenarios
+  };
+};
