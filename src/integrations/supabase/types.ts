@@ -694,47 +694,6 @@ export type Database = {
           },
         ]
       }
-      risk_scale_level_templates: {
-        Row: {
-          color: string | null
-          created_at: string
-          description: string | null
-          id: string
-          level_value: number
-          name: string
-          risk_scale_template_id: string
-          updated_at: string
-        }
-        Insert: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          level_value: number
-          name: string
-          risk_scale_template_id: string
-          updated_at?: string
-        }
-        Update: {
-          color?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          level_value?: number
-          name?: string
-          risk_scale_template_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "risk_scale_level_templates_risk_scale_template_id_fkey"
-            columns: ["risk_scale_template_id"]
-            isOneToOne: false
-            referencedRelation: "risk_scales_template"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       risk_scale_levels: {
         Row: {
           color: string | null
@@ -797,39 +756,6 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      risk_scales_template: {
-        Row: {
-          category: string
-          created_at: string
-          description: string | null
-          full_desc: string | null
-          full_name: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          category: string
-          created_at?: string
-          description?: string | null
-          full_desc?: string | null
-          full_name?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          description?: string | null
-          full_desc?: string | null
-          full_name?: string | null
           id?: string
           name?: string
           updated_at?: string

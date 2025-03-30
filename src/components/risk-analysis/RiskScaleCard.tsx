@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType } from '@/types';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
     description: ''
   });
 
+  // Start editing a level
   const handleStartEdit = (level: RiskScaleLevel) => {
     setEditingLevelId(level.id);
     setEditValues({
@@ -39,19 +41,23 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
     });
   };
 
+  // Save edited level
   const handleSaveEdit = async (levelId: string) => {
     await onUpdateLevel(levelId, editValues);
     setEditingLevelId(null);
   };
 
+  // Cancel editing
   const handleCancelEdit = () => {
     setEditingLevelId(null);
   };
 
+  // Helper function to get the level value regardless of naming convention
   const getLevelValue = (level: RiskScaleLevel): number => {
-    return level.level_value;
+    return level.levelValue !== undefined ? level.levelValue : (level.level_value || 0);
   };
 
+  // Get color for risk level
   const getLevelColor = (level: RiskScaleLevel) => {
     return level.color || 
       (getLevelValue(level) === 1 ? "#4CAF50" : 
@@ -59,8 +65,9 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
        getLevelValue(level) === 3 ? "#9C27B0" : "#F44336");
   };
 
+  // Helper function to get isActive status regardless of naming convention
   const getIsActive = (scale: CompanyRiskScale): boolean => {
-    return scale.is_active || false;
+    return scale.isActive !== undefined ? scale.isActive : (scale.is_active || false);
   };
 
   if (isLoading) {
@@ -95,8 +102,8 @@ const RiskScaleCard: React.FC<RiskScaleCardProps> = ({
         <CardTitle className="flex justify-between items-center pr-10">
           <span>{scaleType.name}</span>
           <Switch 
-            checked={companyScale.is_active} 
-            onCheckedChange={() => onToggleActive(companyScale.id, companyScale.is_active)}
+            checked={getIsActive(companyScale)} 
+            onCheckedChange={() => onToggleActive(companyScale.id, getIsActive(companyScale))}
           />
         </CardTitle>
         <CardDescription>{scaleType.description}</CardDescription>

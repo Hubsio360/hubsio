@@ -141,8 +141,8 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {scale.levels?.sort((a, b) => (a.level_value || 0) - (b.level_value || 0)).map(level => (
-                          <SelectItem key={level.id} value={level.level_value === 1 ? 'low' : level.level_value === 2 ? 'medium' : level.level_value === 3 ? 'high' : 'critical'}>
+                        {scale.levels?.sort((a, b) => (a.levelValue || 0) - (b.levelValue || 0)).map(level => (
+                          <SelectItem key={level.id} value={level.levelValue === 1 ? 'low' : level.levelValue === 2 ? 'medium' : level.levelValue === 3 ? 'high' : 'critical'}>
                             {level.name} - {level.description}
                           </SelectItem>
                         ))}
@@ -157,13 +157,13 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
         </Tabs>
       )}
       
-      {likelihoodScale && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         <FormField
           control={control}
           name="rawLikelihood"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Probabilité</FormLabel>
+              <FormLabel>Probabilité brute</FormLabel>
               <Select 
                 onValueChange={field.onChange} 
                 defaultValue={field.value}
@@ -171,22 +171,53 @@ export function RiskAssessmentSection({ companyId }: RiskAssessmentSectionProps)
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Niveau de probabilité" />
+                    <SelectValue placeholder="Sélectionner une probabilité" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {likelihoodScale.levels?.sort((a, b) => (a.level_value || 0) - (b.level_value || 0)).map(level => (
-                    <SelectItem key={level.id} value={level.level_value === 1 ? 'low' : level.level_value === 2 ? 'medium' : level.level_value === 3 ? 'high' : 'critical'}>
-                      {level.name} - {level.description}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="low">Faible</SelectItem>
+                  <SelectItem value="medium">Moyenne</SelectItem>
+                  <SelectItem value="high">Élevée</SelectItem>
+                  <SelectItem value="critical">Critique</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
           )}
         />
-      )}
+        
+        <FormField
+          control={control}
+          name="rawRiskLevel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Niveau de risque brut</FormLabel>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+                value={field.value}
+                disabled
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Niveau de risque calculé" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="low">Faible</SelectItem>
+                  <SelectItem value="medium">Moyen</SelectItem>
+                  <SelectItem value="high">Élevé</SelectItem>
+                  <SelectItem value="critical">Critique</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Niveau calculé automatiquement à partir de l'impact maximal multiplié par la probabilité
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
   );
 }

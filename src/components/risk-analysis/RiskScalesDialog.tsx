@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -24,7 +25,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ensureCompanyHasRequiredScales } from '@/utils/riskScalesUtils';
 
 interface RiskScalesDialogProps {
   open: boolean;
@@ -43,17 +43,13 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   onOpenChange,
   companyId,
 }) => {
+  // Définir les fonctions helper AVANT leur utilisation
   const getScaleType = (scaleTypeId: string, scaleTypes: RiskScaleType[]): RiskScaleType => {
-    const foundType = scaleTypes.find(type => type.id === scaleTypeId);
-    if (foundType) return foundType;
-    
-    return {
+    return scaleTypes.find(type => type.id === scaleTypeId) || {
       id: '',
       name: 'Type inconnu',
       description: '',
-      category: 'impact',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      category: 'impact'
     };
   };
 
@@ -71,7 +67,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-  const [isCreatingDefaultScales, setIsCreatingDefaultScales] = useState(false);
   const { toast } = useToast();
   
   const {
@@ -89,15 +84,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     ensureDefaultScalesExist
   } = useRiskScalesManager(companyId);
 
-  useEffect(() => {
-    if (open) {
-      console.log("RiskScalesDialog: companyId =", companyId);
-      console.log("RiskScalesDialog: companyRiskScales =", companyRiskScales);
-      console.log("RiskScalesDialog: riskScaleTypes =", riskScaleTypes);
-      console.log("RiskScalesDialog: isLoading =", isLoading);
-    }
-  }, [open, companyId, companyRiskScales, riskScaleTypes, isLoading]);
-
+  // Séparation explicite des échelles de probabilité et d'impact
   const likelihoodScales = companyRiskScales.filter(
     (scale) => {
       const scaleType = getScaleType(getScaleTypeId(scale), riskScaleTypes);
@@ -112,13 +99,12 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     }
   );
 
+  // Initialiser les échelles par défaut si nécessaire, mais avec un debounce
   useEffect(() => {
     let mounted = true;
     
     if (open && !isLoading && !isRefreshing && !initialLoadComplete) {
       setIsInitializing(true);
-      
-      console.log("RiskScalesDialog: Initializing default scales for company:", companyId);
       
       ensureDefaultScalesExist()
         .then(() => {
@@ -160,6 +146,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
   const handleAddCustomScale = async () => {
     const category = activeTab as 'impact' | 'likelihood';
     
+    // Si on est dans l'onglet de probabilité et qu'une échelle existe déjà
     if (category === 'likelihood' && likelihoodScales.length > 0) {
       toast({
         variant: "destructive",
@@ -193,36 +180,6 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
       } finally {
         setIsFormSubmitting(false);
       }
-    }
-  };
-
-  const handleCreateRequiredScales = async () => {
-    setIsCreatingDefaultScales(true);
-    try {
-      const success = await ensureCompanyHasRequiredScales(companyId);
-      
-      if (success) {
-        toast({
-          title: "Succès",
-          description: "Les échelles de risque requises ont été créées avec succès",
-        });
-        await refreshData();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible de créer toutes les échelles requises",
-        });
-      }
-    } catch (error) {
-      console.error("Erreur lors de la création des échelles requises:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la création des échelles",
-      });
-    } finally {
-      setIsCreatingDefaultScales(false);
     }
   };
 
@@ -273,6 +230,7 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
     return scale?.levels || [];
   };
 
+  // Prevent flickering - only show dialog content when fully loaded
   const isContentReady = !isLoading && !isInitializing && initialLoadComplete;
   
   return (
@@ -325,15 +283,16 @@ const RiskScalesDialog: React.FC<RiskScalesDialogProps> = ({
               </Button>
               <Button 
                 variant="outline" 
-                onClick={handleCreateRequiredScales} 
-                disabled={isLoading || isCreatingDefaultScales}
-                title="Créer les échelles requises"
+                onClick={() => {
+                  setIsInitializing(true);
+                  ensureDefaultScalesExist()
+                    .then(() => refreshData())
+                    .finally(() => setIsInitializing(false));
+                }} 
+                disabled={isLoading || isInitializing}
+                title="Réinitialiser les échelles par défaut"
               >
-                {isCreatingDefaultScales ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
+                <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
 

@@ -3,10 +3,8 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
-import { RiskLevel, RiskStatus } from '@/types';
-import { RiskScenarioScope } from '@/types/risk-scenario';
+import { RiskLevel, RiskStatus, RiskScope } from '@/types';
 import type { RiskScenarioFormValues } from '@/components/risk-analysis/new-scenario/RiskScenarioForm';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useNewRiskScenario = (companyId: string) => {
   const { toast } = useToast();
@@ -37,33 +35,26 @@ export const useNewRiskScenario = (companyId: string) => {
 
     try {
       const newScenario = {
-        company_id: companyId,
+        companyId,
         name: values.name,
         description: values.description,
-        risk_level: values.riskLevel as RiskLevel,
-        impact_level: values.impactLevel as RiskLevel,
+        riskLevel: values.riskLevel as RiskLevel,
+        impactLevel: values.impactLevel as RiskLevel,
         likelihood: values.likelihood as RiskLevel,
         status: values.status as RiskStatus,
-        scope: values.scope as RiskScenarioScope,
-        impact_description: values.impactDescription,
-        residual_impact: values.residualImpact,
-        residual_likelihood: values.residualLikelihood,
-        residual_risk_level: values.residualRiskLevel,
-        security_measures: values.securityMeasures,
-        measure_effectiveness: values.measureEffectiveness,
-        raw_impact: values.rawImpact,
-        raw_likelihood: values.rawLikelihood,
-        raw_risk_level: values.rawRiskLevel
+        scope: values.scope as RiskScope,
+        impactDescription: values.impactDescription,
+        rawImpact: values.rawImpact,
+        rawLikelihood: values.rawLikelihood,
+        rawRiskLevel: values.rawRiskLevel,
+        residualImpact: values.residualImpact,
+        residualLikelihood: values.residualLikelihood,
+        residualRiskLevel: values.residualRiskLevel,
+        securityMeasures: values.securityMeasures,
+        measureEffectiveness: values.measureEffectiveness
       };
 
-      // Ajout direct en utilisant la structure snake_case attendue par Supabase
-      const { data, error } = await supabase
-        .from('risk_scenarios')
-        .insert([newScenario])
-        .select()
-        .single();
-        
-      if (error) throw error;
+      await createRiskScenario(newScenario);
       
       toast({
         title: "Scénario créé",

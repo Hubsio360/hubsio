@@ -1,3 +1,4 @@
+
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,22 @@ import {
   Plus, 
   ArrowDown, 
   ArrowUp, 
+  MoreVertical,
+  Edit,
   Trash2,
   AlertCircle
 } from 'lucide-react';
-import { RiskScenario, RiskLevel, RiskScenarioScope } from '@/types';
+import { RiskScenario, RiskLevel } from '@/types';
 import { getRiskLevelBadge, getRiskScopeBadge, getRiskStatusBadge } from '@/components/risk-analysis/utils/riskBadges';
 import { useData } from '@/contexts/DataContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +35,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { EditRiskScenarioModalV2 } from './EditRiskScenarioModalV2';
 
 interface ScenariosTabProps {
   isLoading: boolean;
@@ -34,7 +44,8 @@ interface ScenariosTabProps {
 }
 
 const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps) => {
-  const { deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
+  const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<RiskScenario | null>(null);
   const { toast } = useToast();
@@ -72,9 +83,32 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
     }
   };
 
+  const handleEditScenario = (scenario: RiskScenario) => {
+    setSelectedScenario(scenario);
+    setEditDialogOpen(true);
+  };
+
   const handleDeleteScenario = (scenario: RiskScenario) => {
     setSelectedScenario(scenario);
     setDeleteDialogOpen(true);
+  };
+
+  const handleSaveScenario = async (updatedData: Partial<RiskScenario>) => {
+    if (!selectedScenario) return false;
+    
+    try {
+      await updateRiskScenario(selectedScenario.id, updatedData);
+      await fetchRiskScenariosByCompanyId(companyId);
+      return true;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du scénario:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le scénario de risque",
+        variant: "destructive",
+      });
+      return false;
+    }
   };
 
   const confirmDeleteScenario = async () => {
@@ -86,11 +120,6 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
       if (success) {
         await fetchRiskScenariosByCompanyId(companyId);
         setDeleteDialogOpen(false);
-        
-        toast({
-          title: "Succès",
-          description: "Scénario de risque supprimé avec succès",
-        });
       } else {
         throw new Error("Échec de la suppression");
       }
@@ -179,13 +208,27 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
                             Détails
                           </Link>
                         </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm" 
-                          onClick={() => handleDeleteScenario(scenario)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                              <span className="sr-only">Menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleEditScenario(scenario)}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Modifier
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteScenario(scenario)}
+                              className="text-red-600 focus:text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -195,6 +238,16 @@ const ScenariosTab = ({ isLoading, riskScenarios, companyId }: ScenariosTabProps
           )}
         </CardContent>
       </Card>
+
+      {/* Remplacer l'ancien dialog par le nouveau */}
+      {selectedScenario && (
+        <EditRiskScenarioModalV2
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          scenario={selectedScenario}
+          onSave={handleSaveScenario}
+        />
+      )}
 
       {/* Dialog de confirmation pour la suppression */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

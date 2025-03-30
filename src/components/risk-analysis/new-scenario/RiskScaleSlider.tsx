@@ -32,7 +32,9 @@ const RiskScaleSlider: React.FC<RiskScaleSliderProps> = ({
   // Sort levels by level_value
   const sortedLevels = Array.isArray(levels) 
     ? [...levels].sort((a, b) => {
-        return a.level_value - b.level_value;
+        const aValue = a.levelValue !== undefined ? a.levelValue : (a.level_value || 0);
+        const bValue = b.levelValue !== undefined ? b.levelValue : (b.level_value || 0);
+        return aValue - bValue;
       })
     : [];
   

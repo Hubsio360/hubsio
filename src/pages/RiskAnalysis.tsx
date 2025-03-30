@@ -10,7 +10,6 @@ import { useToast } from '@/hooks/use-toast';
 import { OrganizationContextDialog } from '@/components/risk-analysis/OrganizationContextDialog';
 import RiskScalesDialog from '@/components/risk-analysis/RiskScalesDialog';
 import { AnalysisWizard } from '@/components/risk-analysis/AnalysisWizard';
-import { initializeRiskScaleTemplates } from '@/services/riskScaleTemplateService';
 
 import RiskSummaryCards from '@/components/risk-analysis/RiskSummaryCards';
 import OverviewTab from '@/components/risk-analysis/OverviewTab';
@@ -41,25 +40,6 @@ const RiskAnalysis = () => {
   const [openAnalysisWizard, setOpenAnalysisWizard] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dataFetchedOnce, setDataFetchedOnce] = useState(false);
-  const [templatesInitialized, setTemplatesInitialized] = useState(false);
-
-  useEffect(() => {
-    if (!templatesInitialized) {
-      initializeRiskScaleTemplates()
-        .then(success => {
-          if (success) {
-            console.log("Risk scale templates initialized successfully");
-          } else {
-            console.error("Failed to initialize risk scale templates");
-          }
-          setTemplatesInitialized(true);
-        })
-        .catch(error => {
-          console.error("Error initializing risk scale templates:", error);
-          setTemplatesInitialized(true);
-        });
-    }
-  }, [templatesInitialized]);
 
   useEffect(() => {
     if (id && !dataFetchedOnce) {

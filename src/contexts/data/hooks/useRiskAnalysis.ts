@@ -5,9 +5,7 @@ import {
   RiskVulnerability, 
   RiskScenario, 
   RiskTreatment, 
-  RiskLevel,
-  mapDbToRiskScenario,
-  mapRiskScenarioToDb
+  RiskLevel 
 } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +44,23 @@ const mapDbVulnerabilityToRiskVulnerability = (dbVuln: any): RiskVulnerability =
   updatedAt: dbVuln.updated_at
 });
 
+const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
+  id: dbScenario.id,
+  companyId: dbScenario.company_id,
+  name: dbScenario.name,
+  description: dbScenario.description,
+  threatId: dbScenario.threat_id,
+  vulnerabilityId: dbScenario.vulnerability_id,
+  impactDescription: dbScenario.impact_description,
+  impactLevel: dbScenario.impact_level,
+  likelihood: dbScenario.likelihood,
+  riskLevel: dbScenario.risk_level,
+  status: dbScenario.status,
+  scope: dbScenario.scope,
+  createdAt: dbScenario.created_at,
+  updatedAt: dbScenario.updated_at
+});
+
 const mapDbTreatmentToRiskTreatment = (dbTreatment: any): RiskTreatment => ({
   id: dbTreatment.id,
   riskScenarioId: dbTreatment.risk_scenario_id,
@@ -82,6 +97,20 @@ const mapRiskVulnerabilityToDbVulnerability = (vulnerability: Omit<RiskVulnerabi
   name: vulnerability.name,
   description: vulnerability.description,
   category: vulnerability.category
+});
+
+const mapRiskScenarioToDbScenario = (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>) => ({
+  company_id: scenario.companyId,
+  name: scenario.name,
+  description: scenario.description,
+  threat_id: scenario.threatId,
+  vulnerability_id: scenario.vulnerabilityId,
+  impact_description: scenario.impactDescription,
+  impact_level: scenario.impactLevel,
+  likelihood: scenario.likelihood,
+  risk_level: scenario.riskLevel,
+  status: scenario.status,
+  scope: scenario.scope
 });
 
 const mapRiskTreatmentToDbTreatment = (treatment: Omit<RiskTreatment, 'id' | 'createdAt' | 'updatedAt'>) => ({
@@ -368,7 +397,7 @@ export const useRiskAnalysis = () => {
   // Add a risk scenario
   const addRiskScenario = useCallback(async (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskScenario> => {
     try {
-      const dbScenario = mapRiskScenarioToDb(scenario);
+      const dbScenario = mapRiskScenarioToDbScenario(scenario);
       const { data, error } = await supabase
         .from('risk_scenarios')
         .insert([dbScenario])
@@ -380,7 +409,7 @@ export const useRiskAnalysis = () => {
         throw new Error(error.message);
       }
       
-      const newScenario = mapDbToRiskScenario(data);
+      const newScenario = mapDbScenarioToRiskScenario(data);
       setRiskScenarios(prev => [...prev, newScenario]);
       return newScenario;
     } catch (error) {
@@ -524,18 +553,6 @@ export const useRiskAnalysis = () => {
       if (scenario.riskLevel !== undefined) updates.risk_level = scenario.riskLevel;
       if (scenario.status !== undefined) updates.status = scenario.status;
       if (scenario.scope !== undefined) updates.scope = scenario.scope;
-      
-      // Map residual fields
-      if (scenario.residualImpact !== undefined) updates.residual_impact = scenario.residualImpact;
-      if (scenario.residualLikelihood !== undefined) updates.residual_likelihood = scenario.residualLikelihood;
-      if (scenario.residualRiskLevel !== undefined) updates.residual_risk_level = scenario.residualRiskLevel;
-      
-      // Map security measure fields
-      if (scenario.securityMeasures !== undefined) updates.security_measures = scenario.securityMeasures;
-      if (scenario.measureEffectiveness !== undefined) updates.measure_effectiveness = scenario.measureEffectiveness;
-      
-      // Map impact scale ratings
-      if (scenario.impactScaleRatings !== undefined) updates.impact_scale_ratings = scenario.impactScaleRatings;
       
       const { data, error } = await supabase
         .from('risk_scenarios')

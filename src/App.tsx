@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -141,23 +141,21 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <ThemeProvider defaultTheme="light">
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <AuthProvider>
-                <DataProvider>
-                  <AppRoutes />
-                </DataProvider>
-              </AuthProvider>
-            </TooltipProvider>
-          </ThemeProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </React.StrictMode>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider defaultTheme="light">
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <AuthProvider>
+              <DataProvider>
+                <AppRoutes />
+              </DataProvider>
+            </AuthProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 };
 

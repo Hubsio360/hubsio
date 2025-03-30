@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -35,7 +36,7 @@ import {
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
-import { RiskScenario, RiskLevel } from '@/types';
+import { RiskScenario } from '@/types';
 import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -46,79 +47,23 @@ const RiskScenarioDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [generatingImpact, setGeneratingImpact] = useState(false);
-  const dataContext = useData();
+  const { updateRiskScenario, deleteRiskScenario, fetchRiskScenariosByCompanyId } = useData();
   const { toast } = useToast();
 
+  // Use useCallback to prevent recreation of this function on each render
   const fetchScenarioData = useCallback(async () => {
     if (!id) return;
     
     try {
       setIsLoading(true);
       
-      const { riskScenarios, fetchRiskScenariosByCompanyId } = dataContext;
+      const { riskScenarios } = useData();
       
       let scenario = riskScenarios.find(s => s.id === id);
       
       if (!scenario && currentScenario?.companyId) {
         await fetchRiskScenariosByCompanyId(currentScenario.companyId);
         scenario = riskScenarios.find(s => s.id === id);
-      } else if (!scenario) {
-        const { data: scenarioData, error: scenarioError } = await supabase
-          .from('risk_scenarios')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (scenarioError) {
-          console.error("Error fetching scenario from Supabase:", scenarioError);
-          throw new Error(scenarioError.message);
-        }
-
-        if (scenarioData) {
-          scenario = {
-            id: scenarioData.id,
-            companyId: scenarioData.company_id,
-            company_id: scenarioData.company_id,
-            name: scenarioData.name,
-            description: scenarioData.description,
-            impactDescription: scenarioData.impact_description,
-            impact_description: scenarioData.impact_description,
-            impactLevel: scenarioData.impact_level as RiskLevel,
-            impact_level: scenarioData.impact_level as RiskLevel,
-            likelihood: scenarioData.likelihood as RiskLevel,
-            riskLevel: scenarioData.risk_level as RiskLevel,
-            risk_level: scenarioData.risk_level as RiskLevel,
-            status: scenarioData.status,
-            scope: scenarioData.scope,
-            rawImpact: scenarioData.impact_level as RiskLevel,
-            rawLikelihood: scenarioData.likelihood as RiskLevel,
-            rawRiskLevel: scenarioData.risk_level as RiskLevel,
-            residualImpact: scenarioData.residual_impact as RiskLevel || 'low',
-            residual_impact: scenarioData.residual_impact as RiskLevel || 'low',
-            residualLikelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
-            residual_likelihood: scenarioData.residual_likelihood as RiskLevel || 'low',
-            residualRiskLevel: scenarioData.residual_risk_level as RiskLevel || 'low',
-            residual_risk_level: scenarioData.residual_risk_level as RiskLevel || 'low',
-            threatId: scenarioData.threat_id,
-            threat_id: scenarioData.threat_id,
-            vulnerabilityId: scenarioData.vulnerability_id,
-            vulnerability_id: scenarioData.vulnerability_id,
-            securityMeasures: scenarioData.security_measures || '',
-            security_measures: scenarioData.security_measures || '',
-            measureEffectiveness: scenarioData.measure_effectiveness || '',
-            measure_effectiveness: scenarioData.measure_effectiveness || '',
-            impactScaleRatings: typeof scenarioData.impact_scale_ratings === 'object' 
-              ? scenarioData.impact_scale_ratings as Record<string, RiskLevel>
-              : {},
-            impact_scale_ratings: scenarioData.impact_scale_ratings,
-            createdAt: scenarioData.created_at,
-            created_at: scenarioData.created_at,
-            updatedAt: scenarioData.updated_at,
-            updated_at: scenarioData.updated_at,
-          };
-
-          await fetchRiskScenariosByCompanyId(scenario.company_id);
-        }
       }
       
       if (scenario) {
@@ -133,8 +78,6 @@ const RiskScenarioDetail = () => {
         
         if (currentScenario?.companyId) {
           navigate(`/risk-analysis/${currentScenario.companyId}`);
-        } else {
-          navigate('/risk-analysis');
         }
       }
     } catch (error) {
@@ -147,7 +90,7 @@ const RiskScenarioDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast, navigate, currentScenario?.companyId, dataContext]);
+  }, [id, toast, navigate, currentScenario?.companyId, fetchRiskScenariosByCompanyId]);
 
   useEffect(() => {
     fetchScenarioData();
@@ -163,13 +106,13 @@ const RiskScenarioDetail = () => {
         vulnerabilityId: data.vulnerabilityId === "none" ? null : data.vulnerabilityId
       };
       
-      const { updateRiskScenario } = dataContext;
       const updatedScenario = await updateRiskScenario(id, processedData);
       
       if (!updatedScenario) {
         throw new Error("Failed to update scenario");
       }
       
+      // Update local state to reflect changes
       setCurrentScenario(prev => prev ? {...prev, ...processedData} : null);
       
       return true;
@@ -188,7 +131,6 @@ const RiskScenarioDetail = () => {
     if (!currentScenario) return;
     
     try {
-      const { deleteRiskScenario } = dataContext;
       await deleteRiskScenario(currentScenario.id);
       toast({
         title: "Succès",
@@ -224,7 +166,6 @@ const RiskScenarioDetail = () => {
       if (error) throw error;
 
       if (data.impactDescription) {
-        const { updateRiskScenario } = dataContext;
         const success = await updateRiskScenario(currentScenario.id, {
           impactDescription: data.impactDescription
         });
@@ -535,6 +476,7 @@ const RiskScenarioDetail = () => {
         onOpenChange={(open) => {
           setIsEditing(open);
           
+          // Refresh data when dialog closes to ensure we have latest state
           if (!open) {
             fetchScenarioData();
           }

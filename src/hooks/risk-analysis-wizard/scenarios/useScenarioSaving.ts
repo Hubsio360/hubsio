@@ -4,8 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SuggestedScenario, BusinessProcess } from '../types';
 import { useData } from '@/contexts/DataContext';
-import { RiskLevel, RiskStatus, mapRiskScenarioToDb } from '@/types';
-import { RiskScenarioScope } from '@/types/risk-scenario';
+import { RiskScope, RiskStatus, RiskLevel } from '@/types';
 
 export function useScenarioSaving(companyId: string) {
   const { toast } = useToast();
@@ -13,10 +12,12 @@ export function useScenarioSaving(companyId: string) {
   const [loading, setLoading] = useState(false);
   const [storedBusinessProcesses, setStoredBusinessProcesses] = useState<BusinessProcess[]>([]);
 
+  // Store business processes for later use
   const storeBusinessProcesses = (processes: BusinessProcess[]) => {
     setStoredBusinessProcesses(processes);
   };
 
+  // Save scenarios and business processes as assets
   const saveAndClose = async (selectedScenarios: SuggestedScenario[]) => {
     if (selectedScenarios.length === 0) {
       toast({
@@ -27,6 +28,7 @@ export function useScenarioSaving(companyId: string) {
       return false;
     }
 
+    // Vérification de session avant toute opération
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !sessionData.session) {
       console.error("Erreur d'authentification:", sessionError || "Aucune session active");
@@ -49,6 +51,7 @@ export function useScenarioSaving(companyId: string) {
       console.log('Nombre de scénarios à sauvegarder:', selectedScenarios.length);
       console.log('Nombre de processus métier à sauvegarder:', storedBusinessProcesses.length);
 
+      // Vérification de l'ID de l'entreprise
       if (!companyId) {
         console.error("L'ID de l'entreprise est manquant ou invalide:", companyId);
         throw new Error("ID d'entreprise invalide");
@@ -57,10 +60,12 @@ export function useScenarioSaving(companyId: string) {
       console.log('Session Supabase valide:', !!sessionData.session);
       console.log('User ID:', sessionData.session?.user?.id);
 
+      // 1. Enregistrer les processus métier comme actifs
       console.log('Sauvegarde des processus métier:', storedBusinessProcesses.length);
       for (const process of storedBusinessProcesses) {
         try {
           console.log('Tentative d\'enregistrement du processus:', process.name);
+          // Ajout d'informations supplémentaires pour le debugging
           const processData = {
             companyId,
             name: process.name,
@@ -78,45 +83,45 @@ export function useScenarioSaving(companyId: string) {
           console.error(`Erreur lors de l'enregistrement du processus ${process.name}:`, processError);
           console.error('Détails de l\'erreur:', JSON.stringify(processError));
           hasErrors = true;
+          // Continuer avec les autres processus malgré l'erreur
         }
       }
-
+      
+      // 2. Enregistrer chaque scénario sélectionné
       console.log('Sauvegarde des scénarios de risque');
       for (const scenario of selectedScenarios) {
         try {
           console.log('Tentative d\'enregistrement du scénario:', scenario.name);
+          // Ajout d'informations supplémentaires pour le debugging
           const scenarioData = {
-            company_id: companyId,
+            companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified' as RiskStatus,
-            scope: 'organization' as RiskScenarioScope,
-            impact_level: 'medium' as RiskLevel,
-            likelihood: 'medium' as RiskLevel,
-            risk_level: 'medium' as RiskLevel,
-            residual_impact: 'low' as RiskLevel,
-            residual_likelihood: 'low' as RiskLevel,
-            residual_risk_level: 'low' as RiskLevel
+            status: 'identified' as RiskStatus, // Cast to RiskStatus type
+            scope: 'technical' as RiskScope, // Cast to RiskScope type
+            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
           };
           console.log('Données du scénario à enregistrer:', scenarioData);
           
-          const { data, error } = await supabase
-            .from('risk_scenarios')
-            .insert([scenarioData])
-            .select()
-            .single();
-            
-          if (error) throw error;
-          
+          await createRiskScenario(scenarioData);
           savedScenariosCount++;
           console.log(`Scénario enregistré avec succès: ${scenario.name}`);
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
           console.error('Détails de l\'erreur:', JSON.stringify(scenarioError));
           hasErrors = true;
+          // Continuer avec les autres scénarios malgré l'erreur
         }
       }
-
+      
       if (hasErrors) {
         if (savedAssetsCount > 0 || savedScenariosCount > 0) {
           toast({
@@ -137,7 +142,7 @@ export function useScenarioSaving(companyId: string) {
           description: `${savedScenariosCount} scénario(s) et ${savedAssetsCount} processus métier enregistrés`,
         });
       }
-
+      
       setLoading(false);
       return savedScenariosCount > 0 || savedAssetsCount > 0;
     } catch (error) {
@@ -153,8 +158,9 @@ export function useScenarioSaving(companyId: string) {
     }
   };
 
-  const saveScenarios = async (scenariosToSave: SuggestedScenario[]) => {
-    if (scenariosToSave.length === 0) {
+  // Save only scenarios without business processes
+  const saveScenarios = async (selectedScenarios: SuggestedScenario[]) => {
+    if (selectedScenarios.length === 0) {
       toast({
         title: "Attention",
         description: "Veuillez sélectionner au moins un scénario de risque",
@@ -164,61 +170,34 @@ export function useScenarioSaving(companyId: string) {
     }
 
     setLoading(true);
-    let hasErrors = false;
-    let savedScenariosCount = 0;
-
     try {
-      console.log('Début de sauvegarde des scénarios');
-      
-      for (const scenario of scenariosToSave) {
+      // Enregistrer chaque scénario sélectionné
+      for (const scenario of selectedScenarios) {
         try {
-          const scenarioData = {
-            company_id: companyId,
+          await createRiskScenario({
+            companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified' as RiskStatus,
-            scope: 'organization' as RiskScenarioScope,
-            impact_level: 'medium' as RiskLevel,
-            likelihood: 'medium' as RiskLevel,
-            risk_level: 'medium' as RiskLevel,
-            residual_impact: 'low' as RiskLevel,
-            residual_likelihood: 'low' as RiskLevel,
-            residual_risk_level: 'low' as RiskLevel
-          };
-          
-          const { data, error } = await supabase
-            .from('risk_scenarios')
-            .insert([scenarioData])
-            .select()
-            .single();
-          
-          if (error) {
-            console.error('Erreur lors de l\'enregistrement du scénario:', error);
-            hasErrors = true;
-          } else {
-            savedScenariosCount++;
-          }
-        } catch (error) {
-          console.error('Erreur lors de l\'enregistrement du scénario:', error);
-          hasErrors = true;
+            status: 'identified' as RiskStatus, // Cast to RiskStatus type
+            scope: 'technical' as RiskScope, // Cast to RiskScope type
+            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            // Valeurs par défaut pour les autres champs
+            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
+            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
+            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
+            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
+          });
+        } catch (scenarioError) {
+          console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);
         }
       }
-
-      if (hasErrors) {
-        toast({
-          title: "Erreur",
-          description: "Impossible d'enregistrer les scénarios de risque",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Succès",
-          description: `${savedScenariosCount} scénario(s) enregistrés`,
-        });
-      }
-
+      
       setLoading(false);
-      return !hasErrors;
+      return true;
     } catch (error) {
       console.error("Erreur lors de l'enregistrement des scénarios:", error);
       setLoading(false);
@@ -228,8 +207,6 @@ export function useScenarioSaving(companyId: string) {
         variant: "destructive",
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 

@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { CompanyRiskScale, RiskScaleLevel, RiskScaleType, RiskScaleWithLevels } from '@/types';
@@ -53,27 +54,20 @@ export const useCompanyRiskScales = () => {
           
           if (levelsError) {
             console.error('Error fetching risk scale levels:', levelsError);
-            const defaultScaleType: RiskScaleType = {
+            return mapToRiskScaleWithLevels(scale, [], scale.risk_scale_types || {
               id: '',
               name: 'Type inconnu',
               description: '',
-              category: 'impact',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            };
-            return mapToRiskScaleWithLevels(scale, [], scale.risk_scale_types || defaultScaleType);
+              category: 'impact'
+            });
           }
           
-          const scaleType: RiskScaleType = scale.risk_scale_types || {
+          return mapToRiskScaleWithLevels(scale, levels || [], scale.risk_scale_types || {
             id: '',
             name: 'Type inconnu',
             description: '',
-            category: 'impact',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          return mapToRiskScaleWithLevels(scale, levels || [], scaleType);
+            category: 'impact'
+          });
         })
       );
       
@@ -88,7 +82,7 @@ export const useCompanyRiskScales = () => {
   const addCompanyRiskScale = useCallback(async (
     companyId: string,
     scaleTypeId: string,
-    levels: Omit<RiskScaleLevel, 'id' | 'company_risk_scale_id' | 'created_at' | 'updated_at'>[],
+    levels: Omit<RiskScaleLevel, 'id' | 'companyRiskScaleId' | 'createdAt' | 'updatedAt'>[],
     riskScaleTypes: RiskScaleType[]
   ): Promise<RiskScaleWithLevels | null> => {
     try {
@@ -117,25 +111,25 @@ export const useCompanyRiskScales = () => {
             name: 'Négligeable', 
             description: 'Niveau de risque négligeable', 
             color: '#4CAF50', 
-            level_value: 1 
+            levelValue: 1 
           },
           { 
             name: 'Faible', 
             description: 'Niveau de risque faible', 
             color: '#FFA726', 
-            level_value: 2 
+            levelValue: 2 
           },
           { 
             name: 'Significatif', 
             description: 'Niveau de risque significatif', 
             color: '#9C27B0', 
-            level_value: 3 
+            levelValue: 3 
           },
           { 
             name: 'Majeur', 
             description: 'Niveau de risque majeur', 
             color: '#F44336', 
-            level_value: 4 
+            levelValue: 4 
           }
         ];
       }
@@ -146,7 +140,7 @@ export const useCompanyRiskScales = () => {
         name: level.name,
         description: level.description,
         color: level.color,
-        level_value: level.level_value
+        level_value: level.levelValue
       }));
       
       const { data: levelsData, error: levelsError } = await supabase
@@ -164,9 +158,7 @@ export const useCompanyRiskScales = () => {
         id: scaleTypeId,
         name: 'Type inconnu',
         description: '',
-        category: 'impact',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        category: 'impact'
       };
       
       const newScaleWithLevels: RiskScaleWithLevels = {
@@ -192,7 +184,7 @@ export const useCompanyRiskScales = () => {
       if (updatedData.name !== undefined) updates.name = updatedData.name;
       if (updatedData.description !== undefined) updates.description = updatedData.description;
       if (updatedData.color !== undefined) updates.color = updatedData.color;
-      if (updatedData.level_value !== undefined) updates.level_value = updatedData.level_value;
+      if (updatedData.levelValue !== undefined) updates.level_value = updatedData.levelValue;
       
       const { data, error } = await supabase
         .from('risk_scale_levels')

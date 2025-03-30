@@ -1,47 +1,64 @@
 
+import { RiskLevel } from './index';
+
 export interface RiskScaleType {
   id: string;
   name: string;
-  description?: string;
-  category: 'impact' | 'likelihood' | 'risk_level' | string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface RiskScaleLevel {
-  id: string;
-  company_risk_scale_id: string;
-  name: string;
-  description?: string;
-  level_value: number;
-  color?: string;
-  created_at: string;
-  updated_at: string;
+  description: string;
+  category?: 'impact' | 'likelihood' | string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Database field mappings
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CompanyRiskScale {
   id: string;
-  company_id: string;
-  scale_type_id: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  companyId?: string;
+  scaleTypeId?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  scaleType?: RiskScaleType;
   levels?: RiskScaleLevel[];
-  scale_type?: RiskScaleType;
+  // Database field mappings
+  company_id?: string;
+  scale_type_id?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  risk_scale_types?: RiskScaleType;
+}
+
+export interface RiskScaleLevel {
+  id: string;
+  companyRiskScaleId?: string;
+  levelValue?: number;
+  name: string;
+  description: string;
+  color: string;
+  createdAt?: string;
+  updatedAt?: string;
+  // Database field mappings
+  company_risk_scale_id?: string;
+  level_value?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface RiskScaleWithLevels extends CompanyRiskScale {
   levels: RiskScaleLevel[];
   scaleType: RiskScaleType;
-  // Add backward compatibility aliases
-  isActive?: boolean;
-  scaleTypeId?: string;
-  companyId?: string;
 }
 
 export interface RiskAssessment {
-  impact: string;
-  likelihood: string;
-  risk_level: string;
-  impact_description?: string;
+  rawLikelihood: RiskLevel;
+  rawImpact: RiskLevel;
+  rawRiskLevel: RiskLevel;
+  residualLikelihood: RiskLevel;
+  residualImpact: RiskLevel;
+  residualRiskLevel: RiskLevel;
+  securityMeasures: string;
+  measureEffectiveness: string;
 }
