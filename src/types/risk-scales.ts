@@ -72,5 +72,5 @@ export interface RiskAssessment {
   measure_effectiveness?: string;
   // Impact scale ratings field
   impactScaleRatings?: Record<string, RiskLevel>;
-  impact_scale_ratings?: Record<string, RiskLevel>;
+  impact_scale_ratings?: Record<string, RiskLevel> | any;
 }
