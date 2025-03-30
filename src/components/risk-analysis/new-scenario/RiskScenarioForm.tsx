@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,7 +73,6 @@ export const RiskScenarioForm = forwardRef<{ handleTemplateSelect: (template: En
         residualLikelihood: initialValues.residualLikelihood || 'low',
         residualRiskLevel: initialValues.residualRiskLevel || 'low',
         securityMeasures: initialValues.securityMeasures || '',
-        measureEffectiveness: initialValues.measureEffectiveness || '',
         threatId: initialValues.threatId || 'none',
         vulnerabilityId: initialValues.vulnerabilityId || 'none',
       },

@@ -88,26 +88,7 @@ export function ResidualRiskSection() {
         )}
       />
       
-      <FormField
-        control={control}
-        name="measureEffectiveness"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Efficacité des mesures</FormLabel>
-            <FormControl>
-              <Textarea 
-                placeholder="Évaluez l'efficacité des mesures de sécurité..." 
-                className="min-h-[100px]" 
-                {...field} 
-              />
-            </FormControl>
-            <FormDescription>
-              Indiquez l'efficacité des mesures et leur impact sur la réduction du risque
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      {/* Removed measureEffectiveness field as it doesn't exist in the database */}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         <FormField
