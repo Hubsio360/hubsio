@@ -8,24 +8,26 @@ interface ResidualRiskTabProps {
 
 const ResidualRiskTab: React.FC<ResidualRiskTabProps> = ({ scenario }) => {
   // Helper function to get property value safely, handling both camelCase and snake_case
-  const getProperty = (camelCase: string, snakeCase: string) => {
-    return scenario[camelCase] !== undefined ? scenario[camelCase] : scenario[snakeCase];
+  const getProperty = <T,>(camelCase: string, snakeCase: string): T | undefined => {
+    return scenario[camelCase as keyof RiskScenario] !== undefined 
+      ? scenario[camelCase as keyof RiskScenario] as unknown as T 
+      : scenario[snakeCase as keyof RiskScenario] as unknown as T;
   };
 
   // Get security measures
-  const securityMeasures = getProperty('securityMeasures', 'security_measures');
+  const securityMeasures = getProperty<string>('securityMeasures', 'security_measures');
   
   // Get measure effectiveness
-  const measureEffectiveness = getProperty('measureEffectiveness', 'measure_effectiveness');
+  const measureEffectiveness = getProperty<string>('measureEffectiveness', 'measure_effectiveness');
   
   // Get residual impact
-  const residualImpact = getProperty('residualImpact', 'residual_impact');
+  const residualImpact = getProperty<string>('residualImpact', 'residual_impact');
   
   // Get residual likelihood
-  const residualLikelihood = getProperty('residualLikelihood', 'residual_likelihood');
+  const residualLikelihood = getProperty<string>('residualLikelihood', 'residual_likelihood');
   
   // Get residual risk level
-  const residualRiskLevel = getProperty('residualRiskLevel', 'residual_risk_level');
+  const residualRiskLevel = getProperty<string>('residualRiskLevel', 'residual_risk_level');
 
   // Helper function to translate risk levels to French
   const translateRiskLevel = (level: string | undefined) => {

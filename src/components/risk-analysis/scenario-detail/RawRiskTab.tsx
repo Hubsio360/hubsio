@@ -8,18 +8,20 @@ interface RawRiskTabProps {
 
 const RawRiskTab: React.FC<RawRiskTabProps> = ({ scenario }) => {
   // Helper function to get property value safely, handling both camelCase and snake_case
-  const getProperty = (camelCase: string, snakeCase: string) => {
-    return scenario[camelCase] !== undefined ? scenario[camelCase] : scenario[snakeCase];
+  const getProperty = <T,>(camelCase: string, snakeCase: string): T | undefined => {
+    return scenario[camelCase as keyof RiskScenario] !== undefined 
+      ? scenario[camelCase as keyof RiskScenario] as unknown as T 
+      : scenario[snakeCase as keyof RiskScenario] as unknown as T;
   };
 
   // Get the raw impact value
-  const rawImpact = getProperty('rawImpact', 'raw_impact');
+  const rawImpact = getProperty<string>('rawImpact', 'raw_impact');
   
   // Get the raw likelihood value
-  const rawLikelihood = getProperty('rawLikelihood', 'raw_likelihood');
+  const rawLikelihood = getProperty<string>('rawLikelihood', 'raw_likelihood');
   
   // Get the raw risk level value
-  const rawRiskLevel = getProperty('rawRiskLevel', 'raw_risk_level');
+  const rawRiskLevel = getProperty<string>('rawRiskLevel', 'raw_risk_level');
 
   // Helper function to translate risk levels to French
   const translateRiskLevel = (level: string | undefined) => {

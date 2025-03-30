@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { RiskLevel, RiskScope, RiskStatus, RiskScenario } from '@/types';
 
 // Import refactored components
 import ScenarioDetailHeader from '@/components/risk-analysis/scenario-detail/ScenarioDetailHeader';
@@ -12,9 +13,36 @@ import LoadingState from '@/components/risk-analysis/scenario-detail/LoadingStat
 import ScenarioNotFound from '@/components/risk-analysis/scenario-detail/ScenarioNotFound';
 import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 
+// Define a database response type to handle snake_case properties
+interface RiskScenarioDbResponse {
+  id: string;
+  company_id: string;
+  name: string;
+  description?: string;
+  threat_id?: string;
+  vulnerability_id?: string;
+  impact_description?: string;
+  impact_level: RiskLevel;
+  likelihood: RiskLevel;
+  risk_level: RiskLevel;
+  status: RiskStatus;
+  scope: RiskScope;
+  raw_impact?: RiskLevel;
+  raw_likelihood?: RiskLevel;
+  raw_risk_level?: RiskLevel;
+  residual_impact?: RiskLevel;
+  residual_likelihood?: RiskLevel;
+  residual_risk_level?: RiskLevel;
+  security_measures?: string;
+  measure_effectiveness?: string;
+  impact_scale_ratings?: Record<string, any>;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const RiskScenarioDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [currentScenario, setCurrentScenario] = useState(null);
+  const [currentScenario, setCurrentScenario] = useState<RiskScenario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [generatingImpact, setGeneratingImpact] = useState(false);
@@ -62,7 +90,7 @@ const RiskScenarioDetail = () => {
     fetchScenarioData();
   }, [fetchScenarioData]);
 
-  const handleSaveScenario = async (data) => {
+  const handleSaveScenario = async (data: Partial<RiskScenario>) => {
     if (!currentScenario || !id) return false;
     
     try {
@@ -159,10 +187,10 @@ const RiskScenarioDetail = () => {
     }
   };
 
-  const updateRiskScenario = async (id, scenarioData) => {
+  const updateRiskScenario = async (id: string, scenarioData: Partial<RiskScenario>) => {
     try {
-      // Convert camelCase fields to snake_case for database
-      const updates = {};
+      // Create properly typed update object
+      const updates: Record<string, any> = {};
       
       // Safely map properties, checking if they exist first
       if (scenarioData.name !== undefined) updates.name = scenarioData.name;
@@ -197,49 +225,51 @@ const RiskScenarioDetail = () => {
         throw new Error(error.message);
       }
       
+      const dbResponse = data as RiskScenarioDbResponse;
+      
       // Map database fields to both camelCase and snake_case in our object for flexibility
       return {
-        id: data.id,
-        companyId: data.company_id,
-        name: data.name,
-        description: data.description,
-        threatId: data.threat_id,
-        vulnerabilityId: data.vulnerability_id,
-        impactDescription: data.impact_description,
-        impactLevel: data.impact_level,
-        likelihood: data.likelihood,
-        riskLevel: data.risk_level,
-        status: data.status,
-        scope: data.scope,
-        rawImpact: data.raw_impact,
-        rawLikelihood: data.raw_likelihood,
-        rawRiskLevel: data.raw_risk_level,
-        residualImpact: data.residual_impact,
-        residualLikelihood: data.residual_likelihood,
-        residualRiskLevel: data.residual_risk_level,
-        securityMeasures: data.security_measures,
-        measureEffectiveness: data.measure_effectiveness,
-        impactScaleRatings: data.impact_scale_ratings,
+        id: dbResponse.id,
+        companyId: dbResponse.company_id,
+        name: dbResponse.name,
+        description: dbResponse.description,
+        threatId: dbResponse.threat_id,
+        vulnerabilityId: dbResponse.vulnerability_id,
+        impactDescription: dbResponse.impact_description,
+        impactLevel: dbResponse.impact_level,
+        likelihood: dbResponse.likelihood,
+        riskLevel: dbResponse.risk_level,
+        status: dbResponse.status,
+        scope: dbResponse.scope,
+        rawImpact: dbResponse.raw_impact,
+        rawLikelihood: dbResponse.raw_likelihood,
+        rawRiskLevel: dbResponse.raw_risk_level,
+        residualImpact: dbResponse.residual_impact,
+        residualLikelihood: dbResponse.residual_likelihood,
+        residualRiskLevel: dbResponse.residual_risk_level,
+        securityMeasures: dbResponse.security_measures,
+        measureEffectiveness: dbResponse.measure_effectiveness,
+        impactScaleRatings: dbResponse.impact_scale_ratings,
         
         // Include snake_case versions for backward compatibility
-        company_id: data.company_id,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        impact_level: data.impact_level,
-        risk_level: data.risk_level,
-        threat_id: data.threat_id,
-        vulnerability_id: data.vulnerability_id,
-        impact_description: data.impact_description,
-        raw_impact: data.raw_impact,
-        raw_likelihood: data.raw_likelihood,
-        raw_risk_level: data.raw_risk_level,
-        residual_impact: data.residual_impact,
-        residual_likelihood: data.residual_likelihood,
-        residual_risk_level: data.residual_risk_level,
-        security_measures: data.security_measures,
-        measure_effectiveness: data.measure_effectiveness,
-        impact_scale_ratings: data.impact_scale_ratings
-      };
+        company_id: dbResponse.company_id,
+        created_at: dbResponse.created_at,
+        updated_at: dbResponse.updated_at,
+        impact_level: dbResponse.impact_level,
+        risk_level: dbResponse.risk_level,
+        threat_id: dbResponse.threat_id,
+        vulnerability_id: dbResponse.vulnerability_id,
+        impact_description: dbResponse.impact_description,
+        raw_impact: dbResponse.raw_impact,
+        raw_likelihood: dbResponse.raw_likelihood,
+        raw_risk_level: dbResponse.raw_risk_level,
+        residual_impact: dbResponse.residual_impact,
+        residual_likelihood: dbResponse.residual_likelihood,
+        residual_risk_level: dbResponse.residual_risk_level,
+        security_measures: dbResponse.security_measures,
+        measure_effectiveness: dbResponse.measure_effectiveness,
+        impact_scale_ratings: dbResponse.impact_scale_ratings
+      } as RiskScenario;
     } catch (error) {
       console.error('Error updating risk scenario:', error);
       return null;
