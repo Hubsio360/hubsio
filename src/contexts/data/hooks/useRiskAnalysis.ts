@@ -71,6 +71,8 @@ const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
   company_id: dbScenario.company_id,
   created_at: dbScenario.created_at,
   updated_at: dbScenario.updated_at,
+  impact_level: dbScenario.impact_level,
+  risk_level: dbScenario.risk_level,
   raw_impact: dbScenario.raw_impact,
   raw_likelihood: dbScenario.raw_likelihood,
   raw_risk_level: dbScenario.raw_risk_level,
@@ -78,7 +80,8 @@ const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
   residual_likelihood: dbScenario.residual_likelihood,
   residual_risk_level: dbScenario.residual_risk_level,
   security_measures: dbScenario.security_measures,
-  measure_effectiveness: dbScenario.measure_effectiveness
+  measure_effectiveness: dbScenario.measure_effectiveness,
+  impact_scale_ratings: dbScenario.impact_scale_ratings
 });
 
 const mapDbTreatmentToRiskTreatment = (dbTreatment: any): RiskTreatment => ({
@@ -417,7 +420,30 @@ export const useRiskAnalysis = () => {
   // Add a risk scenario
   const addRiskScenario = useCallback(async (scenario: Omit<RiskScenario, 'id' | 'createdAt' | 'updatedAt'>): Promise<RiskScenario> => {
     try {
-      const dbScenario = mapRiskScenarioToDbScenario(scenario);
+      // Use the mapping function to convert to database format
+      const dbScenario: Record<string, any> = {
+        company_id: scenario.companyId,
+        name: scenario.name,
+        description: scenario.description,
+        threat_id: scenario.threatId,
+        vulnerability_id: scenario.vulnerabilityId,
+        impact_description: scenario.impactDescription,
+        impact_level: scenario.impactLevel,
+        likelihood: scenario.likelihood,
+        risk_level: scenario.riskLevel,
+        status: scenario.status,
+        scope: scenario.scope,
+        raw_impact: scenario.rawImpact,
+        raw_likelihood: scenario.rawLikelihood,
+        raw_risk_level: scenario.rawRiskLevel,
+        residual_impact: scenario.residualImpact,
+        residual_likelihood: scenario.residualLikelihood,
+        residual_risk_level: scenario.residualRiskLevel,
+        security_measures: scenario.securityMeasures,
+        measure_effectiveness: scenario.measureEffectiveness,
+        impact_scale_ratings: scenario.impactScaleRatings
+      };
+      
       const { data, error } = await supabase
         .from('risk_scenarios')
         .insert([dbScenario])
@@ -573,6 +599,15 @@ export const useRiskAnalysis = () => {
       if (scenario.riskLevel !== undefined) updates.risk_level = scenario.riskLevel;
       if (scenario.status !== undefined) updates.status = scenario.status;
       if (scenario.scope !== undefined) updates.scope = scenario.scope;
+      if (scenario.rawImpact !== undefined) updates.raw_impact = scenario.rawImpact;
+      if (scenario.rawLikelihood !== undefined) updates.raw_likelihood = scenario.rawLikelihood;
+      if (scenario.rawRiskLevel !== undefined) updates.raw_risk_level = scenario.rawRiskLevel;
+      if (scenario.residualImpact !== undefined) updates.residual_impact = scenario.residualImpact;
+      if (scenario.residualLikelihood !== undefined) updates.residual_likelihood = scenario.residualLikelihood;
+      if (scenario.residualRiskLevel !== undefined) updates.residual_risk_level = scenario.residualRiskLevel;
+      if (scenario.securityMeasures !== undefined) updates.security_measures = scenario.securityMeasures;
+      if (scenario.measureEffectiveness !== undefined) updates.measure_effectiveness = scenario.measureEffectiveness;
+      if (scenario.impactScaleRatings !== undefined) updates.impact_scale_ratings = scenario.impactScaleRatings;
       
       const { data, error } = await supabase
         .from('risk_scenarios')

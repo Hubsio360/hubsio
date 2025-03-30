@@ -259,6 +259,17 @@ const RiskScenarioDetail = () => {
         company_id: updatedData.company_id,
         created_at: updatedData.created_at,
         updated_at: updatedData.updated_at,
+        impact_level: updatedData.impact_level,
+        risk_level: updatedData.risk_level,
+        raw_impact: updatedData.raw_impact,
+        raw_likelihood: updatedData.raw_likelihood,
+        raw_risk_level: updatedData.raw_risk_level,
+        residual_impact: updatedData.residual_impact,
+        residual_likelihood: updatedData.residual_likelihood,
+        residual_risk_level: updatedData.residual_risk_level,
+        security_measures: updatedData.security_measures,
+        measure_effectiveness: updatedData.measure_effectiveness,
+        impact_scale_ratings: updatedData.impact_scale_ratings,
       };
       
       return updatedScenario;
@@ -465,31 +476,31 @@ const RiskScenarioDetail = () => {
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact brut</h4>
                   <p className="text-xl font-semibold capitalize">
-                    {currentScenario.rawImpact === 'low' ? 'Faible' :
-                     currentScenario.rawImpact === 'medium' ? 'Moyen' :
-                     currentScenario.rawImpact === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.rawImpact || currentScenario.raw_impact) === 'low' ? 'Faible' :
+                     (currentScenario.rawImpact || currentScenario.raw_impact) === 'medium' ? 'Moyen' :
+                     (currentScenario.rawImpact || currentScenario.raw_impact) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
                 
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité brute</h4>
                   <p className="text-xl font-semibold capitalize">
-                    {currentScenario.rawLikelihood === 'low' ? 'Faible' :
-                     currentScenario.rawLikelihood === 'medium' ? 'Moyen' :
-                     currentScenario.rawLikelihood === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'low' ? 'Faible' :
+                     (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'medium' ? 'Moyen' :
+                     (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
                 
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque brut</h4>
                   <p className={`text-xl font-semibold capitalize ${
-                    currentScenario.rawRiskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-                    currentScenario.rawRiskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                    currentScenario.rawRiskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
+                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
+                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                    (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {currentScenario.rawRiskLevel === 'low' ? 'Faible' :
-                     currentScenario.rawRiskLevel === 'medium' ? 'Moyen' :
-                     currentScenario.rawRiskLevel === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'Faible' :
+                     (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'Moyen' :
+                     (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
               </div>
@@ -499,12 +510,12 @@ const RiskScenarioDetail = () => {
               <div>
                 <h3 className="text-lg font-medium mb-2">Mesures de sécurité</h3>
                 <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  {currentScenario.securityMeasures || "Aucune mesure de sécurité spécifiée."}
+                  {(currentScenario.securityMeasures || currentScenario.security_measures) || "Aucune mesure de sécurité spécifiée."}
                 </p>
                 
                 <h3 className="text-lg font-medium mb-2">Efficacité des mesures</h3>
                 <p className="text-gray-700 dark:text-gray-300 mb-4">
-                  {currentScenario.measureEffectiveness || "Aucune évaluation de l'efficacité des mesures."}
+                  {(currentScenario.measureEffectiveness || currentScenario.measure_effectiveness) || "Aucune évaluation de l'efficacité des mesures."}
                 </p>
               </div>
               
@@ -512,31 +523,31 @@ const RiskScenarioDetail = () => {
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact résiduel</h4>
                   <p className="text-xl font-semibold capitalize">
-                    {currentScenario.residualImpact === 'low' ? 'Faible' :
-                     currentScenario.residualImpact === 'medium' ? 'Moyen' :
-                     currentScenario.residualImpact === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.residualImpact || currentScenario.residual_impact) === 'low' ? 'Faible' :
+                     (currentScenario.residualImpact || currentScenario.residual_impact) === 'medium' ? 'Moyen' :
+                     (currentScenario.residualImpact || currentScenario.residual_impact) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
                 
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité résiduelle</h4>
                   <p className="text-xl font-semibold capitalize">
-                    {currentScenario.residualLikelihood === 'low' ? 'Faible' :
-                     currentScenario.residualLikelihood === 'medium' ? 'Moyen' :
-                     currentScenario.residualLikelihood === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'low' ? 'Faible' :
+                     (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'medium' ? 'Moyen' :
+                     (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
                 
                 <div className="bg-background rounded-lg p-4 border">
                   <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque résiduel</h4>
                   <p className={`text-xl font-semibold capitalize ${
-                    currentScenario.residualRiskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-                    currentScenario.residualRiskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                    currentScenario.residualRiskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
+                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
+                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
+                    (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {currentScenario.residualRiskLevel === 'low' ? 'Faible' :
-                     currentScenario.residualRiskLevel === 'medium' ? 'Moyen' :
-                     currentScenario.residualRiskLevel === 'high' ? 'Élevé' : 'Critique'}
+                    {(currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'Faible' :
+                     (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'Moyen' :
+                     (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'Élevé' : 'Critique'}
                   </p>
                 </div>
               </div>

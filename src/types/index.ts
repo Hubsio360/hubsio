@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -258,6 +259,8 @@ export interface RiskScenario {
   company_id?: string;
   created_at?: string;
   updated_at?: string;
+  impact_level?: RiskLevel;
+  risk_level?: RiskLevel;
   // Risk Assessment fields
   rawImpact?: RiskLevel;
   rawLikelihood?: RiskLevel;
@@ -278,6 +281,7 @@ export interface RiskScenario {
   measure_effectiveness?: string;
   // New field to store individual scale impact ratings
   impactScaleRatings?: Record<string, RiskLevel>;
+  impact_scale_ratings?: Record<string, RiskLevel>;
 }
 
 export interface RiskTreatment {
