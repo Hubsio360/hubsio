@@ -1,10 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
-import { RiskScenario } from '@/types';
-import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 import { supabase } from '@/integrations/supabase/client';
 
 // Import refactored components
@@ -12,10 +10,11 @@ import ScenarioDetailHeader from '@/components/risk-analysis/scenario-detail/Sce
 import ScenarioDetailContent from '@/components/risk-analysis/scenario-detail/ScenarioDetailContent';
 import LoadingState from '@/components/risk-analysis/scenario-detail/LoadingState';
 import ScenarioNotFound from '@/components/risk-analysis/scenario-detail/ScenarioNotFound';
+import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 
 const RiskScenarioDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [currentScenario, setCurrentScenario] = useState<RiskScenario | null>(null);
+  const [currentScenario, setCurrentScenario] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [generatingImpact, setGeneratingImpact] = useState(false);
@@ -46,10 +45,6 @@ const RiskScenarioDetail = () => {
           description: "Impossible de trouver le scénario demandé",
           variant: "destructive",
         });
-        
-        if (currentScenario?.companyId) {
-          // We'll handle navigation in the header component
-        }
       }
     } catch (error) {
       console.error('Error fetching scenario:', error);
@@ -67,7 +62,7 @@ const RiskScenarioDetail = () => {
     fetchScenarioData();
   }, [fetchScenarioData]);
 
-  const handleSaveScenario = async (data: Partial<RiskScenario>): Promise<boolean> => {
+  const handleSaveScenario = async (data) => {
     if (!currentScenario || !id) return false;
     
     try {
@@ -107,7 +102,6 @@ const RiskScenarioDetail = () => {
         title: "Succès",
         description: "Scénario de risque supprimé avec succès",
       });
-      // We'll let the header component handle navigation
     } catch (error) {
       toast({
         title: "Erreur",
@@ -165,10 +159,10 @@ const RiskScenarioDetail = () => {
     }
   };
 
-  const updateRiskScenario = async (id: string, scenarioData: Partial<RiskScenario>): Promise<RiskScenario | null> => {
+  const updateRiskScenario = async (id, scenarioData) => {
     try {
       // Convert camelCase fields to snake_case for database
-      const updates: Record<string, any> = {};
+      const updates = {};
       if (scenarioData.name !== undefined) updates.name = scenarioData.name;
       if (scenarioData.description !== undefined) updates.description = scenarioData.description;
       if (scenarioData.threatId !== undefined) updates.threat_id = scenarioData.threatId;
@@ -189,11 +183,11 @@ const RiskScenarioDetail = () => {
       if (scenarioData.measureEffectiveness !== undefined) updates.measure_effectiveness = scenarioData.measureEffectiveness;
       if (scenarioData.impactScaleRatings !== undefined) updates.impact_scale_ratings = scenarioData.impactScaleRatings;
       
-      const { data: updatedData, error } = await supabase
+      const { data, error } = await supabase
         .from('risk_scenarios')
         .update(updates)
         .eq('id', id)
-        .select('*')
+        .select()
         .single();
       
       if (error) {
@@ -201,52 +195,48 @@ const RiskScenarioDetail = () => {
         throw new Error(error.message);
       }
       
-      // Map database fields to application format
-      const updatedScenario: RiskScenario = {
-        id: updatedData.id,
-        companyId: updatedData.company_id,
-        name: updatedData.name,
-        description: updatedData.description,
-        threatId: updatedData.threat_id,
-        vulnerabilityId: updatedData.vulnerability_id,
-        impactDescription: updatedData.impact_description,
-        impactLevel: updatedData.impact_level,
-        likelihood: updatedData.likelihood,
-        riskLevel: updatedData.risk_level,
-        status: updatedData.status,
-        scope: updatedData.scope,
-        rawImpact: updatedData.raw_impact,
-        rawLikelihood: updatedData.raw_likelihood,
-        rawRiskLevel: updatedData.raw_risk_level,
-        residualImpact: updatedData.residual_impact,
-        residualLikelihood: updatedData.residual_likelihood,
-        residualRiskLevel: updatedData.residual_risk_level,
-        securityMeasures: updatedData.security_measures,
-        measureEffectiveness: updatedData.measure_effectiveness,
-        impactScaleRatings: updatedData.impact_scale_ratings,
-        createdAt: updatedData.created_at,
-        updatedAt: updatedData.updated_at,
-        // Add snake_case fields for compatibility
-        company_id: updatedData.company_id,
-        created_at: updatedData.created_at,
-        updated_at: updatedData.updated_at,
-        impact_level: updatedData.impact_level,
-        risk_level: updatedData.risk_level,
-        threat_id: updatedData.threat_id,
-        vulnerability_id: updatedData.vulnerability_id,
-        impact_description: updatedData.impact_description,
-        raw_impact: updatedData.raw_impact,
-        raw_likelihood: updatedData.raw_likelihood,
-        raw_risk_level: updatedData.raw_risk_level,
-        residual_impact: updatedData.residual_impact,
-        residual_likelihood: updatedData.residual_likelihood,
-        residual_risk_level: updatedData.residual_risk_level,
-        security_measures: updatedData.security_measures,
-        measure_effectiveness: updatedData.measure_effectiveness,
-        impact_scale_ratings: updatedData.impact_scale_ratings,
+      return {
+        id: data.id,
+        companyId: data.company_id,
+        name: data.name,
+        description: data.description,
+        threatId: data.threat_id,
+        vulnerabilityId: data.vulnerability_id,
+        impactDescription: data.impact_description,
+        impactLevel: data.impact_level,
+        likelihood: data.likelihood,
+        riskLevel: data.risk_level,
+        status: data.status,
+        scope: data.scope,
+        rawImpact: data.raw_impact,
+        rawLikelihood: data.raw_likelihood,
+        rawRiskLevel: data.raw_risk_level,
+        residualImpact: data.residual_impact,
+        residualLikelihood: data.residual_likelihood,
+        residualRiskLevel: data.residual_risk_level,
+        securityMeasures: data.security_measures,
+        measureEffectiveness: data.measure_effectiveness,
+        impactScaleRatings: data.impact_scale_ratings,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        company_id: data.company_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        impact_level: data.impact_level,
+        risk_level: data.risk_level,
+        threat_id: data.threat_id,
+        vulnerability_id: data.vulnerability_id,
+        impact_description: data.impact_description,
+        raw_impact: data.raw_impact,
+        raw_likelihood: data.raw_likelihood,
+        raw_risk_level: data.raw_risk_level,
+        residual_impact: data.residual_impact,
+        residual_likelihood: data.residual_likelihood,
+        residual_risk_level: data.residual_risk_level,
+        security_measures: data.security_measures,
+        measure_effectiveness: data.measure_effectiveness,
+        impact_scale_ratings: data.impact_scale_ratings
       };
-      
-      return updatedScenario;
     } catch (error) {
       console.error('Error updating risk scenario:', error);
       return null;
