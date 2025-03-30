@@ -3,6 +3,9 @@ import { RiskLevel } from './common';
 import { Json } from './supabase';
 import { RiskScope, RiskStatus } from './risk';
 
+// Définition du scope spécifique pour les scénarios de risque, différent de RiskScope général
+export type RiskScenarioScope = 'organization' | 'system' | 'service' | 'process';
+
 export interface RiskScenario {
   id: string;
   company_id: string;
@@ -12,7 +15,7 @@ export interface RiskScenario {
   impact_description?: string;
   impactDescription?: string; // Alias pour la cohérence
   status: RiskStatus;
-  scope: 'organization' | 'system' | 'service' | 'process';
+  scope: RiskScenarioScope;
   created_at: string;
   createdAt?: string; // Alias
   updated_at: string;

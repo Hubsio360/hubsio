@@ -8,4 +8,3 @@ export * from './common';
 export * from './risk';
 export * from './risk-scenario';
 export * from './risk-scales';
-export * from './supabase';

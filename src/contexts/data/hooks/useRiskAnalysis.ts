@@ -44,33 +44,9 @@ const mapDbVulnerabilityToRiskVulnerability = (dbVuln: any): RiskVulnerability =
   updatedAt: dbVuln.updated_at
 });
 
-const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => ({
-  id: dbScenario.id,
-  companyId: dbScenario.company_id,
-  name: dbScenario.name,
-  description: dbScenario.description,
-  threatId: dbScenario.threat_id,
-  vulnerabilityId: dbScenario.vulnerability_id,
-  impactDescription: dbScenario.impact_description,
-  impactLevel: dbScenario.impact_level as RiskLevel,
-  likelihood: dbScenario.likelihood as RiskLevel,
-  riskLevel: dbScenario.risk_level as RiskLevel,
-  status: dbScenario.status,
-  scope: dbScenario.scope,
-  rawImpact: dbScenario.impact_level as RiskLevel,
-  rawLikelihood: dbScenario.likelihood as RiskLevel,
-  rawRiskLevel: dbScenario.risk_level as RiskLevel,
-  residualImpact: dbScenario.residual_impact as RiskLevel || 'low',
-  residualLikelihood: dbScenario.residual_likelihood as RiskLevel || 'low',
-  residualRiskLevel: dbScenario.residual_risk_level as RiskLevel || 'low',
-  securityMeasures: dbScenario.security_measures || '',
-  measureEffectiveness: dbScenario.measure_effectiveness || '',
-  impactScaleRatings: typeof dbScenario.impact_scale_ratings === 'object' 
-    ? dbScenario.impact_scale_ratings as Record<string, RiskLevel>
-    : {},
-  createdAt: dbScenario.created_at,
-  updatedAt: dbScenario.updated_at
-});
+const mapDbScenarioToRiskScenario = (dbScenario: any): RiskScenario => {
+  return mapDbToRiskScenario(dbScenario);
+};
 
 const mapDbTreatmentToRiskTreatment = (dbTreatment: any): RiskTreatment => ({
   id: dbTreatment.id,
