@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { RiskScenario } from '@/types';
+import ColorScale from './ColorScale';
 
 interface ResidualRiskTabProps {
   scenario: RiskScenario;
@@ -29,59 +30,57 @@ const ResidualRiskTab: React.FC<ResidualRiskTabProps> = ({ scenario }) => {
   // Get residual risk level
   const residualRiskLevel = getProperty<string>('residualRiskLevel', 'residual_risk_level');
 
-  // Helper function to translate risk levels to French
-  const translateRiskLevel = (level: string | undefined) => {
-    if (!level) return 'Non défini';
-    
-    switch(level) {
-      case 'low': return 'Faible';
-      case 'medium': return 'Moyen';
-      case 'high': return 'Élevé';
-      case 'critical': return 'Critique';
-      default: return level;
-    }
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-medium mb-2">Mesures de sécurité</h3>
-        <p className="text-gray-700 dark:text-gray-300 mb-4">
-          {securityMeasures || "Aucune mesure de sécurité spécifiée."}
-        </p>
+        <h3 className="text-xl font-semibold mb-2">Mesures de sécurité</h3>
+        <div className="p-4 bg-background border rounded-lg">
+          <p className="text-gray-700 dark:text-gray-300">
+            {securityMeasures || "Aucune mesure de sécurité spécifiée."}
+          </p>
+        </div>
         
-        <h3 className="text-lg font-medium mb-2">Efficacité des mesures</h3>
-        <p className="text-gray-700 dark:text-gray-300 mb-4">
-          {measureEffectiveness || "Aucune évaluation de l'efficacité des mesures."}
-        </p>
+        <h3 className="text-xl font-semibold mt-6 mb-2">Efficacité des mesures</h3>
+        <div className="p-4 bg-background border rounded-lg">
+          <p className="text-gray-700 dark:text-gray-300">
+            {measureEffectiveness || "Aucune évaluation de l'efficacité des mesures."}
+          </p>
+        </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-background rounded-lg p-4 border">
-          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact résiduel</h4>
-          <p className="text-xl font-semibold capitalize">
-            {translateRiskLevel(residualImpact)}
-          </p>
+      <div className="bg-background rounded-lg p-6 border">
+        <ColorScale 
+          value={residualImpact || 'low'} 
+          title="Impact résiduel" 
+          description="Évaluation de l'impact potentiel après application des mesures de sécurité."
+        />
+      </div>
+      
+      <div className="bg-background rounded-lg p-6 border">
+        <ColorScale 
+          value={residualLikelihood || 'low'} 
+          title="Probabilité résiduelle" 
+          description="Évaluation de la probabilité après application des mesures de sécurité."
+        />
+      </div>
+      
+      <div className="bg-background rounded-lg p-6 border">
+        <h4 className="text-xl font-semibold mb-4">Niveau de risque résiduel</h4>
+        <div className={`inline-flex items-center px-4 py-2 rounded-full font-medium text-sm ${
+          residualRiskLevel === 'low' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+          residualRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+          residualRiskLevel === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : 
+          residualRiskLevel === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
+          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+        }`}>
+          {residualRiskLevel === 'low' ? 'FAIBLE' :
+           residualRiskLevel === 'medium' ? 'MOYEN' :
+           residualRiskLevel === 'high' ? 'ÉLEVÉ' : 
+           residualRiskLevel === 'critical' ? 'CRITIQUE' : 'NON DÉFINI'}
         </div>
-        
-        <div className="bg-background rounded-lg p-4 border">
-          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité résiduelle</h4>
-          <p className="text-xl font-semibold capitalize">
-            {translateRiskLevel(residualLikelihood)}
-          </p>
-        </div>
-        
-        <div className="bg-background rounded-lg p-4 border">
-          <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque résiduel</h4>
-          <p className={`text-xl font-semibold capitalize ${
-            residualRiskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-            residualRiskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-            residualRiskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 
-            residualRiskLevel === 'critical' ? 'text-red-600 dark:text-red-400' : ''
-          }`}>
-            {translateRiskLevel(residualRiskLevel)}
-          </p>
-        </div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">
+          Niveau calculé automatiquement à partir de l'impact résiduel et de la probabilité résiduelle
+        </p>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { RiskScenario } from '@/types';
+import ColorScale from './ColorScale';
 
 interface RawRiskTabProps {
   scenario: RiskScenario;
@@ -23,44 +24,40 @@ const RawRiskTab: React.FC<RawRiskTabProps> = ({ scenario }) => {
   // Get the raw risk level value
   const rawRiskLevel = getProperty<string>('rawRiskLevel', 'raw_risk_level');
 
-  // Helper function to translate risk levels to French
-  const translateRiskLevel = (level: string | undefined) => {
-    if (!level) return 'Non défini';
-    
-    switch(level) {
-      case 'low': return 'Faible';
-      case 'medium': return 'Moyen';
-      case 'high': return 'Élevé';
-      case 'critical': return 'Critique';
-      default: return level;
-    }
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="bg-background rounded-lg p-4 border">
-        <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact brut</h4>
-        <p className="text-xl font-semibold capitalize">
-          {translateRiskLevel(rawImpact)}
-        </p>
+    <div className="space-y-8">
+      <div className="bg-background rounded-lg p-6 border">
+        <ColorScale 
+          value={rawImpact || 'low'} 
+          title="Impact brut" 
+          description="Évaluation de l'impact potentiel si le risque se concrétise, sans tenir compte des mesures de protection."
+        />
       </div>
       
-      <div className="bg-background rounded-lg p-4 border">
-        <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité brute</h4>
-        <p className="text-xl font-semibold capitalize">
-          {translateRiskLevel(rawLikelihood)}
-        </p>
+      <div className="bg-background rounded-lg p-6 border">
+        <ColorScale 
+          value={rawLikelihood || 'low'} 
+          title="Probabilité brute" 
+          description="Évaluation de la probabilité que le risque se concrétise, sans tenir compte des mesures de protection."
+        />
       </div>
       
-      <div className="bg-background rounded-lg p-4 border">
-        <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque brut</h4>
-        <p className={`text-xl font-semibold capitalize ${
-          rawRiskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-          rawRiskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-          rawRiskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 
-          rawRiskLevel === 'critical' ? 'text-red-600 dark:text-red-400' : ''
+      <div className="bg-background rounded-lg p-6 border">
+        <h4 className="text-xl font-semibold mb-4">Niveau de risque brut</h4>
+        <div className={`inline-flex items-center px-4 py-2 rounded-full font-medium text-sm ${
+          rawRiskLevel === 'low' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+          rawRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+          rawRiskLevel === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' : 
+          rawRiskLevel === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 
+          'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
         }`}>
-          {translateRiskLevel(rawRiskLevel)}
+          {rawRiskLevel === 'low' ? 'FAIBLE' :
+           rawRiskLevel === 'medium' ? 'MOYEN' :
+           rawRiskLevel === 'high' ? 'ÉLEVÉ' : 
+           rawRiskLevel === 'critical' ? 'CRITIQUE' : 'NON DÉFINI'}
+        </div>
+        <p className="mt-4 text-gray-600 dark:text-gray-400">
+          Niveau calculé automatiquement à partir de l'impact et de la probabilité
         </p>
       </div>
     </div>
