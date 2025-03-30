@@ -1,48 +1,20 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Shield, 
-  Edit, 
-  Trash2, 
-  AlertTriangle, 
-  ChevronLeft,
-  ArrowLeft,
-  FileText,
-  Loader2,
-  Wand2
-} from 'lucide-react';
+import { useParams } from 'react-router-dom';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from '@/hooks/use-toast';
 import { RiskScenario } from '@/types';
 import { EditRiskScenarioModalV2 } from '@/components/risk-analysis/EditRiskScenarioModalV2';
 import { supabase } from '@/integrations/supabase/client';
 
+// Import refactored components
+import ScenarioDetailHeader from '@/components/risk-analysis/scenario-detail/ScenarioDetailHeader';
+import ScenarioDetailContent from '@/components/risk-analysis/scenario-detail/ScenarioDetailContent';
+import LoadingState from '@/components/risk-analysis/scenario-detail/LoadingState';
+import ScenarioNotFound from '@/components/risk-analysis/scenario-detail/ScenarioNotFound';
+
 const RiskScenarioDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [currentScenario, setCurrentScenario] = useState<RiskScenario | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -50,7 +22,7 @@ const RiskScenarioDetail = () => {
   const data = useData();
   const { toast } = useToast();
 
-  // Utilisation de useCallback pour éviter la recréation de cette fonction à chaque rendu
+  // Fetch scenario data with useCallback to avoid recreation at every render
   const fetchScenarioData = useCallback(async () => {
     if (!id) return;
     
@@ -58,7 +30,6 @@ const RiskScenarioDetail = () => {
       setIsLoading(true);
       
       const { riskScenarios } = data;
-      
       let scenario = riskScenarios.find(s => s.id === id);
       
       if (!scenario && currentScenario?.companyId) {
@@ -77,7 +48,7 @@ const RiskScenarioDetail = () => {
         });
         
         if (currentScenario?.companyId) {
-          navigate(`/risk-analysis/${currentScenario.companyId}`);
+          // We'll handle navigation in the header component
         }
       }
     } catch (error) {
@@ -90,7 +61,7 @@ const RiskScenarioDetail = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [id, toast, navigate, currentScenario?.companyId, data]);
+  }, [id, toast, currentScenario?.companyId, data]);
 
   useEffect(() => {
     fetchScenarioData();
@@ -112,7 +83,7 @@ const RiskScenarioDetail = () => {
         throw new Error("Failed to update scenario");
       }
       
-      // Mise à jour de l'état local pour refléter les changements
+      // Update local state to reflect changes
       setCurrentScenario(prev => prev ? {...prev, ...processedData} : null);
       
       return true;
@@ -136,7 +107,7 @@ const RiskScenarioDetail = () => {
         title: "Succès",
         description: "Scénario de risque supprimé avec succès",
       });
-      navigate(`/risk-analysis/${currentScenario.companyId}`);
+      // We'll let the header component handle navigation
     } catch (error) {
       toast({
         title: "Erreur",
@@ -196,7 +167,7 @@ const RiskScenarioDetail = () => {
 
   const updateRiskScenario = async (id: string, scenarioData: Partial<RiskScenario>): Promise<RiskScenario | null> => {
     try {
-      // Conversion des champs camelCase en snake_case pour la base de données
+      // Convert camelCase fields to snake_case for database
       const updates: Record<string, any> = {};
       if (scenarioData.name !== undefined) updates.name = scenarioData.name;
       if (scenarioData.description !== undefined) updates.description = scenarioData.description;
@@ -230,7 +201,7 @@ const RiskScenarioDetail = () => {
         throw new Error(error.message);
       }
       
-      // Conversion des données de la base de données au format de l'application
+      // Map database fields to application format
       const updatedScenario: RiskScenario = {
         id: updatedData.id,
         companyId: updatedData.company_id,
@@ -255,7 +226,7 @@ const RiskScenarioDetail = () => {
         impactScaleRatings: updatedData.impact_scale_ratings,
         createdAt: updatedData.created_at,
         updatedAt: updatedData.updated_at,
-        // Ajout des champs en snake_case pour la compatibilité
+        // Add snake_case fields for compatibility
         company_id: updatedData.company_id,
         created_at: updatedData.created_at,
         updated_at: updatedData.updated_at,
@@ -283,283 +254,26 @@ const RiskScenarioDetail = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Chargement du scénario...</span>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   if (!currentScenario) {
-    return (
-      <div className="container mx-auto py-6">
-        <Button 
-          variant="ghost" 
-          className="mb-4" 
-          onClick={() => navigate(-1)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Button>
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <AlertTriangle className="h-12 w-12 text-warning mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Scénario non trouvé</h2>
-            <p className="text-muted-foreground mb-4">
-              Le scénario de risque que vous cherchez n'existe pas ou a été supprimé.
-            </p>
-            <Button onClick={() => navigate(-1)}>
-              Retourner à l'analyse de risque
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ScenarioNotFound />;
   }
 
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate(`/risk-analysis/${currentScenario?.companyId}`)}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Retour à l'analyse
-        </Button>
-        
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            onClick={() => setIsEditing(true)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Modifier
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Supprimer
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action ne peut pas être annulée. Le scénario de risque sera définitivement supprimé.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteScenario}>
-                  Supprimer
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </div>
+      <ScenarioDetailHeader 
+        scenario={currentScenario}
+        onEdit={() => setIsEditing(true)}
+        onDelete={handleDeleteScenario}
+      />
       
-      {currentScenario && (
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-2xl">{currentScenario.name}</CardTitle>
-                <CardDescription>
-                  Scénario de risque - ID: {currentScenario.id}
-                </CardDescription>
-              </div>
-              <div className="flex space-x-2">
-                <Badge variant="outline" className="capitalize">
-                  {currentScenario.scope}
-                </Badge>
-                <Badge 
-                  variant={
-                    currentScenario.riskLevel === 'low' ? 'secondary' :
-                    currentScenario.riskLevel === 'medium' ? 'outline' :
-                    currentScenario.riskLevel === 'high' ? 'default' : 'destructive'
-                  }
-                >
-                  {currentScenario.riskLevel === 'low' ? 'Faible' :
-                  currentScenario.riskLevel === 'medium' ? 'Moyen' :
-                  currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
-                </Badge>
-                <Badge 
-                  variant="outline" 
-                  className="capitalize"
-                >
-                  {currentScenario.status === 'identified' ? 'Identifié' :
-                  currentScenario.status === 'analyzed' ? 'Analysé' :
-                  currentScenario.status === 'treated' ? 'Traité' :
-                  currentScenario.status === 'accepted' ? 'Accepté' : 'Surveillé'}
-                </Badge>
-              </div>
-            </div>
-          </CardHeader>
-          
-          <CardContent className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Description</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {currentScenario.description || "Aucune description fournie."}
-              </p>
-            </div>
-            
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-medium">Description de l'impact</h3>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={generateImpactDescription}
-                  disabled={generatingImpact || !currentScenario.description}
-                >
-                  {generatingImpact ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Génération...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" />
-                      Générer avec IA
-                    </>
-                  )}
-                </Button>
-              </div>
-              <p className="text-gray-700 dark:text-gray-300">
-                {currentScenario.impactDescription || "Aucune description d'impact fournie."}
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-background rounded-lg p-4 border">
-                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact</h4>
-                <p className="text-xl font-semibold capitalize">
-                  {currentScenario.impactLevel === 'low' ? 'Faible' :
-                  currentScenario.impactLevel === 'medium' ? 'Moyen' :
-                  currentScenario.impactLevel === 'high' ? 'Élevé' : 'Critique'}
-                </p>
-              </div>
-              
-              <div className="bg-background rounded-lg p-4 border">
-                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité</h4>
-                <p className="text-xl font-semibold capitalize">
-                  {currentScenario.likelihood === 'low' ? 'Faible' :
-                  currentScenario.likelihood === 'medium' ? 'Moyen' :
-                  currentScenario.likelihood === 'high' ? 'Élevé' : 'Critique'}
-                </p>
-              </div>
-              
-              <div className="bg-background rounded-lg p-4 border">
-                <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque</h4>
-                <p className={`text-xl font-semibold capitalize ${
-                  currentScenario.riskLevel === 'low' ? 'text-green-600 dark:text-green-400' :
-                  currentScenario.riskLevel === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                  currentScenario.riskLevel === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-                }`}>
-                  {currentScenario.riskLevel === 'low' ? 'Faible' :
-                  currentScenario.riskLevel === 'medium' ? 'Moyen' :
-                  currentScenario.riskLevel === 'high' ? 'Élevé' : 'Critique'}
-                </p>
-              </div>
-            </div>
-            
-            <Tabs defaultValue="raw" className="mt-6">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="raw">Évaluation brute</TabsTrigger>
-                <TabsTrigger value="residual">Évaluation résiduelle</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="raw" className="space-y-4 p-4 border rounded-md mt-2">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact brut</h4>
-                    <p className="text-xl font-semibold capitalize">
-                      {(currentScenario.rawImpact || currentScenario.raw_impact) === 'low' ? 'Faible' :
-                      (currentScenario.rawImpact || currentScenario.raw_impact) === 'medium' ? 'Moyen' :
-                      (currentScenario.rawImpact || currentScenario.raw_impact) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité brute</h4>
-                    <p className="text-xl font-semibold capitalize">
-                      {(currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'low' ? 'Faible' :
-                      (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'medium' ? 'Moyen' :
-                      (currentScenario.rawLikelihood || currentScenario.raw_likelihood) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque brut</h4>
-                    <p className={`text-xl font-semibold capitalize ${
-                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
-                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {(currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'low' ? 'Faible' :
-                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'medium' ? 'Moyen' :
-                      (currentScenario.rawRiskLevel || currentScenario.raw_risk_level) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="residual" className="space-y-4 p-4 border rounded-md mt-2">
-                <div>
-                  <h3 className="text-lg font-medium mb-2">Mesures de sécurité</h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {(currentScenario.securityMeasures || currentScenario.security_measures) || "Aucune mesure de sécurité spécifiée."}
-                  </p>
-                  
-                  <h3 className="text-lg font-medium mb-2">Efficacité des mesures</h3>
-                  <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {(currentScenario.measureEffectiveness || currentScenario.measure_effectiveness) || "Aucune évaluation de l'efficacité des mesures."}
-                  </p>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Impact résiduel</h4>
-                    <p className="text-xl font-semibold capitalize">
-                      {(currentScenario.residualImpact || currentScenario.residual_impact) === 'low' ? 'Faible' :
-                      (currentScenario.residualImpact || currentScenario.residual_impact) === 'medium' ? 'Moyen' :
-                      (currentScenario.residualImpact || currentScenario.residual_impact) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Probabilité résiduelle</h4>
-                    <p className="text-xl font-semibold capitalize">
-                      {(currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'low' ? 'Faible' :
-                      (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'medium' ? 'Moyen' :
-                      (currentScenario.residualLikelihood || currentScenario.residual_likelihood) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-background rounded-lg p-4 border">
-                    <h4 className="font-medium text-sm uppercase tracking-wide text-muted-foreground mb-2">Niveau de risque résiduel</h4>
-                    <p className={`text-xl font-semibold capitalize ${
-                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'text-green-600 dark:text-green-400' :
-                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'text-yellow-600 dark:text-yellow-400' :
-                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {(currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'low' ? 'Faible' :
-                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'medium' ? 'Moyen' :
-                      (currentScenario.residualRiskLevel || currentScenario.residual_risk_level) === 'high' ? 'Élevé' : 'Critique'}
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-      )}
+      <ScenarioDetailContent 
+        scenario={currentScenario}
+        isGenerating={generatingImpact}
+        onGenerateImpact={generateImpactDescription}
+      />
       
       {currentScenario && (
         <EditRiskScenarioModalV2
