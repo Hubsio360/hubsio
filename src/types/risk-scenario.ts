@@ -1,6 +1,7 @@
 
-import { RiskLevel } from '@/types';
+import { RiskLevel } from './common';
 import { Json } from './supabase';
+import { RiskScope, RiskStatus } from './risk';
 
 export interface RiskScenario {
   id: string;
@@ -10,7 +11,7 @@ export interface RiskScenario {
   description?: string;
   impact_description?: string;
   impactDescription?: string; // Alias pour la cohérence
-  status: 'identified' | 'analyzed' | 'treated' | 'accepted' | 'monitored';
+  status: RiskStatus;
   scope: 'organization' | 'system' | 'service' | 'process';
   created_at: string;
   createdAt?: string; // Alias
