@@ -50,9 +50,8 @@ export const useNewRiskScenario = (companyId: string) => {
         residualImpact: values.residualImpact,
         residualLikelihood: values.residualLikelihood,
         residualRiskLevel: values.residualRiskLevel,
-        securityMeasures: values.securityMeasures,
-        // Supprimer cette propriété qui n'existe pas dans la base de données
-        // measureEffectiveness: values.measureEffectiveness
+        securityMeasures: values.securityMeasures
+        // Ne pas inclure measureEffectiveness car cette colonne n'existe pas dans la base de données
       };
 
       await createRiskScenario(newScenario);

@@ -59,25 +59,7 @@ const ResidualRiskAssessment: React.FC<ResidualRiskAssessmentProps> = ({
         )}
       />
       
-      <FormField
-        control={form.control}
-        name="measureEffectiveness"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="text-lg font-medium">Efficacité des mesures</FormLabel>
-            <FormDescription>
-              Évaluez l'efficacité des mesures de sécurité mises en place
-            </FormDescription>
-            <FormControl>
-              <Textarea
-                placeholder="Ex: Niveau d'efficacité, limites éventuelles..."
-                className="min-h-[80px]"
-                {...field}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
+      {/* Nous ne rendons plus le champ measureEffectiveness car il n'existe pas dans la BDD */}
       
       <Separator className="my-6" />
       

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +29,7 @@ export interface RiskScenarioFormValues {
   residualLikelihood: RiskLevel;
   residualRiskLevel: RiskLevel;
   securityMeasures: string;
-  measureEffectiveness: string;
+  // Suppression de measureEffectiveness car il n'existe pas dans la base de données
   threatId?: string;
   vulnerabilityId?: string;
   impactScaleRatings?: Record<string, RiskLevel>;
