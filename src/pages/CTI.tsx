@@ -11,14 +11,7 @@ import CtiResultViewer from '@/components/cti/CtiResultViewer';
 import CtiResultEditor from '@/components/cti/CtiResultEditor';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-
-interface CtiResult {
-  id?: string;
-  title: string;
-  query: string;
-  content: string;
-  createdAt?: string;
-}
+import { CtiResult } from '@/types';
 
 const CTI = () => {
   const { toast } = useToast();
@@ -112,13 +105,11 @@ const CTI = () => {
     try {
       const { data, error } = await supabase
         .from('cti_results')
-        .insert([
-          {
-            title: result.title,
-            query: result.query,
-            content: result.content,
-          }
-        ])
+        .insert({
+          title: result.title,
+          query: result.query,
+          content: result.content
+        })
         .select();
       
       if (error) throw error;

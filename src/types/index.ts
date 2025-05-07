@@ -306,3 +306,12 @@ export interface RiskScenarioAsset {
 
 // Exported from risk-scales.ts
 export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';
+
+// Types for CTI (Cyber Threat Intelligence)
+export interface CtiResult {
+  id?: string;
+  title: string;
+  query: string;
+  content: string;
+  createdAt?: string;
+}

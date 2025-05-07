@@ -450,6 +450,36 @@ export type Database = {
           },
         ]
       }
+      cti_results: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          query: string
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          query: string
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          query?: string
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       findings: {
         Row: {
           audit_step_id: string
