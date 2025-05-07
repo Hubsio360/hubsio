@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,17 +96,19 @@ export function useScenarioSaving(companyId: string) {
             companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified' as RiskStatus, // Cast to RiskStatus type
-            scope: 'technical' as RiskScope, // Cast to RiskScope type
-            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
-            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
-            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
-            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
-            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
-            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
+            status: 'identified' as RiskStatus, 
+            scope: 'technical' as RiskScope,
+            riskLevel: 'medium' as RiskLevel,
+            impactLevel: 'medium' as RiskLevel,
+            likelihood: 'medium' as RiskLevel,
+            rawImpact: 'medium' as RiskLevel,
+            rawLikelihood: 'medium' as RiskLevel,
+            rawRiskLevel: 'medium' as RiskLevel,
+            residualImpact: 'low' as RiskLevel,
+            residualLikelihood: 'low' as RiskLevel,
+            residualRiskLevel: 'low' as RiskLevel,
+            securityMeasures: '' // Ajout du champ securityMeasures avec une valeur par défaut vide
+            // Suppression de measureEffectiveness
           };
           console.log('Données du scénario à enregistrer:', scenarioData);
           
@@ -178,18 +179,19 @@ export function useScenarioSaving(companyId: string) {
             companyId,
             name: scenario.name,
             description: scenario.description,
-            status: 'identified' as RiskStatus, // Cast to RiskStatus type
-            scope: 'technical' as RiskScope, // Cast to RiskScope type
-            riskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            impactLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            likelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
-            // Valeurs par défaut pour les autres champs
-            rawImpact: 'medium' as RiskLevel, // Cast to RiskLevel type
-            rawLikelihood: 'medium' as RiskLevel, // Cast to RiskLevel type
-            rawRiskLevel: 'medium' as RiskLevel, // Cast to RiskLevel type
-            residualImpact: 'low' as RiskLevel, // Cast to RiskLevel type
-            residualLikelihood: 'low' as RiskLevel, // Cast to RiskLevel type
-            residualRiskLevel: 'low' as RiskLevel // Cast to RiskLevel type
+            status: 'identified' as RiskStatus,
+            scope: 'technical' as RiskScope,
+            riskLevel: 'medium' as RiskLevel,
+            impactLevel: 'medium' as RiskLevel,
+            likelihood: 'medium' as RiskLevel,
+            rawImpact: 'medium' as RiskLevel,
+            rawLikelihood: 'medium' as RiskLevel,
+            rawRiskLevel: 'medium' as RiskLevel,
+            residualImpact: 'low' as RiskLevel,
+            residualLikelihood: 'low' as RiskLevel,
+            residualRiskLevel: 'low' as RiskLevel,
+            securityMeasures: '' // Ajout du champ securityMeasures avec une valeur par défaut
+            // Suppression de measureEffectiveness
           });
         } catch (scenarioError) {
           console.error(`Erreur lors de l'enregistrement du scénario ${scenario.name}:`, scenarioError);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, 
@@ -39,7 +38,6 @@ interface ScenarioFormValues {
   residualLikelihood: RiskLevel;
   residualRiskLevel: RiskLevel;
   securityMeasures: string;
-  measureEffectiveness: string;
   threatId: string;
   vulnerabilityId: string;
   impactScaleRatings: Record<string, RiskLevel>;
@@ -80,7 +78,6 @@ export function EditRiskScenarioModalV2({
         residualLikelihood: scenario.residualLikelihood || 'low',
         residualRiskLevel: scenario.residualRiskLevel || 'low',
         securityMeasures: scenario.securityMeasures || '',
-        measureEffectiveness: scenario.measureEffectiveness || '',
         threatId: scenario.threatId || 'none',
         vulnerabilityId: scenario.vulnerabilityId || 'none',
         impactScaleRatings: scenario.impactScaleRatings || {},
@@ -127,7 +124,6 @@ export function EditRiskScenarioModalV2({
         residualLikelihood: values.residualLikelihood,
         residualRiskLevel: values.residualRiskLevel,
         securityMeasures: values.securityMeasures,
-        measureEffectiveness: values.measureEffectiveness,
         impactScaleRatings: values.impactScaleRatings,
         threatId: values.threatId === "none" ? null : values.threatId,
         vulnerabilityId: values.vulnerabilityId === "none" ? null : values.vulnerabilityId

@@ -89,7 +89,7 @@ export function ResidualRiskSection() {
         )}
       />
       
-      {/* Removed measureEffectiveness field as it doesn't exist in the database */}
+      {/* La section concernant measureEffectiveness a été supprimée */}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
         <FormField
