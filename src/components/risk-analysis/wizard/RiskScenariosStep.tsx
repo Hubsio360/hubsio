@@ -75,6 +75,7 @@ export function RiskScenariosStep({
     setSaving(true);
     try {
       console.log("Début de la sauvegarde et fermeture");
+      console.log("Scénarios sélectionnés:", suggestedScenarios.filter(s => s.selected));
       const success = await onSaveAndClose();
       
       if (success) {
@@ -83,7 +84,6 @@ export function RiskScenariosStep({
           description: `${selectedCount} scénario${selectedCount > 1 ? 's' : ''} enregistré${selectedCount > 1 ? 's' : ''}`,
         });
       } else {
-        // Si onSaveAndClose retourne false, c'est qu'il y a eu une erreur déjà gérée
         console.log("Sauvegarde échouée selon la valeur de retour");
       }
     } catch (error) {
@@ -115,6 +115,11 @@ export function RiskScenariosStep({
     } finally {
       setGeneratingMore(false);
     }
+  };
+
+  const handleScenarioToggle = (id: string) => {
+    console.log(`Toggle scénario ${id}`);
+    onToggleScenario(id);
   };
 
   const filteredScenarios = suggestedScenarios.filter(
@@ -243,7 +248,7 @@ export function RiskScenariosStep({
                           ? "border-primary bg-primary/5 hover:bg-primary/10" 
                           : "hover:border-muted-foreground/50 hover:bg-accent/30"
                       }`}
-                      onClick={() => onToggleScenario(scenario.id)}
+                      onClick={() => handleScenarioToggle(scenario.id)}
                     >
                       <div className="flex items-start justify-between mb-2">
                         <h4 className="font-medium line-clamp-1 pr-2">{scenario.name}</h4>

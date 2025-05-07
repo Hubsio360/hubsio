@@ -10,6 +10,7 @@ export function useScenariosManagement() {
 
   // Handle template selection
   const handleTemplateSelect = (template: EnhancedTemplate) => {
+    console.log("Template sélectionné:", template);
     const newScenario: SuggestedScenario = {
       id: `scenario-${Date.now()}`,
       name: template.name,
@@ -17,7 +18,7 @@ export function useScenariosManagement() {
       selected: true
     };
     
-    setSuggestedScenarios([...suggestedScenarios, newScenario]);
+    setSuggestedScenarios(prevScenarios => [...prevScenarios, newScenario]);
     
     toast({
       title: "Scénario ajouté",
@@ -27,6 +28,7 @@ export function useScenariosManagement() {
 
   // Toggle scenario selection
   const toggleScenarioSelection = (id: string) => {
+    console.log(`Basculement de la sélection du scénario ${id}`);
     setSuggestedScenarios(
       suggestedScenarios.map(scenario => 
         scenario.id === id 

@@ -78,6 +78,7 @@ export function ResidualRiskSection() {
                 placeholder="Décrivez les mesures de sécurité mises en place..." 
                 className="min-h-[100px]" 
                 {...field} 
+                value={typeof field.value === 'string' ? field.value : ''}
               />
             </FormControl>
             <FormDescription>
