@@ -13,7 +13,8 @@ import {
   Menu, 
   Settings, 
   Users, 
-  X 
+  X,
+  Shield
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -39,7 +40,8 @@ const Navbar = () => {
   const navItems = [
     { path: '/', label: 'Accueil', icon: <Home className="w-4 h-4 mr-2" /> },
     { path: '/audits', label: 'Audits', icon: <FileText className="w-4 h-4 mr-2" /> },
-    { path: '/reports', label: 'Rapports', icon: <BarChart3 className="w-4 h-4 mr-2" /> }
+    { path: '/reports', label: 'Rapports', icon: <BarChart3 className="w-4 h-4 mr-2" /> },
+    { path: '/cti', label: 'CTI', icon: <Shield className="w-4 h-4 mr-2" /> }
   ];
 
   if (user?.role === 'admin') {
