@@ -67,6 +67,7 @@ async function getCompanyInfo(companyName: string) {
        • Utilise des verbes d'action (gestion, traitement, développement, etc.)
        • Couvre tous les aspects de l'entreprise: opérations, finance, marketing, RH, IT, etc.
        • Sois très spécifique au secteur d'activité de l'entreprise
+    3. Tu ne dois pas identifier les fonctions propres à l'outil que développe l'entreprise, mais te concentrer sur les processus internes qui permettent à l'organisation de fonctionner (fonctions support, fonctions techique, fonctions commercialles, administrative etc.)
     
     Réponds au format JSON strict avec deux champs seulement:
     {"description": "description détaillée de l'entreprise en 3-4 phrases", "activities": ["Processus 1", "Processus 2", ...]}
