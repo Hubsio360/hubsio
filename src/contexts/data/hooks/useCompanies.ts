@@ -1,107 +1,80 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types';
-import { supabase, checkAuth } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext'; // Import from AuthContext directly
+import { useState, useCallback } from 'react';
 
-export const useCompanies = () => {
+interface AddCompanyParams {
+  name: string;
+  activity?: string;
+  parentCompany?: string;
+  marketScope?: string;
+  creationYear?: number;
+}
+
+export function useCompanies() {
+  const [loading, setLoading] = useState<boolean | Record<string, boolean>>(false);
+  const [error, setError] = useState<null | Error>(null);
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const { isAuthenticated } = useAuth();
 
   const fetchCompanies = useCallback(async () => {
+    setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, companies: true });
+    setError(null);
+    
+    console.log('Utilisateur authentifié, récupération des entreprises...');
+    
     try {
-      if (!isAuthenticated) {
-        console.log('Utilisateur non authentifié, report de la récupération des entreprises');
-        setCompanies([]);
-        setLoading(false);
-        return [];
-      }
-      
-      setLoading(true);
-      console.log('Utilisateur authentifié, récupération des entreprises...');
-      
       const { data, error } = await supabase
         .from('companies')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching companies:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les entreprises: " + error.message,
-          variant: "destructive",
-        });
-        setLoading(false);
-        return [];
-      }
-
+      if (error) throw error;
+      
       console.log('Companies fetched successfully:', data);
-      const formattedCompanies: Company[] = data.map(item => ({
-        id: item.id,
-        name: item.name,
-        activity: item.activity || '',
-        creationYear: item.creation_year,
-        parentCompany: item.parent_company,
-        marketScope: item.market_scope,
-        lastAuditDate: item.last_audit_date,
-      }));
+      
+      // Convert database format to frontend format
+      const formattedCompanies: Company[] = data?.map(company => ({
+        id: company.id,
+        name: company.name,
+        activity: company.activity || '',
+        creationYear: company.creation_year,
+        parentCompany: company.parent_company,
+        marketScope: company.market_scope,
+        lastAuditDate: company.last_audit_date,
+      })) || [];
       
       setCompanies(formattedCompanies);
       return formattedCompanies;
-    } catch (error) {
-      console.error('Error in fetchCompanies:', error);
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors du chargement des entreprises",
-        variant: "destructive",
-      });
+    } catch (err: any) {
+      console.error('Error fetching companies:', err);
+      setError(err);
       return [];
     } finally {
-      setLoading(false);
+      setLoading(prev => typeof prev === 'boolean' ? false : { ...prev, companies: false });
     }
-  }, [isAuthenticated, toast]);
+  }, []);
 
-  useEffect(() => {
-    fetchCompanies();
-  }, [isAuthenticated, fetchCompanies]);
-
-  const addCompany = async (company: Omit<Company, 'id'>): Promise<Company> => {
+  const addCompany = useCallback(async (companyData: AddCompanyParams): Promise<Company> => {
+    setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, addCompany: true });
+    setError(null);
+    
     try {
-      console.log('Adding new company:', company);
-      
-      const session = await checkAuth();
-      if (!session) {
-        console.error('Tentative d\'ajout d\'entreprise sans authentification');
-        throw new Error("Vous devez être connecté pour ajouter une entreprise");
-      }
-      
-      const companyData = {
-        name: company.name,
-        activity: company.activity || null,
-        creation_year: company.creationYear || null,
-        parent_company: company.parentCompany || null,
-        market_scope: company.marketScope || null,
-        last_audit_date: company.lastAuditDate || null,
-      };
-      
-      console.log('Prepared data for insertion:', companyData);
-      console.log('Current auth session:', session);
-      
       const { data, error } = await supabase
         .from('companies')
-        .insert(companyData)
+        .insert({
+          name: companyData.name,
+          activity: companyData.activity || null,
+          parent_company: companyData.parentCompany || null,
+          market_scope: companyData.marketScope || null,
+          creation_year: companyData.creationYear || null,
+        })
         .select()
         .single();
       
-      if (error) {
-        console.error('Error adding company:', error);
-        throw new Error(`Erreur lors de l'ajout de l'entreprise: ${error.message}`);
-      }
-
+      if (error) throw error;
+      
       console.log('Company added successfully:', data);
+      
       const newCompany: Company = {
         id: data.id,
         name: data.name,
@@ -111,100 +84,94 @@ export const useCompanies = () => {
         marketScope: data.market_scope,
         lastAuditDate: data.last_audit_date,
       };
-
-      setCompanies(prev => [...prev, newCompany]);
       
-      try {
-        await fetchCompanies();
-      } catch (error) {
-        console.error('Error refreshing companies after add:', error);
-      }
+      setCompanies(prevCompanies => [newCompany, ...prevCompanies]);
       
       return newCompany;
-    } catch (error) {
-      console.error('Error in addCompany:', error);
-      throw error;
+    } catch (err: any) {
+      console.error('Error adding company:', err);
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(prev => typeof prev === 'boolean' ? false : { ...prev, addCompany: false });
     }
-  };
+  }, []);
 
-  const enrichCompanyData = async (companyId: string): Promise<Company> => {
+  const enrichCompanyData = useCallback(async (companyId: string): Promise<Company | null> => {
+    setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, enrichCompany: true });
+    setError(null);
+    
     try {
       console.log('Enriching company data for ID:', companyId);
       
-      return new Promise<Company>((resolve, reject) => {
-        setTimeout(async () => {
-          try {
-            // Trouver l'entreprise actuelle
-            const companyIndex = companies.findIndex((c) => c.id === companyId);
-            if (companyIndex === -1) {
-              return reject(new Error('Company not found'));
-            }
+      // Trouver l'entreprise actuelle pour obtenir son nom
+      const company = companies.find(c => c.id === companyId);
+      if (!company) {
+        throw new Error('Company not found');
+      }
 
-            const company = companies[companyIndex];
-            
-            // Simulation d'une analyse par IA
-            // Dans un cas réel, cela appellerait une fonction d'edge qui utiliserait l'API OpenAI
-            const enrichedData = {
-              activity: company.activity || `${company.name} se spécialise dans la fourniture de solutions avancées pour les entreprises. Ses principaux processus métier incluent la consultance en sécurité, l'audit de systèmes d'information et la formation des équipes à la cybersécurité.`,
-              creationYear: company.creationYear || 2018,
-              marketScope: company.marketScope || 'National',
-            };
-
-            const enrichedCompany = {
-              ...company,
-              ...enrichedData,
-            };
-
-            // Mettre à jour dans la base de données
-            const { error } = await supabase
-              .from('companies')
-              .update({
-                activity: enrichedData.activity,
-                creation_year: enrichedData.creationYear,
-                market_scope: enrichedData.marketScope
-              })
-              .eq('id', companyId);
-              
-            if (error) {
-              console.error('Error updating enriched company data:', error);
-              return reject(error);
-            }
-              
-            // Mettre à jour l'état local
-            const newCompanies = [...companies];
-            newCompanies[companyIndex] = enrichedCompany;
-            setCompanies(newCompanies);
-            
-            // Rafraîchir les données
-            try {
-              await fetchCompanies();
-              resolve(enrichedCompany);
-            } catch (error) {
-              console.error('Error refreshing companies after enrich:', error);
-              resolve(enrichedCompany); // Résoudre quand même avec l'entreprise enrichie
-            }
-          } catch (error) {
-            console.error('Error in enrichCompanyData processing:', error);
-            reject(error);
-          }
-        }, 1000);
+      // Appeler l'edge function pour enrichir les données de l'entreprise
+      const response = await supabase.functions.invoke('enrich-company', {
+        body: {
+          companyId: companyId,
+          companyName: company.name,
+          description: company.activity
+        }
       });
-    } catch (error) {
-      console.error('Error in enrichCompanyData:', error);
-      throw error;
-    }
-  };
 
-  const getCompanyById = (id: string): Company | undefined => {
-    return companies.find((company) => company.id === id);
-  };
+      if (response.error) {
+        throw new Error(response.error.message || 'Error enriching company data');
+      }
+
+      const enrichedData = response.data.data;
+      
+      // Mettre à jour l'entreprise avec les données enrichies
+      const { data, error } = await supabase
+        .from('companies')
+        .update({
+          activity: enrichedData.activity || null,
+          creation_year: enrichedData.creationYear || null,
+          parent_company: enrichedData.parentCompany || null,
+          market_scope: enrichedData.marketScope || null,
+        })
+        .eq('id', companyId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Formater les données pour le frontend
+      const updatedCompany: Company = {
+        id: data.id,
+        name: data.name,
+        activity: data.activity || '',
+        creationYear: data.creation_year,
+        parentCompany: data.parent_company,
+        marketScope: data.market_scope,
+        lastAuditDate: data.last_audit_date,
+      };
+      
+      // Mettre à jour le state local
+      setCompanies(prevCompanies => 
+        prevCompanies.map(c => c.id === companyId ? updatedCompany : c)
+      );
+      
+      return updatedCompany;
+    } catch (err: any) {
+      console.error('Error enriching company data:', err);
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(prev => typeof prev === 'boolean' ? false : { ...prev, enrichCompany: false });
+    }
+  }, [companies]);
 
   return {
     companies,
     loading,
+    error,
     fetchCompanies,
     addCompany,
     enrichCompanyData,
-    getCompanyById,
   };
-};
+}
