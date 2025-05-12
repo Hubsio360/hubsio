@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 interface AddCompanyParams {
   name: string;
@@ -20,7 +20,7 @@ export function useCompanies() {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, companies: true });
     setError(null);
     
-    console.log('Utilisateur authentifié, récupération des entreprises...');
+    console.log('Récupération des entreprises...');
     
     try {
       const { data, error } = await supabase
@@ -30,9 +30,9 @@ export function useCompanies() {
       
       if (error) throw error;
       
-      console.log('Companies fetched successfully:', data);
+      console.log('Entreprises récupérées avec succès:', data);
       
-      // Convert database format to frontend format
+      // Conversion du format de la base de données au format frontend
       const formattedCompanies: Company[] = data?.map(company => ({
         id: company.id,
         name: company.name,
@@ -46,13 +46,18 @@ export function useCompanies() {
       setCompanies(formattedCompanies);
       return formattedCompanies;
     } catch (err: any) {
-      console.error('Error fetching companies:', err);
+      console.error('Erreur lors de la récupération des entreprises:', err);
       setError(err);
       return [];
     } finally {
       setLoading(prev => typeof prev === 'boolean' ? false : { ...prev, companies: false });
     }
   }, []);
+
+  // Appel automatique à fetchCompanies au montage du composant
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   const getCompanyById = useCallback((id: string): Company | undefined => {
     return companies.find(company => company.id === id);
@@ -77,7 +82,7 @@ export function useCompanies() {
       
       if (error) throw error;
       
-      console.log('Company added successfully:', data);
+      console.log('Entreprise ajoutée avec succès:', data);
       
       const newCompany: Company = {
         id: data.id,
@@ -93,7 +98,7 @@ export function useCompanies() {
       
       return newCompany;
     } catch (err: any) {
-      console.error('Error adding company:', err);
+      console.error('Erreur lors de l\'ajout de l\'entreprise:', err);
       setError(err);
       throw err;
     } finally {
@@ -106,12 +111,12 @@ export function useCompanies() {
     setError(null);
     
     try {
-      console.log('Enriching company data for ID:', companyId);
+      console.log('Enrichissement des données pour l\'entreprise ID:', companyId);
       
       // Trouver l'entreprise actuelle pour obtenir son nom
       const company = companies.find(c => c.id === companyId);
       if (!company) {
-        throw new Error('Company not found');
+        throw new Error('Entreprise non trouvée');
       }
 
       // Appeler l'edge function pour enrichir les données de l'entreprise
@@ -124,7 +129,7 @@ export function useCompanies() {
       });
 
       if (response.error) {
-        throw new Error(response.error.message || 'Error enriching company data');
+        throw new Error(response.error.message || 'Erreur lors de l\'enrichissement des données');
       }
 
       const enrichedData = response.data.data;
@@ -162,7 +167,7 @@ export function useCompanies() {
       
       return updatedCompany;
     } catch (err: any) {
-      console.error('Error enriching company data:', err);
+      console.error('Erreur lors de l\'enrichissement des données:', err);
       setError(err);
       throw err;
     } finally {
