@@ -28,25 +28,25 @@ export interface DataContextProps {
   companyRiskScales: RiskScaleWithLevels[];
   
   loading: {
-    companies: boolean;
-    frameworks: boolean;
-    controls: boolean;
-    topics: boolean;
-    interviews: boolean;
-    themes: boolean;
-    standardClauses: boolean;
-    audits: boolean;
-    users: boolean;
-    services: boolean; 
-    consultingProjects: boolean;
-    rssiServices: boolean;
-    riskAssets: boolean;
-    riskThreats: boolean;
-    riskVulnerabilities: boolean;
-    riskScenarios: boolean;
-    riskTreatments: boolean;
-    riskScaleTypes: boolean;
-    companyRiskScales: boolean;
+    companies: boolean | Record<string, boolean>;
+    frameworks: any;
+    controls: any;
+    topics: any;
+    interviews: any;
+    themes: any;
+    standardClauses: any;
+    audits: any;
+    users: any;
+    services: any; 
+    consultingProjects: any;
+    rssiServices: any;
+    riskAssets: any;
+    riskThreats: any;
+    riskVulnerabilities: any;
+    riskScenarios: any;
+    riskTreatments: any;
+    riskScaleTypes: any;
+    companyRiskScales: any;
   };
   
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
