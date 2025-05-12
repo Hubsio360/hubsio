@@ -1,3 +1,4 @@
+
 import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService, RiskAsset, RiskThreat, RiskVulnerability, RiskScenario, RiskTreatment, RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, UserRole } from '@/types';
 import { RiskScenarioTemplate } from '../hooks/useRiskScenarioTemplates';
 
@@ -50,6 +51,7 @@ export interface DataContextProps {
   };
   
   addCompany: (company: Omit<Company, 'id'>) => Promise<Company>;
+  updateCompany: (id: string, updates: Partial<Company>) => Promise<Company>; // Nouvelle fonction
   addAudit: (audit: Omit<Audit, 'id'>) => Promise<Audit>;
   updateAudit: (id: string, updates: Partial<Audit>) => Promise<Audit>;
   deleteAudit: (id: string) => Promise<boolean>;

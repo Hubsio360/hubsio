@@ -1,23 +1,18 @@
+
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { 
   Plus, 
   Search, 
-  Calendar, 
-  Building2, 
-  FileText, 
-  Sparkles,
   AlertCircle,
-  CheckCircle,
-  MoveRight,
-  Loader2
+  Loader2,
+  Sparkles
 } from 'lucide-react';
 import { useData } from '@/contexts/DataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { 
   Dialog,
   DialogContent,
@@ -29,18 +24,27 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Company } from '@/types';
+import { ClientCard } from '@/components/clients/ClientCard';
+import { EditClientDialog } from '@/components/clients/EditClientDialog';
 
 const Home = () => {
-  const { companies, addCompany, enrichCompanyData, getAuditsByCompanyId, loading: dataLoading } = useData();
+  const navigate = useNavigate();
+  const { companies, addCompany, enrichCompanyData, loading: dataLoading, fetchCompanies } = useData();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [newCompany, setNewCompany] = useState({ name: '', activity: '' });
-  const [isEnriching, setIsEnriching] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEnrichingClient, setIsEnrichingClient] = useState<string | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+
+  // Ensure companies are loaded
+  useEffect(() => {
+    fetchCompanies();
+  }, [fetchCompanies]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -51,12 +55,10 @@ const Home = () => {
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Fixed: Ensure isLoading is always a boolean by checking if dataLoading for companies is either a boolean or an object
+  // Make sure isLoading is always a boolean
   const isLoading = authLoading || (
     typeof dataLoading === 'object' && dataLoading.companies !== undefined
-      ? typeof dataLoading.companies === 'boolean' 
-        ? dataLoading.companies 
-        : false
+      ? dataLoading.companies === true
       : false
   );
 
@@ -66,7 +68,7 @@ const Home = () => {
     if (!user) {
       toast({
         title: "Authentification requise",
-        description: "Vous devez être connecté pour ajouter une entreprise",
+        description: "Vous devez être connecté pour ajouter un client",
         variant: "destructive",
       });
       return;
@@ -75,7 +77,7 @@ const Home = () => {
     if (!newCompany.name.trim()) {
       toast({
         title: "Champ requis",
-        description: "Le nom de l'entreprise est obligatoire",
+        description: "Le nom du client est obligatoire",
         variant: "destructive",
       });
       return;
@@ -88,33 +90,52 @@ const Home = () => {
       });
       
       toast({
-        title: "Entreprise ajoutée",
-        description: `${company.name} a été ajoutée avec succès`,
+        title: "Client ajouté",
+        description: `${company.name} a été ajouté avec succès`,
       });
       
       setNewCompany({ name: '', activity: '' });
-      setIsDialogOpen(false);
+      setIsAddDialogOpen(false);
     } catch (error: any) {
-      console.error('Erreur lors de l\'ajout de l\'entreprise:', error);
+      console.error('Erreur lors de l\'ajout du client:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Impossible d'ajouter l'entreprise",
+        description: error.message || "Impossible d'ajouter le client",
         variant: "destructive",
       });
     }
   };
 
-  const handleEnrichCompany = async () => {
+  const handleEnrichCompany = async (companyId: string) => {
+    setIsEnrichingClient(companyId);
+    
+    try {
+      const enrichedCompany = await enrichCompanyData(companyId);
+      
+      toast({
+        title: "Données enrichies",
+        description: `Les informations de ${enrichedCompany.name} ont été complétées automatiquement`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'enrichir les données du client",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnrichingClient(null);
+    }
+  };
+
+  const handleEnrichNewCompany = async () => {
     if (!newCompany.name.trim()) {
       toast({
         title: "Champ requis",
-        description: "Le nom de l'entreprise est obligatoire",
+        description: "Le nom du client est obligatoire",
         variant: "destructive",
       });
       return;
     }
-    
-    setIsEnriching(true);
     
     try {
       // Créer d'abord l'entreprise
@@ -122,24 +143,47 @@ const Home = () => {
         name: newCompany.name,
       });
       
+      setIsAddDialogOpen(false);
+      
       // Puis l'enrichir
-      await enrichCompanyData(company.id);
-      
-      toast({
-        title: "Données enrichies",
-        description: `Les informations de ${company.name} ont été complétées automatiquement`,
-      });
-      
-      setNewCompany({ name: '', activity: '' });
-      setIsDialogOpen(false);
-    } catch (error) {
+      handleEnrichCompany(company.id);
+    } catch (error: any) {
       toast({
         title: "Erreur",
-        description: "Impossible d'enrichir les données de l'entreprise",
+        description: error.message || "Impossible d'ajouter le client",
         variant: "destructive",
       });
-    } finally {
-      setIsEnriching(false);
+    }
+  };
+
+  const handleEditCompany = (company: Company) => {
+    setEditingCompany(company);
+  };
+
+  const handleSaveCompany = async (companyData: Partial<Company>) => {
+    if (!editingCompany) return;
+    
+    try {
+      // Simuler la mise à jour - à remplacer par votre logique réelle
+      // Cette fonction n'existe pas encore dans votre contexte
+      await updateCompany(editingCompany.id, companyData);
+      
+      // Rafraîchir la liste des entreprises
+      await fetchCompanies();
+      
+    } catch (error: any) {
+      console.error('Erreur lors de la modification du client:', error);
+      throw error;
+    }
+  };
+
+  const updateCompany = async (id: string, data: Partial<Company>): Promise<Company> => {
+    try {
+      // Implémenter cette fonction dans useCompanies.ts
+      // Pour l'instant on jette une erreur
+      throw new Error("Fonction updateCompany non implémentée");
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -151,7 +195,7 @@ const Home = () => {
           <div className="flex items-center">
             <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
             <p className="text-sm text-yellow-700">
-              Vous n'êtes pas connecté. Certaines fonctionnalités comme l'ajout d'entreprises ne seront pas disponibles.
+              Vous n'êtes pas connecté. Certaines fonctionnalités comme l'ajout de clients ne seront pas disponibles.
             </p>
           </div>
         </div>
@@ -163,30 +207,27 @@ const Home = () => {
   // Composant d'état de chargement
   const renderLoadingState = () => {
     return (
-      <div className="space-y-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {[1, 2, 3].map((i) => (
           <Card key={i} className="overflow-hidden animate-pulse">
-            <CardHeader>
+            <CardContent className="p-6">
               <Skeleton className="h-6 w-3/4 mb-2" />
-              <Skeleton className="h-4 w-1/2" />
-            </CardHeader>
-            <CardContent>
+              <Skeleton className="h-4 w-1/2 mb-4" />
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
                 <Skeleton className="h-4 w-1/2" />
               </div>
+              <div className="flex gap-2 mt-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
             </CardContent>
-            <CardFooter>
-              <Skeleton className="h-10 w-full" />
-            </CardFooter>
           </Card>
         ))}
       </div>
     );
   };
-
-  console.log("Companies on page:", companies);
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-6 animate-fade-in">
@@ -195,7 +236,7 @@ const Home = () => {
         <div>
           <h1 className="text-3xl font-bold mb-2">Clients</h1>
           <p className="text-muted-foreground">
-            Gérez vos entreprises à auditer
+            Gérez vos clients et leurs informations
           </p>
         </div>
         
@@ -211,7 +252,7 @@ const Home = () => {
             />
           </div>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex-shrink-0" disabled={isLoading || !user}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -222,14 +263,14 @@ const Home = () => {
               <DialogHeader>
                 <DialogTitle>Ajouter un client</DialogTitle>
                 <DialogDescription>
-                  Créez une nouvelle entreprise à auditer
+                  Créez un nouveau client à gérer
                 </DialogDescription>
               </DialogHeader>
               <form ref={formRef} onSubmit={handleAddCompany}>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name" className="required">
-                      Nom de l'entreprise
+                      Nom du client
                     </Label>
                     <Input
                       id="name"
@@ -255,11 +296,10 @@ const Home = () => {
                     type="button" 
                     variant="outline"
                     className="w-full sm:w-auto"
-                    onClick={handleEnrichCompany}
-                    disabled={isEnriching}
+                    onClick={handleEnrichNewCompany}
                   >
                     <Sparkles className="mr-2 h-4 w-4" />
-                    {isEnriching ? 'Enrichissement...' : 'Enrichir les informations'}
+                    Ajouter et enrichir
                   </Button>
                   <Button type="submit" className="w-full sm:w-auto">
                     <Plus className="mr-2 h-4 w-4" />
@@ -284,7 +324,7 @@ const Home = () => {
               : "Vous n'avez pas encore ajouté de clients"}
           </p>
           {!searchTerm && user && (
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Ajouter votre premier client
             </Button>
@@ -292,89 +332,25 @@ const Home = () => {
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredCompanies.map((company) => {
-            const companyAudits = getAuditsByCompanyId(company.id);
-            const totalAudits = companyAudits.length;
-            const hasCompletedAudits = companyAudits.some(audit => audit.status === 'completed');
-            
-            return (
-              <Card key={company.id} className="overflow-hidden card-hover">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-xl truncate" title={company.name}>
-                      {company.name}
-                    </CardTitle>
-                    {hasCompletedAudits && (
-                      <Badge variant="secondary" className="h-6">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Audité
-                      </Badge>
-                    )}
-                  </div>
-                  {company.activity && (
-                    <CardDescription className="line-clamp-2" title={company.activity}>
-                      {company.activity}
-                    </CardDescription>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4 pb-4">
-                  <ScrollArea className="h-28">
-                    <div className="space-y-2">
-                      {company.creationYear && (
-                        <div className="flex items-start text-sm">
-                          <Building2 className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0 mt-0.5" />
-                          <div>
-                            <span className="text-muted-foreground">Création:</span> {company.creationYear}
-                            {company.parentCompany && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                Groupe: {company.parentCompany}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {company.marketScope && (
-                        <div className="flex items-center text-sm">
-                          <span className="flex-shrink-0 w-6"></span>
-                          <div>
-                            <span className="text-muted-foreground">Marché:</span> {company.marketScope}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-start text-sm">
-                        <FileText className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-muted-foreground">Audits:</span> {totalAudits}
-                        </div>
-                      </div>
-                      
-                      {company.lastAuditDate && (
-                        <div className="flex items-start text-sm">
-                          <Calendar className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0 mt-0.5" />
-                          <div>
-                            <span className="text-muted-foreground">Dernier audit:</span>{' '}
-                            {new Date(company.lastAuditDate).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                </CardContent>
-                <CardFooter>
-                  <Button asChild className="w-full justify-between" variant="outline">
-                    <Link to={`/company/${company.id}`}>
-                      Voir les audits
-                      <MoveRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            );
-          })}
+          {filteredCompanies.map((company) => (
+            <ClientCard
+              key={company.id}
+              company={company}
+              onEdit={handleEditCompany}
+              onView={(id) => navigate(`/company/${id}`)}
+              onEnrich={handleEnrichCompany}
+              isEnriching={isEnrichingClient === company.id}
+            />
+          ))}
         </div>
       )}
+
+      <EditClientDialog
+        company={editingCompany}
+        isOpen={!!editingCompany}
+        onClose={() => setEditingCompany(null)}
+        onSave={handleSaveCompany}
+      />
     </div>
   );
 };

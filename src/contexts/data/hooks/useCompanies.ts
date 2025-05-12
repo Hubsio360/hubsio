@@ -54,7 +54,6 @@ export function useCompanies() {
     }
   }, []);
 
-  // Appel automatique à fetchCompanies au montage du composant
   useEffect(() => {
     fetchCompanies();
   }, [fetchCompanies]);
@@ -106,7 +105,55 @@ export function useCompanies() {
     }
   }, []);
 
-  const enrichCompanyData = useCallback(async (companyId: string): Promise<Company | null> => {
+  const updateCompany = useCallback(async (id: string, companyData: Partial<AddCompanyParams>): Promise<Company> => {
+    setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, updateCompany: true });
+    setError(null);
+    
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .update({
+          name: companyData.name,
+          activity: companyData.activity || null,
+          parent_company: companyData.parentCompany || null,
+          market_scope: companyData.marketScope || null,
+          creation_year: companyData.creationYear || null,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('Entreprise mise à jour avec succès:', data);
+      
+      const updatedCompany: Company = {
+        id: data.id,
+        name: data.name,
+        activity: data.activity || '',
+        creationYear: data.creation_year,
+        parentCompany: data.parent_company,
+        marketScope: data.market_scope,
+        lastAuditDate: data.last_audit_date,
+      };
+      
+      setCompanies(prevCompanies => 
+        prevCompanies.map(company => 
+          company.id === id ? updatedCompany : company
+        )
+      );
+      
+      return updatedCompany;
+    } catch (err: any) {
+      console.error('Erreur lors de la mise à jour de l\'entreprise:', err);
+      setError(err);
+      throw err;
+    } finally {
+      setLoading(prev => typeof prev === 'boolean' ? false : { ...prev, updateCompany: false });
+    }
+  }, []);
+
+  const enrichCompanyData = useCallback(async (companyId: string): Promise<Company> => {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, enrichCompany: true });
     setError(null);
     
@@ -181,6 +228,7 @@ export function useCompanies() {
     error,
     fetchCompanies,
     addCompany,
+    updateCompany,
     enrichCompanyData,
     getCompanyById,
   };
