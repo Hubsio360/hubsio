@@ -10,9 +10,10 @@ interface CompanyInfoCardProps {
   company: Company;
   isEnrichingClient: boolean;
   onEnrichCompany: () => void;
+  auditCount?: number; // Add optional audit count prop
 }
 
-const CompanyInfoCard = ({ company, isEnrichingClient, onEnrichCompany }: CompanyInfoCardProps) => {
+const CompanyInfoCard = ({ company, isEnrichingClient, onEnrichCompany, auditCount = 0 }: CompanyInfoCardProps) => {
   return (
     <Card className="md:col-span-2">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -78,7 +79,7 @@ const CompanyInfoCard = ({ company, isEnrichingClient, onEnrichCompany }: Compan
             <div className="flex items-center">
               <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
               <span className="text-muted-foreground mr-2">Total audits:</span>
-              <span>{company.audits?.length || 0}</span>
+              <span>{auditCount}</span>
             </div>
             
             {company.lastAuditDate && (

@@ -132,7 +132,8 @@ const CompanyDetail = () => {
         <CompanyInfoCard 
           company={company} 
           isEnrichingClient={isEnrichingClient} 
-          onEnrichCompany={handleEnrichCompany} 
+          onEnrichCompany={handleEnrichCompany}
+          auditCount={audits.length} // Pass the audit count here
         />
 
         <ActiveAuditCard 
