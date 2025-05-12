@@ -1,20 +1,18 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Company, Audit, Framework, FrameworkControl, AuditStep, Finding, AuditTopic, AuditTheme, AuditInterview, InterviewParticipant, StandardClause, User, Service, ConsultingProject, RssiService } from '@/types';
+import React, { createContext, useContext } from 'react';
+import { Company } from '@/types';
 import { DataContextProps } from './data/types/dataContextTypes';
 import { useCompanies } from './data/hooks/useCompanies';
 import { useAudits } from './data/hooks/useAudits';
+import { useFindings } from './data/hooks/useFindings';
+import { useAuditSteps } from './data/hooks/useAuditSteps';
 import { useFrameworks } from './data/hooks/useFrameworks';
 import { useControls } from './data/hooks/useControls';
-import { useAuditSteps } from './data/hooks/useAuditSteps';
-import { useFindings } from './data/hooks/useFindings';
 import { useAuditTopics } from './data/hooks/useAuditTopics';
-import { useAuditInterviews } from './data/hooks/useAuditInterviews';
 import { useThemes } from './data/hooks/useThemes';
 import { useStandardClauses } from './data/hooks/useStandardClauses';
+import { useAuditInterviews } from './data/hooks/useAuditInterviews';
 import { useUsers } from './data/hooks/useUsers';
-import { useAuth } from '@/contexts/AuthContext'; // Update this import to use AuthContext directly
 import { useRiskAnalysis } from './data/hooks/useRiskAnalysis';
 import { useServices } from './data/hooks/useServices';
 import { useRiskScales } from './data/hooks/useRiskScales';
@@ -36,18 +34,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clausesHook = useStandardClauses();
   const interviewsHook = useAuditInterviews();
   const usersHook = useUsers();
-  const authHook = useAuth();
   const riskAnalysisHook = useRiskAnalysis();
   const servicesHook = useServices();
   const riskScalesHook = useRiskScales();
   const riskScenarioTemplatesHook = useRiskScenarioTemplates();
-
-  const handleRefresh = async () => {
-    await Promise.all([
-      companiesHook.fetchCompanies(),
-      frameworksHook.fetchFrameworks()
-    ]);
-  };
 
   const contextValue: DataContextProps = {
     companies: companiesHook.companies,
@@ -62,6 +52,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     standardClauses: clausesHook.standardClauses,
     users: usersHook.users,
     addCompany: companiesHook.addCompany,
+    updateCompany: companiesHook.updateCompany,  // Ajout de la fonction updateCompany
     addAudit: auditsHook.addAudit,
     updateAudit: auditsHook.updateAudit,
     deleteAudit: auditsHook.deleteAudit,

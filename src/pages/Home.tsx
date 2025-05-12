@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -31,7 +30,7 @@ import { EditClientDialog } from '@/components/clients/EditClientDialog';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { companies, addCompany, enrichCompanyData, loading: dataLoading, fetchCompanies } = useData();
+  const { companies, addCompany, updateCompany, enrichCompanyData, loading: dataLoading } = useData();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,15 +40,7 @@ const Home = () => {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
-  // Ensure companies are loaded
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
+  // Filtrer les entreprises sans utiliser fetchCompanies
   const filteredCompanies = companies.filter(company =>
     company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -61,6 +52,10 @@ const Home = () => {
       ? dataLoading.companies === true
       : false
   );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,25 +159,13 @@ const Home = () => {
     if (!editingCompany) return;
     
     try {
-      // Simuler la mise à jour - à remplacer par votre logique réelle
-      // Cette fonction n'existe pas encore dans votre contexte
       await updateCompany(editingCompany.id, companyData);
-      
-      // Rafraîchir la liste des entreprises
-      await fetchCompanies();
-      
+      toast({
+        title: "Client modifié",
+        description: "Les informations du client ont été mises à jour avec succès"
+      });
     } catch (error: any) {
       console.error('Erreur lors de la modification du client:', error);
-      throw error;
-    }
-  };
-
-  const updateCompany = async (id: string, data: Partial<Company>): Promise<Company> => {
-    try {
-      // Implémenter cette fonction dans useCompanies.ts
-      // Pour l'instant on jette une erreur
-      throw new Error("Fonction updateCompany non implémentée");
-    } catch (error) {
       throw error;
     }
   };

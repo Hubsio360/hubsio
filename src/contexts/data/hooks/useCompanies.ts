@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types';
 import { useState, useCallback, useEffect } from 'react';
@@ -105,6 +104,7 @@ export function useCompanies() {
     }
   }, []);
 
+  // Ajout de la fonction updateCompany
   const updateCompany = useCallback(async (id: string, companyData: Partial<AddCompanyParams>): Promise<Company> => {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, updateCompany: true });
     setError(null);
