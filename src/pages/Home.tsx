@@ -52,8 +52,14 @@ const Home = () => {
     (company.activity && company.activity.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Assurez-vous que isLoading est toujours un booléen
-  const isLoading = authLoading || (typeof dataLoading === 'object' ? dataLoading.companies : false);
+  // Fixed: Ensure isLoading is always a boolean by checking if dataLoading for companies is either a boolean or an object
+  const isLoading = authLoading || (
+    typeof dataLoading === 'object' && dataLoading.companies !== undefined
+      ? typeof dataLoading.companies === 'boolean' 
+        ? dataLoading.companies 
+        : false
+      : false
+  );
 
   const handleAddCompany = async (e: React.FormEvent) => {
     e.preventDefault();
