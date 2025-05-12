@@ -54,6 +54,10 @@ export function useCompanies() {
     }
   }, []);
 
+  const getCompanyById = useCallback((id: string): Company | undefined => {
+    return companies.find(company => company.id === id);
+  }, [companies]);
+
   const addCompany = useCallback(async (companyData: AddCompanyParams): Promise<Company> => {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, addCompany: true });
     setError(null);
@@ -173,5 +177,6 @@ export function useCompanies() {
     fetchCompanies,
     addCompany,
     enrichCompanyData,
+    getCompanyById,
   };
 }
