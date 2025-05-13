@@ -51,7 +51,7 @@ Retourne uniquement un objet JSON avec ce format exact, sans texte d'explication
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un expert en analyse d\'entreprises qui génère des profils d\'entreprise réalistes. Réponds uniquement avec du JSON sans explications ni formatage markdown.' },
+          { role: 'system', content: 'Fais une recherche sur internet pour la société. Réponds uniquement avec du JSON sans explications ni formatage markdown.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
