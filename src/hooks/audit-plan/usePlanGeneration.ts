@@ -1,143 +1,73 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { useData } from '@/contexts/DataContext';
-import { PlanGenerationOptions } from './types';
-import { toast as sonnerToast } from 'sonner';
+import { generatePlanSchedule } from '@/contexts/data/utils/interviewPlanGenerator';
+
+interface UsePlanGenerationProps {
+  selectedTopicIds: string[];
+  selectedDays: string[];
+  themeDurations: Record<string, number>;
+  maxHoursPerDay: number;
+  requiredDays: number;
+}
 
 export const usePlanGeneration = (
-  auditId: string,
-  startDate: string,
+  auditId: string, 
+  startDate: string, 
   endDate: string,
   onPlanGenerated?: (targetTab?: string) => void
 ) => {
   const [generating, setGenerating] = useState(false);
-  const { generateAuditPlan, fetchThemes, fetchInterviewsByAuditId } = useData();
-  const { toast: uiToast } = useToast();
+  const { toast } = useToast();
 
-  const generatePlan = async (
-    options: {
-      selectedTopicIds: string[];
-      selectedDays: string[];
-      themeDurations: Record<string, number>;
-      maxHoursPerDay: number;
-      requiredDays: number;
-    }
-  ) => {
-    const { selectedTopicIds, selectedDays, themeDurations, maxHoursPerDay, requiredDays } = options;
-    
-    if (!auditId) {
-      console.error("ID d'audit manquant lors de la génération du plan");
-      sonnerToast.error("ID d'audit manquant");
-      return;
-    }
-
-    console.log(`Démarrage de la génération pour l'audit ${auditId} avec ${selectedTopicIds.length} thématiques et ${selectedDays.length} jours`);
-
-    // Si aucune thématique n'est sélectionnée, tenter de charger toutes les thématiques disponibles
-    let topicsToUse = selectedTopicIds;
-    
-    if (selectedTopicIds.length === 0) {
-      console.log("Aucune thématique sélectionnée, tentative de charger toutes les thématiques");
-      try {
-        const allThemes = await fetchThemes();
-        topicsToUse = allThemes
-          .filter(theme => !['ADMIN', 'Cloture'].includes(theme.name))
-          .map(theme => theme.id);
-          
-        console.log(`Utilisation de ${topicsToUse.length} thématiques par défaut:`, topicsToUse);
-        
-        if (topicsToUse.length === 0) {
-          sonnerToast.error("Impossible de trouver des thématiques. Veuillez contacter l'administrateur.");
-          return;
-        }
-      } catch (error) {
-        console.error("Impossible de charger les thématiques:", error);
-        sonnerToast.error("Impossible de charger les thématiques. Veuillez réessayer.");
+  const generatePlan = async ({ 
+    selectedTopicIds,
+    selectedDays,
+    themeDurations,
+    maxHoursPerDay,
+    requiredDays
+  }: UsePlanGenerationProps) => {
+    try {
+      if (selectedDays.length < requiredDays) {
+        toast({
+          title: "Jours insuffisants",
+          description: `Vous devez sélectionner au moins ${requiredDays} jours pour ce plan d'audit.`,
+          variant: "destructive"
+        });
         return;
       }
-    }
 
-    if (selectedDays.length === 0) {
-      console.error("Aucun jour sélectionné pour le plan d'audit");
-      sonnerToast.error("Veuillez sélectionner au moins un jour pour les interviews");
-      return;
-    }
-
-    if (selectedDays.length < requiredDays) {
-      console.error(`Nombre de jours insuffisant: ${selectedDays.length} < ${requiredDays}`);
-      sonnerToast.error(`Vous avez besoin d'au moins ${requiredDays} jours pour couvrir toutes les thématiques sélectionnées`);
-      return;
-    }
-
-    setGenerating(true);
-
-    try {
-      console.log("Starting audit plan generation with data:", {
-        auditId,
-        startDate,
-        endDate,
-        topicIds: topicsToUse,
+      setGenerating(true);
+      
+      const result = await generatePlanSchedule(auditId, startDate, endDate, {
+        topicIds: selectedTopicIds,
         selectedDays,
-        themeDurations
+        themeDurations,
+        maxHoursPerDay
       });
-      
-      // Créer des durées par défaut pour toutes les thématiques si nécessaire
-      const durationsToUse = { ...themeDurations };
-      topicsToUse.forEach(topicId => {
-        if (!durationsToUse[topicId]) {
-          durationsToUse[topicId] = 60; // 60 minutes par défaut
-        }
-      });
-      
-      const generationOptions: PlanGenerationOptions = {
-        topicIds: topicsToUse,
-        selectedDays: selectedDays,
-        themeDurations: durationsToUse,
-        maxHoursPerDay: maxHoursPerDay
-      };
-      
-      console.log("Appel à la fonction generateAuditPlan avec les options:", generationOptions);
-      
-      const success = await generateAuditPlan(auditId, startDate, endDate, generationOptions);
-      console.log("Résultat de generateAuditPlan:", success);
 
-      if (success) {
-        try {
-          // Récupérer les interviews générées pour vérifier qu'elles existent
-          console.log("Récupération des interviews générées...");
-          const interviews = await fetchInterviewsByAuditId(auditId);
-          console.log(`Plan généré avec succès, ${interviews.length} interviews créées:`, interviews);
-          
-          if (interviews.length === 0) {
-            console.error("Aucune interview créée malgré le succès de la génération");
-            throw new Error("Aucune interview générée");
-          }
-          
-          sonnerToast.success(`Plan d'audit généré avec ${interviews.length} interviews planifiées`);
-
-          if (onPlanGenerated) {
-            // Explicitement rediriger vers l'onglet steps (étapes) après génération
-            console.log("Redirection vers l'onglet steps (étapes)");
-            onPlanGenerated('steps');
-          }
-        } catch (fetchError) {
-          console.error("Erreur lors de la récupération des interviews:", fetchError);
-          throw new Error("Le plan a été généré mais les interviews ne peuvent pas être récupérées");
+      if (result) {
+        toast({
+          title: "Plan d'audit généré",
+          description: "Le plan d'audit a été généré avec succès.",
+          variant: "success"
+        });
+        if (onPlanGenerated) {
+          onPlanGenerated("calendar");
         }
       } else {
-        console.error("La génération du plan n'a pas abouti - aucun succès retourné");
-        throw new Error("La génération du plan n'a pas abouti");
+        toast({
+          title: "Erreur",
+          description: "Une erreur est survenue lors de la génération du plan d'audit.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
-      console.error("Error generating audit plan:", error);
-      sonnerToast.error("Impossible de générer le plan d'audit. Consultez les détails dans la console.");
-      
-      // Afficher un message détaillé dans l'UI en supplément
-      uiToast({
-        title: "Erreur détaillée",
-        description: error instanceof Error ? error.message : "Erreur inconnue lors de la génération du plan.",
-        variant: "destructive",
+      console.error("Erreur lors de la génération du plan:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de la génération du plan d'audit.",
+        variant: "destructive"
       });
     } finally {
       setGenerating(false);

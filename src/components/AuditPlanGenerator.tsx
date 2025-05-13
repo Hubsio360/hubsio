@@ -78,9 +78,9 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <PlanOptions
             auditId={auditId}
-            frameworkId={frameworkId}
-            startDate={startDate}
-            endDate={endDate}
+            frameworkId={frameworkId || ''}
+            startDate={new Date(startDate)}
+            endDate={new Date(endDate)}
             selectedTopicIds={selectedTopicIds}
             themes={themes}
             themeDurations={themeDurations}

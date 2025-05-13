@@ -8,6 +8,7 @@ import { usePlanCalculator } from './audit-plan/usePlanCalculator';
 import { usePreviewInterviews } from './audit-plan/usePreviewInterviews';
 import { usePlanGeneration } from './audit-plan/usePlanGeneration';
 import { SYSTEM_THEME_NAMES } from './audit-plan/useInterviewScheduler';
+import { useToast } from '@/hooks/use-toast';
 
 export const useAuditPlanGenerator = ({
   auditId,
@@ -19,6 +20,7 @@ export const useAuditPlanGenerator = ({
   const { themes, fetchThemes } = useData();
   const { state, setState } = useAuditPlanData(auditId, startDate, endDate);
   const [previewInterviews, setPreviewInterviews] = useState<Partial<any>[]>([]);
+  const { toast } = useToast();
   
   // S'assurer que nous avons des thématiques
   useEffect(() => {
@@ -29,12 +31,17 @@ export const useAuditPlanGenerator = ({
           await fetchThemes();
         } catch (error) {
           console.error("Erreur lors du chargement des thématiques:", error);
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger les thématiques",
+            variant: "destructive"
+          });
         }
       }
     };
     
     ensureThemes();
-  }, [themes, fetchThemes]);
+  }, [themes, fetchThemes, toast]);
   
   const {
     totalHours,

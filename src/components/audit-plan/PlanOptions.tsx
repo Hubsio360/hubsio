@@ -16,6 +16,7 @@ import AuditDaysSelector from './AuditDaysSelector';
 import { ThemeSelector } from './ThemeSelector';
 import ThemeDurationSelector from './ThemeDurationSelector';
 import { cn } from '@/lib/utils';
+import { AuditTheme } from '@/types';
 
 export interface PlanOptionsProps {
   auditId: string;
@@ -23,16 +24,15 @@ export interface PlanOptionsProps {
   startDate: Date;
   endDate: Date;
   selectedDays: string[];
-  maxHoursPerDay: number;
   selectedTopicIds: string[];
   themeDurations: Record<string, number>;
-  excludedThemeNames: string[];
-  onStartDateChange: (date: Date) => void;
-  onEndDateChange: (date: Date) => void;
+  themes: AuditTheme[];
+  totalHours: number;
+  availableHoursPerDay: number;
+  systemThemeNames: string[];
+  onTopicSelectionChange: (topicIds: string[]) => void;
+  onDurationChange: (themeId: string, duration: number) => void;
   onSelectedDaysChange: (days: string[]) => void;
-  onMaxHoursChange: (hours: number) => void;
-  onTopicsChange: (topicIds: string[]) => void;
-  onThemeDurationChange: (themeId: string, duration: number) => void;
 }
 
 export function PlanOptions({
@@ -41,22 +41,26 @@ export function PlanOptions({
   startDate,
   endDate,
   selectedDays,
-  maxHoursPerDay,
   selectedTopicIds,
   themeDurations,
-  excludedThemeNames,
-  onStartDateChange,
-  onEndDateChange,
+  themes,
+  totalHours,
+  availableHoursPerDay,
+  systemThemeNames,
+  onTopicSelectionChange,
+  onDurationChange,
   onSelectedDaysChange,
-  onMaxHoursChange,
-  onTopicsChange,
-  onThemeDurationChange,
 }: PlanOptionsProps) {
   const [isStartOpen, setIsStartOpen] = useState(false);
   const [isEndOpen, setIsEndOpen] = useState(false);
 
+  // Convert Date objects to string for the AuditDaysSelector
+  const stringifyDate = (date: Date): string => {
+    return format(date, 'yyyy-MM-dd');
+  };
+
   return (
-    <TabsContent value="options" className="space-y-4">
+    <div className="space-y-4">
       <Card>
         <CardHeader>
           <CardTitle>Options du plan d'audit</CardTitle>
@@ -83,11 +87,8 @@ export function PlanOptions({
                     onSelect={(date) => {
                       setIsStartOpen(false);
                       if (date) {
-                        onStartDateChange(date);
-                        // If end date is before new start date, update it
-                        if (endDate < date) {
-                          onEndDateChange(date);
-                        }
+                        // Handle date selection through props if needed
+                        // Currently using controlled component from parent
                       }
                     }}
                     locale={fr}
@@ -116,7 +117,8 @@ export function PlanOptions({
                     onSelect={(date) => {
                       setIsEndOpen(false);
                       if (date && date >= startDate) {
-                        onEndDateChange(date);
+                        // Handle date selection through props if needed
+                        // Currently using controlled component from parent
                       }
                     }}
                     fromDate={startDate}
@@ -132,24 +134,10 @@ export function PlanOptions({
           <div className="space-y-2">
             <Label>Jours d'audit</Label>
             <AuditDaysSelector
-              startDate={startDate}
-              endDate={endDate}
+              startDate={stringifyDate(startDate)}
+              endDate={stringifyDate(endDate)}
               selectedDays={selectedDays}
               onSelectionChange={onSelectedDaysChange}
-            />
-          </div>
-
-          {/* Max hours per day */}
-          <div className="space-y-2">
-            <Label htmlFor="maxHours">Nombre d'heures maximum par jour</Label>
-            <Input
-              id="maxHours"
-              type="number"
-              min="1"
-              max="24"
-              value={maxHoursPerDay}
-              onChange={(e) => onMaxHoursChange(parseInt(e.target.value))}
-              className="w-full"
             />
           </div>
 
@@ -161,9 +149,9 @@ export function PlanOptions({
             <ThemeSelector
               auditId={auditId}
               frameworkId={frameworkId}
-              onSelectionChange={onTopicsChange}
+              onSelectionChange={onTopicSelectionChange}
               selectedThemeIds={selectedTopicIds}
-              excludedThemeNames={excludedThemeNames}
+              excludedThemeNames={systemThemeNames}
             />
           </div>
 
@@ -173,15 +161,16 @@ export function PlanOptions({
               <Label>Durée par thématique (en heures)</Label>
               <ScrollArea className="h-[200px] pr-4">
                 <ThemeDurationSelector
-                  selectedTopicIds={selectedTopicIds}
+                  themes={themes}
                   themeDurations={themeDurations}
-                  onDurationChange={onThemeDurationChange}
+                  onDurationChange={onDurationChange}
+                  excludedThemeNames={systemThemeNames}
                 />
               </ScrollArea>
             </div>
           )}
         </CardContent>
       </Card>
-    </TabsContent>
+    </div>
   );
 }
