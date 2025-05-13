@@ -47,11 +47,11 @@ export function OrganizationContextDialog({
     setError(null);
     
     try {
-      await enrichCompanyData(companyId);
+      await enrichCompanyData(companyId, organizationContext);
       
       toast({
         title: "Analyse terminée",
-        description: "Le contexte de l'organisation a été enrichi et les processus critiques ont été identifiés.",
+        description: "Le contexte de l'organisation a été enrichi avec des informations réelles.",
       });
       
       onEnrichSuccess();

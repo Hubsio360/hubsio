@@ -27,14 +27,14 @@ serve(async (req) => {
       });
     }
 
-    // Construire un prompt pour OpenAI
+    // Prompt modifié pour rechercher des informations factuelles
     const prompt = `
-Fais une recherche sur internet pour cette la société  "${companyName}" et crée une fiche de synthèse. L'entreprise a partagé cette description: "${description || "Aucune description fournie."}".
+Fais une recherche sur internet pour cette société "${companyName}" et crée une fiche de synthèse factuelle basée sur des informations réelles, non fictives. L'entreprise a partagé cette description: "${description || "Aucune description fournie."}".
 
 Retourne uniquement un objet JSON avec ce format exact, sans texte d'explication, sans code block markdown:
 {
-  "activity": "Description de l'activité principale (max 200 caractères)",
-  "creationYear": "Année de création (un nombre entre 1990 et 2023)",
+  "activity": "Description factuelle de l'activité principale (max 200 caractères)",
+  "creationYear": "Année de création (un nombre entre 1950 et 2023, ou null si inconnu)",
   "parentCompany": "Société mère éventuelle ou null",
   "marketScope": "Portée du marché (Local, National, International, etc.)"
 }
@@ -51,10 +51,10 @@ Retourne uniquement un objet JSON avec ce format exact, sans texte d'explication
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Fais une recherche sur internet pour la société. Réponds uniquement avec du JSON sans explications ni formatage markdown.' },
+          { role: 'system', content: 'Tu es un assistant spécialisé dans la recherche d\'informations sur les entreprises. Recherche uniquement des données factuelles et réelles. Réponds uniquement avec du JSON sans explications ni formatage markdown.' },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
+        temperature: 0.5,
       }),
     });
 
