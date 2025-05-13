@@ -211,7 +211,9 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
           title: 'Interview supprimée',
           description: 'L\'interview a été supprimée avec succès',
         });
-        onDelete && onDelete();
+        if (onDelete) {
+          onDelete();
+        }
       } else {
         toast({
           title: 'Erreur',

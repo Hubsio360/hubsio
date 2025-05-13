@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { useToast } from './use-toast';
@@ -252,7 +253,7 @@ export const useRiskScalesManager = (companyId: string) => {
     if (!companyId) return;
     
     try {
-      const existingScale = companyRiskScales.find(
+      const existingScale = companyRiskScales?.find(
         (scale) => getCompanyId(scale) === companyId && getScaleTypeId(scale) === scaleTypeId
       );
       
@@ -285,7 +286,7 @@ export const useRiskScalesManager = (companyId: string) => {
 
   const handleToggleActive = useCallback(async (scaleId: string, isActive: boolean) => {
     try {
-      const updatedScales = companyRiskScales.map(scale => 
+      const updatedScales = companyRiskScales?.map(scale => 
         scale.id === scaleId ? { 
           ...scale, 
           isActive: !isActive,
@@ -293,13 +294,17 @@ export const useRiskScalesManager = (companyId: string) => {
         } : scale
       ).map(ensureWithLevels);
       
-      setCachedScales(updatedScales);
+      if (updatedScales) {
+        setCachedScales(updatedScales);
+      }
       
       await toggleRiskScaleActive(scaleId, !isActive);
       await refreshData();
     } catch (err) {
       console.error('Error toggling risk scale:', err);
-      setCachedScales(companyRiskScales.map(ensureWithLevels));
+      if (companyRiskScales) {
+        setCachedScales(companyRiskScales.map(ensureWithLevels));
+      }
       toast({
         variant: 'destructive',
         title: 'Erreur',
@@ -363,17 +368,17 @@ export const useRiskScalesManager = (companyId: string) => {
   }, [companyId, fetchRiskScaleTypes, fetchCompanyRiskScales, ensureDefaultScalesExist, companyRiskScales, setupLikelihoodScale, refreshData]);
 
   useEffect(() => {
-    if (Array.isArray(companyRiskScales) && Array.isArray(riskScaleTypes) && 
-        !loading.riskScaleTypes && !loading.companyRiskScales) {
+    if (Array.isArray(riskScaleTypes) && Array.isArray(companyRiskScales) && 
+        loading && typeof loading === 'object' && !loading.riskScaleTypes && !loading.companyRiskScales) {
       setCachedScales(companyRiskScales.map(ensureWithLevels));
       setCachedTypes(riskScaleTypes);
     }
-  }, [companyRiskScales, riskScaleTypes, loading.companyRiskScales, loading.riskScaleTypes]);
+  }, [riskScaleTypes, companyRiskScales, loading]);
 
   return {
     riskScaleTypes: cachedTypes,
     companyRiskScales: cachedScales,
-    isLoading: isInitialLoading || loading.companyRiskScales || loading.riskScaleTypes,
+    isLoading: isInitialLoading || (loading && typeof loading === 'object' && (loading.companyRiskScales || loading.riskScaleTypes)),
     isRefreshing,
     error,
     addScale: handleAddScale,

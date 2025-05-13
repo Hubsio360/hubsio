@@ -1,248 +1,226 @@
 
-import React, { useEffect, useState } from 'react';
-import TopicsList from '@/components/audit-plan/TopicsList';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, RefreshCw, PlusCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import { PlusCircle, Search } from 'lucide-react';
 import { AuditTheme } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ThemeSelectorProps {
   auditId: string;
-  frameworkId?: string;
-  selectedTopicIds: string[];
-  onSelectionChange: (topicIds: string[]) => void;
-  excludedThemeNames?: string[];
+  frameworkId: string;
+  selectedThemes: string[];
+  onSelectTheme: (themeId: string) => void;
+  onUnselectTheme: (themeId: string) => void;
 }
 
-const ThemeSelector: React.FC<ThemeSelectorProps> = ({
-  auditId,
+const ThemeSelector: React.FC<ThemeSelectorProps> = ({ 
+  auditId, 
   frameworkId,
-  selectedTopicIds,
-  onSelectionChange,
-  excludedThemeNames = ['ADMIN', 'Cloture']
+  selectedThemes,
+  onSelectTheme,
+  onUnselectTheme
 }) => {
-  const { fetchThemes, themes: allThemes, loading: globalLoading, addTheme, fetchThemesByFrameworkId } = useData();
-  const [frameworkThemes, setFrameworkThemes] = useState<AuditTheme[]>([]);
-  const [loadingThemes, setLoadingThemes] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [attemptCount, setAttemptCount] = useState(0);
-  const [retryCount, setRetryCount] = useState(0);
+  const { themes, fetchThemesByFrameworkId, addTheme } = useData();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [themesList, setThemesList] = useState<AuditTheme[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [newThemeDialog, setNewThemeDialog] = useState(false);
+  const [newThemeName, setNewThemeName] = useState('');
+  const [newThemeDescription, setNewThemeDescription] = useState('');
+  const [savingTheme, setSavingTheme] = useState(false);
 
-  // Load themes - first try framework specific themes if frameworkId provided, otherwise use all themes
-  const loadThemes = async () => {
-    if (!auditId) {
-      console.log("No audit ID provided for theme loading");
+  useEffect(() => {
+    const loadThemes = async () => {
+      setLoading(true);
+      try {
+        const loadedThemes = await fetchThemesByFrameworkId(frameworkId);
+        setThemesList(loadedThemes);
+      } catch (error) {
+        console.error('Error loading themes:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de charger les thématiques',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadThemes();
+  }, [frameworkId, fetchThemesByFrameworkId, toast]);
+
+  const handleAddTheme = async () => {
+    if (!newThemeName.trim()) {
+      toast({
+        title: 'Erreur',
+        description: 'Le nom de la thématique est requis',
+        variant: 'destructive',
+      });
       return;
     }
-    
-    setLoadingThemes(true);
-    setError(null);
-    
-    try {
-      console.log(`Attempt ${attemptCount + 1}: Loading themes...`);
-      
-      let themes: AuditTheme[] = [];
-      
-      // Si un frameworkId est fourni, essayons d'abord de charger les thèmes spécifiques
-      if (frameworkId) {
-        console.log(`Loading themes for framework ${frameworkId}`);
-        themes = await fetchThemesByFrameworkId(frameworkId);
-        console.log("Framework specific themes loaded:", themes);
-      }
-      
-      // Si nous n'avons pas de thèmes spécifiques au framework ou qu'ils sont vides, utilisons tous les thèmes
-      if (!themes || themes.length === 0) {
-        console.log("No framework specific themes found, loading all themes");
-        themes = await fetchThemes();
-        console.log("All themes loaded:", themes);
-      }
-      
-      // Vérifions si nous avons des thèmes
-      if (themes && Array.isArray(themes) && themes.length > 0) {
-        // Filter out excluded theme names
-        const filteredThemes = themes.filter(theme => 
-          !excludedThemeNames.includes(theme.name)
-        );
-        
-        console.log("Filtered themes:", filteredThemes);
-        setFrameworkThemes(filteredThemes);
-      } else {
-        console.error("No themes found or returned");
-        // Si nous n'avons toujours pas de thèmes, vérifions directement dans la base de données
-        const { data, error } = await supabase
-          .from('audit_themes')
-          .select('*')
-          .order('name');
-          
-        if (error) {
-          console.error("Error checking themes directly:", error);
-          setError("Aucune thématique trouvée. Veuillez ajouter des thématiques ou réessayer.");
-        } else if (data && data.length > 0) {
-          console.log("Found themes directly from database:", data);
-          const directThemes = data.map(theme => ({
-            id: theme.id,
-            name: theme.name,
-            description: theme.description || ''
-          }));
-          
-          const filteredThemes = directThemes.filter(theme => 
-            !excludedThemeNames.includes(theme.name)
-          );
-          
-          setFrameworkThemes(filteredThemes);
-        } else {
-          setError("Aucune thématique trouvée. Veuillez ajouter des thématiques ou réessayer.");
-        }
-      }
-    } catch (error) {
-      console.error("Complete error while loading themes:", error);
-      setError("Impossible de charger les thématiques. Veuillez réessayer.");
-    } finally {
-      setLoadingThemes(false);
-    }
-  };
 
-  // Initial theme loading
-  useEffect(() => {
-    loadThemes();
-  }, [auditId, frameworkId, fetchThemes, fetchThemesByFrameworkId, attemptCount]);
-
-  // Automatic retry mechanism on failure
-  useEffect(() => {
-    // If error and less than 3 automatic attempts
-    if (error && retryCount < 3) {
-      const timer = setTimeout(() => {
-        console.log(`Automatic retry ${retryCount + 1}/3...`);
-        setRetryCount(prev => prev + 1);
-        setAttemptCount(prev => prev + 1);
-      }, 1500); // Increase delay between attempts
-      
-      return () => clearTimeout(timer);
-    }
-  }, [error, retryCount]);
-
-  // Manual retry function
-  const handleRetry = () => {
-    setAttemptCount(prev => prev + 1);
-    setRetryCount(0); // Reset automatic retry counter
-  };
-
-  // Function to add a new theme
-  const handleAddTheme = async () => {
-    const themeName = prompt("Nom de la nouvelle thématique:");
-    if (!themeName || themeName.trim() === '') return;
-    
-    const description = prompt("Description (optionnel):");
-    
+    setSavingTheme(true);
     try {
       const newTheme = await addTheme({
-        name: themeName.trim(),
-        description: description ? description.trim() : ''
+        name: newThemeName,
+        description: newThemeDescription
       });
       
       if (newTheme) {
         toast({
-          title: "Thématique ajoutée",
-          description: `La thématique "${newTheme.name}" a été ajoutée avec succès.`,
+          title: 'Thématique ajoutée',
+          description: 'La thématique a été ajoutée avec succès',
         });
         
-        // Reload themes
-        handleRetry();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible d'ajouter la thématique.",
-        });
+        // Refresh themes list
+        const updatedThemes = await fetchThemesByFrameworkId(frameworkId);
+        setThemesList(updatedThemes);
+        
+        // Reset form and close dialog
+        setNewThemeName('');
+        setNewThemeDescription('');
+        setNewThemeDialog(false);
       }
     } catch (error) {
-      console.error("Error adding theme:", error);
+      console.error('Error adding theme:', error);
       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout de la thématique.",
+        title: 'Erreur',
+        description: 'Impossible d\'ajouter la thématique',
+        variant: 'destructive',
       });
+    } finally {
+      setSavingTheme(false);
     }
   };
 
-  // Debug theme loading state
-  useEffect(() => {
-    console.log("Theme loading state:", {
-      loadingThemes,
-      globalLoading,
-      frameworkThemes: frameworkThemes.length,
-      allThemes: allThemes.length,
-      error
-    });
-  }, [loadingThemes, globalLoading, frameworkThemes, allThemes, error]);
+  const filteredThemes = themesList.filter(theme => 
+    theme.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleThemeToggle = (themeId: string) => {
+    if (selectedThemes.includes(themeId)) {
+      onUnselectTheme(themeId);
+    } else {
+      onSelectTheme(themeId);
+    }
+  };
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <div>
-          <CardTitle className="text-lg">Thématiques d'entretien</CardTitle>
-          <CardDescription>
-            Sélectionnez les thématiques à inclure dans votre plan d'audit
-          </CardDescription>
-        </div>
-        <Button 
-          onClick={handleAddTheme}
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          Nouvelle thématique
-        </Button>
-      </CardHeader>
-      <CardContent>
-        {loadingThemes || globalLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        ) : error ? (
-          <div className="space-y-4">
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-            <div className="flex space-x-2">
-              <Button 
-                onClick={handleRetry}
-                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Réessayer
-              </Button>
-              <Button 
-                onClick={handleAddTheme}
-                variant="outline"
-                size="sm"
-              >
-                <PlusCircle className="h-4 w-4 mr-2" />
-                Ajouter une thématique
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <TopicsList 
-            auditId={auditId} 
-            frameworkId={frameworkId}
-            onSelectionChange={onSelectionChange}
-            excludedThemeNames={excludedThemeNames}
-            frameworkThemes={frameworkThemes}
-            loadingThemes={loadingThemes}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher une thématique..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-        )}
-      </CardContent>
-    </Card>
+        </div>
+        <Dialog open={newThemeDialog} onOpenChange={setNewThemeDialog}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="ml-2">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nouvelle
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ajouter une thématique</DialogTitle>
+              <DialogDescription>
+                Créer une nouvelle thématique pour les audits
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="theme-name">Nom de la thématique</Label>
+                <Input 
+                  id="theme-name" 
+                  value={newThemeName}
+                  onChange={(e) => setNewThemeName(e.target.value)}
+                  placeholder="Exemple: Sécurité des accès"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="theme-description">Description</Label>
+                <Textarea 
+                  id="theme-description"
+                  value={newThemeDescription}
+                  onChange={(e) => setNewThemeDescription(e.target.value)} 
+                  placeholder="Description de la thématique..."
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setNewThemeDialog(false)}>Annuler</Button>
+              <Button onClick={handleAddTheme} disabled={savingTheme}>
+                {savingTheme ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center space-x-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-5 w-full" />
+            </div>
+          ))}
+        </div>
+      ) : filteredThemes.length > 0 ? (
+        <div className="space-y-1 max-h-[300px] overflow-y-auto">
+          {filteredThemes.map(theme => (
+            <div 
+              key={theme.id}
+              className={`
+                flex items-center p-2 rounded-md cursor-pointer
+                ${selectedThemes.includes(theme.id) 
+                  ? 'bg-primary/10 hover:bg-primary/15' 
+                  : 'hover:bg-muted'}
+              `}
+              onClick={() => handleThemeToggle(theme.id)}
+            >
+              <div className="flex-1">
+                <p className="font-medium">{theme.name}</p>
+                {theme.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-1">
+                    {theme.description}
+                  </p>
+                )}
+              </div>
+              <div className={`
+                w-5 h-5 rounded-full border 
+                ${selectedThemes.includes(theme.id) 
+                  ? 'bg-primary border-primary' 
+                  : 'border-input'}
+              `} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center p-4 border rounded-md">
+          <p className="text-muted-foreground">
+            Aucune thématique trouvée{searchQuery ? ' pour cette recherche' : ''}
+          </p>
+          {searchQuery && (
+            <Button variant="link" onClick={() => setSearchQuery('')}>
+              Effacer la recherche
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
