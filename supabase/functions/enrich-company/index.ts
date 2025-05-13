@@ -29,7 +29,7 @@ serve(async (req) => {
 
     // Construire un prompt pour OpenAI
     const prompt = `
-Génère un profil d'entreprise réaliste en français pour "${companyName}". L'entreprise a partagé cette description: "${description || "Aucune description fournie."}".
+Fais une recherche sur internet pour cette la société  "${companyName}" et crée une fiche de synthèse. L'entreprise a partagé cette description: "${description || "Aucune description fournie."}".
 
 Retourne un objet JSON avec ce format exact, en utilisant que des valeurs réalistes basées sur le nom et la description:
 {
