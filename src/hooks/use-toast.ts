@@ -1,22 +1,26 @@
 
-import { toast as sonnerToast, type ToastOptions } from "sonner";
+import { toast as sonnerToast } from "sonner";
 
 type ToastProps = {
   title?: string;
   description?: string;
   variant?: "default" | "destructive" | "success";
-  [key: string]: any;
+  action?: React.ReactNode;
 };
 
-const useToast = () => {
+export function useToast() {
   const toast = ({ title, description, variant, ...props }: ToastProps) => {
     sonnerToast(title, {
       description,
+      className: variant === "destructive" ? "bg-destructive text-destructive-foreground" : 
+                variant === "success" ? "bg-green-500 text-white" : undefined,
       ...props,
     });
   };
 
-  return { toast };
-};
+  return {
+    toast,
+  };
+}
 
-export { useToast, sonnerToast as toast };
+export { useToast as toast };
