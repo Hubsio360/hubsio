@@ -6,6 +6,7 @@ import PlanSummary from './audit-plan/PlanSummary';
 import PlanActions from './audit-plan/PlanActions';
 import { useAuditPlanGenerator } from '@/hooks/useAuditPlanGenerator';
 import { useToast } from '@/hooks/use-toast';
+import { parseISO } from 'date-fns';
 
 interface AuditPlanGeneratorProps {
   auditId: string;
@@ -72,6 +73,10 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
     }
   }, [themes, selectedTopicIds, selectedDays, themeDurations, loaded, toast]);
 
+  // Convert string dates to Date objects for the UI components
+  const startDateObj = parseISO(startDate);
+  const endDateObj = parseISO(endDate);
+
   return (
     <Card className="border-none shadow-none">
       <CardContent className="p-0">
@@ -79,8 +84,8 @@ const AuditPlanGenerator: React.FC<AuditPlanGeneratorProps> = ({
           <PlanOptions
             auditId={auditId}
             frameworkId={frameworkId || ''}
-            startDate={new Date(startDate)}
-            endDate={new Date(endDate)}
+            startDate={startDateObj}
+            endDate={endDateObj}
             selectedTopicIds={selectedTopicIds}
             themes={themes}
             themeDurations={themeDurations}

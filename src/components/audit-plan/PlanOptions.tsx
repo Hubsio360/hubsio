@@ -12,7 +12,7 @@ import { CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { fr } from 'date-fns/locale';
-import AuditDaysSelector from './AuditDaysSelector';
+import AuditDaysSelector from '../AuditDaysSelector';
 import { ThemeSelector } from './ThemeSelector';
 import ThemeDurationSelector from './ThemeDurationSelector';
 import { cn } from '@/lib/utils';
@@ -137,7 +137,9 @@ export function PlanOptions({
               startDate={stringifyDate(startDate)}
               endDate={stringifyDate(endDate)}
               selectedDays={selectedDays}
-              onSelectionChange={onSelectedDaysChange}
+              onSelectedDaysChange={onSelectedDaysChange}
+              requiredHours={totalHours}
+              availableHoursPerDay={availableHoursPerDay}
             />
           </div>
 
@@ -161,7 +163,7 @@ export function PlanOptions({
               <Label>Durée par thématique (en heures)</Label>
               <ScrollArea className="h-[200px] pr-4">
                 <ThemeDurationSelector
-                  themes={themes}
+                  themes={themes.filter(theme => selectedTopicIds.includes(theme.id))}
                   themeDurations={themeDurations}
                   onDurationChange={onDurationChange}
                   excludedThemeNames={systemThemeNames}
