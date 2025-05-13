@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import PlanOptions from './audit-plan/PlanOptions';
+import { PlanOptions } from './audit-plan/PlanOptions';
 import PlanSummary from './audit-plan/PlanSummary';
 import PlanActions from './audit-plan/PlanActions';
 import { useAuditPlanGenerator } from '@/hooks/useAuditPlanGenerator';

@@ -12,9 +12,9 @@ import { CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { fr } from 'date-fns/locale';
-import { AuditDaysSelector } from './AuditDaysSelector';
+import AuditDaysSelector from './AuditDaysSelector';
 import { ThemeSelector } from './ThemeSelector';
-import { ThemeDurationSelector } from './ThemeDurationSelector';
+import ThemeDurationSelector from './ThemeDurationSelector';
 import { cn } from '@/lib/utils';
 
 export interface PlanOptionsProps {

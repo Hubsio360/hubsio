@@ -1,4 +1,3 @@
-
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -320,7 +319,13 @@ export interface CtiResult {
   result: string;
   createdAt?: string;
   updatedAt?: string;
+  // Add fields needed in CTI.tsx
+  title?: string;
+  content?: string;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
-// Export risk scale types properly
+// Export type definitions properly
 export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';

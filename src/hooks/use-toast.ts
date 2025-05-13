@@ -1,7 +1,7 @@
 
-import { toast as sonnerToast, type Toast } from "sonner";
+import { toast as sonnerToast, type ToastOptions } from "sonner";
 
-export type ToastProps = Omit<Toast, "id"> & {
+export type ToastProps = ToastOptions & {
   title?: string;
   description?: string;
   variant?: "default" | "destructive";

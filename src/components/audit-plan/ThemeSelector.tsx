@@ -19,7 +19,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Plus, Save, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export interface ThemeSelectorProps {
   auditId: string;
@@ -37,6 +37,7 @@ export function ThemeSelector({
   selectedThemeIds = [],
 }: ThemeSelectorProps) {
   const { themes, fetchThemesByFrameworkId, addTheme } = useData();
+  const { toast } = useToast();
   
   const [loading, setLoading] = useState(true);
   const [filteredThemes, setFilteredThemes] = useState<AuditTheme[]>([]);
@@ -65,7 +66,7 @@ export function ThemeSelector({
     if (frameworkId) {
       loadThemes();
     }
-  }, [frameworkId]);
+  }, [frameworkId, fetchThemesByFrameworkId]);
   
   // Update filtered themes when themes or search term changes
   useEffect(() => {
