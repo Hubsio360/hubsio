@@ -1,131 +1,139 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Framework } from '@/types';
+import { Loader2, Save } from 'lucide-react';
 
 interface AddControlDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  framework: Framework | null;
+  isOpen: boolean;
+  onClose: () => void;
+  frameworkId: string;
 }
 
-export const AddControlDialog = ({ open, onOpenChange, framework }: AddControlDialogProps) => {
+export function AddControlDialog({ isOpen, onClose, frameworkId }: AddControlDialogProps) {
   const { addControl } = useData();
   const { toast } = useToast();
-  const [isAddingControl, setIsAddingControl] = useState(false);
-  const [editControlFormData, setEditControlFormData] = useState({
-    referenceCode: '',
-    title: '',
-    description: ''
-  });
-
-  useEffect(() => {
-    if (open) {
-      setEditControlFormData({
-        referenceCode: '',
-        title: '',
-        description: ''
-      });
-    }
-  }, [open]);
-
-  const submitAddControl = async () => {
-    if (!framework) return;
+  
+  const [referenceCode, setReferenceCode] = useState('');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!editControlFormData.referenceCode || !editControlFormData.title) {
+    if (!referenceCode.trim() || !title.trim()) {
       toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Le code de référence et le titre sont requis',
+        variant: 'destructive',
       });
       return;
     }
     
-    setIsAddingControl(true);
+    setIsLoading(true);
     
     try {
-      const newControl = await addControl({
-        frameworkId: framework.id,
-        referenceCode: editControlFormData.referenceCode,
-        title: editControlFormData.title,
-        description: editControlFormData.description
+      await addControl({
+        frameworkId,
+        referenceCode,
+        title,
+        description: description || undefined,
       });
       
       toast({
-        title: "Contrôle ajouté",
-        description: `${newControl.referenceCode} - ${newControl.title} a été ajouté avec succès`,
+        title: 'Contrôle ajouté',
+        description: 'Le contrôle a été ajouté avec succès',
       });
       
-      onOpenChange(false);
+      // Reset form
+      setReferenceCode('');
+      setTitle('');
+      setDescription('');
+      
+      onClose();
     } catch (error) {
-      console.error("Erreur lors de l'ajout du contrôle:", error);
+      console.error('Error adding control:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'ajout du contrôle",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de l\'ajout du contrôle',
+        variant: 'destructive',
       });
     } finally {
-      setIsAddingControl(false);
+      setIsLoading(false);
     }
   };
-
+  
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Ajouter un contrôle</DialogTitle>
           <DialogDescription>
-            {framework && `Ajoutez un nouveau contrôle au référentiel ${framework.name}.`}
+            Ajoutez un nouveau contrôle au référentiel
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="add-control-code">Code de référence</Label>
+        
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="referenceCode">Code de référence</Label>
             <Input
-              id="add-control-code"
-              value={editControlFormData.referenceCode}
-              onChange={(e) => setEditControlFormData({ ...editControlFormData, referenceCode: e.target.value })}
-              placeholder="Ex: A.5.1"
+              id="referenceCode"
+              value={referenceCode}
+              onChange={(e) => setReferenceCode(e.target.value)}
+              placeholder="Ex: A.1.2"
+              disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="add-control-title">Titre</Label>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="title">Titre</Label>
             <Input
-              id="add-control-title"
-              value={editControlFormData.title}
-              onChange={(e) => setEditControlFormData({ ...editControlFormData, title: e.target.value })}
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Titre du contrôle"
+              disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="add-control-description">Description</Label>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="add-control-description"
-              value={editControlFormData.description}
-              onChange={(e) => setEditControlFormData({ ...editControlFormData, description: e.target.value })}
-              placeholder="Description détaillée du contrôle"
-              rows={4}
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description du contrôle"
+              className="min-h-[100px]"
+              disabled={isLoading}
             />
           </div>
-        </div>
-        <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-          >
-            Annuler
-          </Button>
-          <Button onClick={submitAddControl} disabled={isAddingControl}>
-            {isAddingControl ? 'Ajout en cours...' : 'Ajouter'}
-          </Button>
-        </DialogFooter>
+          
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Ajout...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Ajouter
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
-};
+}

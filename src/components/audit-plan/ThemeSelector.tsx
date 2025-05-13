@@ -1,73 +1,119 @@
 
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Search } from 'lucide-react';
 import { AuditTheme } from '@/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Plus, Save, Loader2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
-interface ThemeSelectorProps {
+export interface ThemeSelectorProps {
   auditId: string;
   frameworkId: string;
-  selectedThemes: string[];
-  onSelectTheme: (themeId: string) => void;
-  onUnselectTheme: (themeId: string) => void;
+  excludedThemeNames?: string[];
+  onSelectionChange: (themeIds: string[]) => void;
+  selectedThemeIds?: string[];
 }
 
-const ThemeSelector: React.FC<ThemeSelectorProps> = ({ 
-  auditId, 
+export function ThemeSelector({
+  auditId,
   frameworkId,
-  selectedThemes,
-  onSelectTheme,
-  onUnselectTheme
-}) => {
+  excludedThemeNames = [],
+  onSelectionChange,
+  selectedThemeIds = [],
+}: ThemeSelectorProps) {
   const { themes, fetchThemesByFrameworkId, addTheme } = useData();
-  const { toast } = useToast();
+  
   const [loading, setLoading] = useState(true);
-  const [themesList, setThemesList] = useState<AuditTheme[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [newThemeDialog, setNewThemeDialog] = useState(false);
+  const [filteredThemes, setFilteredThemes] = useState<AuditTheme[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>(selectedThemeIds);
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // New theme dialog state
+  const [isNewThemeDialogOpen, setIsNewThemeDialogOpen] = useState(false);
   const [newThemeName, setNewThemeName] = useState('');
   const [newThemeDescription, setNewThemeDescription] = useState('');
-  const [savingTheme, setSavingTheme] = useState(false);
-
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // Load themes on component mount
   useEffect(() => {
     const loadThemes = async () => {
       setLoading(true);
       try {
-        const loadedThemes = await fetchThemesByFrameworkId(frameworkId);
-        setThemesList(loadedThemes);
+        await fetchThemesByFrameworkId(frameworkId);
       } catch (error) {
         console.error('Error loading themes:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible de charger les thématiques',
-          variant: 'destructive',
-        });
       } finally {
         setLoading(false);
       }
     };
-
-    loadThemes();
-  }, [frameworkId, fetchThemesByFrameworkId, toast]);
-
-  const handleAddTheme = async () => {
+    
+    if (frameworkId) {
+      loadThemes();
+    }
+  }, [frameworkId]);
+  
+  // Update filtered themes when themes or search term changes
+  useEffect(() => {
+    if (!themes) return;
+    
+    let filtered = [...themes];
+    
+    // Filter out excluded themes
+    if (excludedThemeNames.length > 0) {
+      filtered = filtered.filter((theme) => !excludedThemeNames.includes(theme.name));
+    }
+    
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (theme) =>
+          theme.name.toLowerCase().includes(searchLower) ||
+          (theme.description && theme.description.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    setFilteredThemes(filtered);
+  }, [themes, searchTerm, excludedThemeNames]);
+  
+  // Handle theme selection change
+  const handleThemeChange = (themeId: string, checked: boolean) => {
+    const newSelectedIds = checked
+      ? [...selectedIds, themeId]
+      : selectedIds.filter((id) => id !== themeId);
+    
+    setSelectedIds(newSelectedIds);
+    onSelectionChange(newSelectedIds);
+  };
+  
+  // Handle creating a new theme
+  const handleCreateTheme = async () => {
     if (!newThemeName.trim()) {
       toast({
-        title: 'Erreur',
-        description: 'Le nom de la thématique est requis',
+        title: 'Nom requis',
+        description: 'Veuillez saisir un nom pour la thématique',
         variant: 'destructive',
       });
       return;
     }
-
-    setSavingTheme(true);
+    
+    setIsSaving(true);
+    
     try {
       const newTheme = await addTheme({
         name: newThemeName,
@@ -76,152 +122,161 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
       
       if (newTheme) {
         toast({
-          title: 'Thématique ajoutée',
-          description: 'La thématique a été ajoutée avec succès',
+          title: 'Thématique créée',
+          description: 'La nouvelle thématique a été créée avec succès',
         });
-        
-        // Refresh themes list
-        const updatedThemes = await fetchThemesByFrameworkId(frameworkId);
-        setThemesList(updatedThemes);
         
         // Reset form and close dialog
         setNewThemeName('');
         setNewThemeDescription('');
-        setNewThemeDialog(false);
+        setIsNewThemeDialogOpen(false);
+        
+        // Refresh themes list
+        await fetchThemesByFrameworkId(frameworkId);
+      } else {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de créer la thématique',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
-      console.error('Error adding theme:', error);
+      console.error('Error creating theme:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'ajouter la thématique',
+        description: 'Une erreur est survenue lors de la création de la thématique',
         variant: 'destructive',
       });
     } finally {
-      setSavingTheme(false);
+      setIsSaving(false);
     }
   };
-
-  const filteredThemes = themesList.filter(theme => 
-    theme.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleThemeToggle = (themeId: string) => {
-    if (selectedThemes.includes(themeId)) {
-      onUnselectTheme(themeId);
-    } else {
-      onSelectTheme(themeId);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="relative flex-1">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Rechercher une thématique..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Dialog open={newThemeDialog} onOpenChange={setNewThemeDialog}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="ml-2">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nouvelle
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Ajouter une thématique</DialogTitle>
-              <DialogDescription>
-                Créer une nouvelle thématique pour les audits
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="theme-name">Nom de la thématique</Label>
-                <Input 
-                  id="theme-name" 
-                  value={newThemeName}
-                  onChange={(e) => setNewThemeName(e.target.value)}
-                  placeholder="Exemple: Sécurité des accès"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="theme-description">Description</Label>
-                <Textarea 
-                  id="theme-description"
-                  value={newThemeDescription}
-                  onChange={(e) => setNewThemeDescription(e.target.value)} 
-                  placeholder="Description de la thématique..."
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setNewThemeDialog(false)}>Annuler</Button>
-              <Button onClick={handleAddTheme} disabled={savingTheme}>
-                {savingTheme ? 'Enregistrement...' : 'Enregistrer'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="animate-spin h-8 w-8 text-muted-foreground" />
       </div>
-
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center space-x-2">
-              <Skeleton className="h-4 w-4" />
-              <Skeleton className="h-5 w-full" />
-            </div>
-          ))}
+    );
+  }
+  
+  return (
+    <Card className="h-full">
+      <CardContent className="p-4 h-full">
+        <div className="flex items-center justify-between mb-2">
+          <Input
+            className="max-w-xs"
+            placeholder="Rechercher des thématiques..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsNewThemeDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Nouvelle thématique
+          </Button>
         </div>
-      ) : filteredThemes.length > 0 ? (
-        <div className="space-y-1 max-h-[300px] overflow-y-auto">
-          {filteredThemes.map(theme => (
-            <div 
-              key={theme.id}
-              className={`
-                flex items-center p-2 rounded-md cursor-pointer
-                ${selectedThemes.includes(theme.id) 
-                  ? 'bg-primary/10 hover:bg-primary/15' 
-                  : 'hover:bg-muted'}
-              `}
-              onClick={() => handleThemeToggle(theme.id)}
+        
+        <Separator className="my-2" />
+        
+        <ScrollArea className="h-[300px] pr-4">
+          <div className="space-y-2">
+            {filteredThemes.length > 0 ? (
+              filteredThemes.map((theme) => (
+                <div key={theme.id} className="flex items-start space-x-2 py-1">
+                  <Checkbox
+                    id={`theme-${theme.id}`}
+                    checked={selectedIds.includes(theme.id)}
+                    onCheckedChange={(checked) =>
+                      handleThemeChange(theme.id, checked === true)
+                    }
+                  />
+                  <div className="grid gap-1.5">
+                    <Label
+                      htmlFor={`theme-${theme.id}`}
+                      className="font-medium"
+                    >
+                      {theme.name}
+                    </Label>
+                    {theme.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {theme.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-muted-foreground py-4">
+                {searchTerm
+                  ? 'Aucune thématique ne correspond à votre recherche'
+                  : 'Aucune thématique disponible'}
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </CardContent>
+      
+      {/* Create Theme Dialog */}
+      <Dialog open={isNewThemeDialogOpen} onOpenChange={setIsNewThemeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer une nouvelle thématique</DialogTitle>
+            <DialogDescription>
+              Ajoutez une nouvelle thématique pour les interviews d'audit
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="theme-name">Nom</Label>
+              <Input
+                id="theme-name"
+                value={newThemeName}
+                onChange={(e) => setNewThemeName(e.target.value)}
+                placeholder="Nom de la thématique"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="theme-description">Description</Label>
+              <Textarea
+                id="theme-description"
+                value={newThemeDescription}
+                onChange={(e) => setNewThemeDescription(e.target.value)}
+                placeholder="Description de la thématique"
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsNewThemeDialogOpen(false)}
+              disabled={isSaving}
             >
-              <div className="flex-1">
-                <p className="font-medium">{theme.name}</p>
-                {theme.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-1">
-                    {theme.description}
-                  </p>
-                )}
-              </div>
-              <div className={`
-                w-5 h-5 rounded-full border 
-                ${selectedThemes.includes(theme.id) 
-                  ? 'bg-primary border-primary' 
-                  : 'border-input'}
-              `} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center p-4 border rounded-md">
-          <p className="text-muted-foreground">
-            Aucune thématique trouvée{searchQuery ? ' pour cette recherche' : ''}
-          </p>
-          {searchQuery && (
-            <Button variant="link" onClick={() => setSearchQuery('')}>
-              Effacer la recherche
+              Annuler
             </Button>
-          )}
-        </div>
-      )}
-    </div>
+            <Button onClick={handleCreateTheme} disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Création...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Créer
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
   );
-};
-
-export default ThemeSelector;
+}

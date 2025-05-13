@@ -14,6 +14,11 @@ import {
   StandardClause,
   AuditInterview,
   InterviewParticipant,
+  AuditTheme,
+  AuditTopic,
+  FrameworkControl,
+  Framework,
+  RiskLevel,
 } from '@/types';
 
 import type { RiskScenarioTemplate } from '@/types';
@@ -26,12 +31,6 @@ interface Control {
   referenceCode: string;
   title: string;
   description?: string;
-}
-
-interface Framework {
-  id: string;
-  name: string;
-  version: string;
 }
 
 interface Topic {
@@ -50,7 +49,27 @@ interface Theme {
 interface DataContextType {
   // Companies
   companies: Company[];
-  loading: boolean | Record<string, boolean>;
+  loading: {
+    companies: boolean | Record<string, boolean>;
+    frameworks: boolean;
+    controls: boolean;
+    topics: boolean;
+    interviews: boolean;
+    themes: boolean;
+    standardClauses: boolean;
+    audits: boolean;
+    users: boolean;
+    services: boolean;
+    consultingProjects: boolean;
+    rssiServices: boolean;
+    riskAssets: boolean;
+    riskThreats: boolean;
+    riskVulnerabilities: boolean;
+    riskScenarios: boolean;
+    riskTreatments: boolean;
+    riskScaleTypes: boolean;
+    companyRiskScales: boolean;
+  };
   error: Error | null;
   fetchCompanies: () => Promise<Company[]>;
   addCompany: (companyData: { name: string; activity?: string; parentCompany?: string; marketScope?: string; creationYear?: number; }) => Promise<Company>;
@@ -71,7 +90,7 @@ interface DataContextType {
   // Controls
   controls: Control[];
   fetchControlsByFramework: (frameworkId: string) => Promise<Control[]>;
-  addControl: (frameworkId: string, referenceCode: string, title: string, description?: string) => Promise<Control>;
+  addControl: (control: Omit<FrameworkControl, 'id'>) => Promise<Control>;
   updateControl: (id: string, data: { referenceCode?: string; title?: string; description?: string }) => Promise<Control>;
   deleteControl: (id: string) => Promise<void>;
   getControlById: (id: string) => Control | undefined;
@@ -83,7 +102,7 @@ interface DataContextType {
   // Topics
   topics: Topic[];
   fetchTopics: () => Promise<Topic[]>;
-  addTopic: (name: string, description?: string) => Promise<Topic>;
+  addTopic: (topic: Omit<AuditTopic, 'id'> | string, description?: string) => Promise<Topic>;
   updateTopic: (id: string, name: string, description?: string) => Promise<Topic>;
   deleteTopic: (id: string) => Promise<void>;
   associateControlsWithTopic: (topicId: string, controlIds: string[]) => Promise<void>;
@@ -92,7 +111,7 @@ interface DataContextType {
   // Themes
   themes: Theme[];
   fetchThemes: () => Promise<Theme[]>;
-  addTheme: (name: string, description?: string) => Promise<Theme>;
+  addTheme: (theme: Omit<AuditTheme, 'id'> | string, description?: string) => Promise<Theme>;
   updateTheme: (id: string, name: string, description?: string) => Promise<Theme>;
   deleteTheme: (id: string) => Promise<void>;
   fetchThemesByFrameworkId: (frameworkId: string) => Promise<Theme[]>;
@@ -105,8 +124,8 @@ interface DataContextType {
   addAudit: (companyId: string, frameworkId: string, startDate: string, endDate: string, createdById: string, scope?: string) => Promise<Audit>;
   updateAudit: (id: string, data: { startDate?: string; endDate?: string; status?: string; scope?: string }) => Promise<Audit>;
   deleteAudit: (id: string) => Promise<void>;
-  assignAuditors: (auditId: string, auditorIds: string[]) => Promise<void>;
-  getAuditAuditors: (auditId: string) => Promise<User[]>;
+  assignAuditors: (auditId: string, auditorIds: { userId: string; roleInAudit: 'lead' | 'participant' }[]) => Promise<void>;
+  getAuditAuditors: (auditId: string) => Promise<{ userId: string; roleInAudit: 'lead' | 'participant' }[]>;
   
   // Findings
   findings: Finding[];
@@ -127,7 +146,7 @@ interface DataContextType {
   addInterview: (data: any) => Promise<AuditInterview>;
   updateInterview: (id: string, data: any) => Promise<AuditInterview>;
   deleteInterview: (id: string) => Promise<void>;
-  addParticipant: (interviewId: string, userId: string, role: string) => Promise<InterviewParticipant>;
+  addParticipant: (interviewId: string, userId: string, role: string) => Promise<boolean>;
   removeParticipant: (interviewId: string, userId: string) => Promise<void>;
   getParticipantsByInterviewId: (interviewId: string) => Promise<InterviewParticipant[]>;
   generateAuditPlan: (auditId: string, startDate: string, endDate: string, options: any) => Promise<boolean>;
@@ -152,7 +171,7 @@ interface DataContextType {
   users: User[];
   fetchUsers: () => Promise<User[]>;
   getUserById: (id: string) => User | undefined;
-  getUsersByRole: (role: string) => Promise<User[]>;
+  getUsersByRole: (role: string | string[]) => Promise<User[]> | User[];
   
   // Risk assets
   riskAssets: RiskAsset[];

@@ -1,108 +1,146 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/contexts/DataContext';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Framework } from '@/types';
+import { Loader2, Save } from 'lucide-react';
 
 interface EditFrameworkDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  framework: Framework | null;
+  isOpen: boolean;
+  onClose: () => void;
+  isCreating: boolean;
+  framework?: Framework | null;
 }
 
-export const EditFrameworkDialog = ({ open, onOpenChange, framework }: EditFrameworkDialogProps) => {
-  const { updateFramework } = useData();
+export function EditFrameworkDialog({
+  isOpen,
+  onClose,
+  isCreating,
+  framework,
+}: EditFrameworkDialogProps) {
+  const { addFramework, updateFramework, refreshFrameworks } = useData();
   const { toast } = useToast();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editFormData, setEditFormData] = useState({ name: '', version: '' });
+  
+  const [name, setName] = useState('');
+  const [version, setVersion] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (framework) {
-      setEditFormData({
-        name: framework.name,
-        version: framework.version
-      });
+    // Initialize form when dialog opens
+    if (isOpen && framework && !isCreating) {
+      setName(framework.name);
+      setVersion(framework.version);
+    } else if (isOpen && isCreating) {
+      // Reset form for creation
+      setName('');
+      setVersion('1.0');
     }
-  }, [framework]);
+  }, [isOpen, framework, isCreating]);
 
-  const submitEdit = async () => {
-    if (!framework) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (!editFormData.name || !editFormData.version) {
+    if (!name.trim()) {
       toast({
-        title: "Champs requis",
-        description: "Veuillez remplir tous les champs",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Le nom du référentiel est requis',
+        variant: 'destructive',
       });
       return;
     }
     
-    setIsEditing(true);
+    setIsLoading(true);
     
     try {
-      const updatedFramework = await updateFramework(framework.id, {
-        name: editFormData.name,
-        version: editFormData.version
-      });
+      if (isCreating) {
+        await addFramework(name, version);
+        toast({
+          title: 'Référentiel créé',
+          description: 'Le référentiel a été créé avec succès',
+        });
+      } else if (framework) {
+        await updateFramework(framework.id, name, version);
+        toast({
+          title: 'Référentiel mis à jour',
+          description: 'Le référentiel a été mis à jour avec succès',
+        });
+      }
       
-      toast({
-        title: "Référentiel mis à jour",
-        description: `${updatedFramework.name} v${updatedFramework.version} a été mis à jour avec succès`,
-      });
-      
-      onOpenChange(false);
+      await refreshFrameworks();
+      onClose();
     } catch (error) {
-      console.error("Erreur lors de la mise à jour:", error);
+      console.error('Error saving framework:', error);
       toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de la mise à jour",
-        variant: "destructive",
+        title: 'Erreur',
+        description: 'Une erreur est survenue lors de la sauvegarde',
+        variant: 'destructive',
       });
     } finally {
-      setIsEditing(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Modifier le référentiel</DialogTitle>
+          <DialogTitle>
+            {isCreating ? 'Ajouter un référentiel' : 'Modifier le référentiel'}
+          </DialogTitle>
           <DialogDescription>
-            Modifiez les informations du référentiel.
+            {isCreating
+              ? 'Créez un nouveau référentiel d\'audit'
+              : 'Modifiez les détails du référentiel d\'audit'}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-name">Nom</Label>
+        
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="name">Nom</Label>
             <Input
-              id="edit-name"
-              value={editFormData.name}
-              onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nom du référentiel"
+              disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-version">Version</Label>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="version">Version</Label>
             <Input
-              id="edit-version"
-              value={editFormData.version}
-              onChange={(e) => setEditFormData({ ...editFormData, version: e.target.value })}
+              id="version"
+              value={version}
+              onChange={(e) => setVersion(e.target.value)}
+              placeholder="1.0"
+              disabled={isLoading}
             />
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Annuler
-          </Button>
-          <Button onClick={submitEdit} disabled={isEditing}>
-            {isEditing ? 'Enregistrement...' : 'Enregistrer'}
-          </Button>
-        </DialogFooter>
+          
+          <DialogFooter className="mt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isCreating ? 'Création...' : 'Mise à jour...'}
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  {isCreating ? 'Créer' : 'Mettre à jour'}
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
-};
+}

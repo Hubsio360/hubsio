@@ -312,5 +312,15 @@ export interface RiskScenarioTemplate {
   domain: string;
 }
 
-// Export risk scale types directly
-export { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';
+// CTI Result type
+export interface CtiResult {
+  id?: string;
+  companyId: string;
+  query: string;
+  result: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Export risk scale types properly
+export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';

@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-import EditFrameworkDialog from './components/EditFrameworkDialog';
-import DeleteFrameworkDialog from './components/DeleteFrameworkDialog';
-import ImportFrameworkSheet from './components/ImportFrameworkSheet';
-import FrameworksList from './components/FrameworksList';
-import FrameworkControls from './components/FrameworkControls';
-import NoFrameworksCard from './components/NoFrameworksCard';
+import { EditFrameworkDialog } from './components/EditFrameworkDialog';
+import { DeleteFrameworkDialog } from './components/DeleteFrameworkDialog';
+import { ImportFrameworkSheet } from './components/ImportFrameworkSheet';
+import { FrameworksList } from './components/FrameworksList';
+import { FrameworkControls } from './components/FrameworkControls';
+import { NoFrameworksCard } from './components/NoFrameworksCard';
 
 const FrameworksPage: React.FC = () => {
   const { frameworks, fetchFrameworks, deleteFramework, loading } = useData();

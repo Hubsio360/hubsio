@@ -204,22 +204,14 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
     setIsDeleting(true);
     
     try {
-      const success = await deleteInterview(interview.id);
+      await deleteInterview(interview.id);
       
-      if (success) {
-        toast({
-          title: 'Interview supprimée',
-          description: 'L\'interview a été supprimée avec succès',
-        });
-        if (onDelete) {
-          onDelete();
-        }
-      } else {
-        toast({
-          title: 'Erreur',
-          description: 'Une erreur est survenue lors de la suppression de l\'interview',
-          variant: 'destructive',
-        });
+      toast({
+        title: 'Interview supprimée',
+        description: 'L\'interview a été supprimée avec succès',
+      });
+      if (onDelete) {
+        onDelete();
       }
     } catch (error) {
       console.error('Error deleting interview:', error);
@@ -256,32 +248,20 @@ const EditInterviewDrawer: React.FC<EditInterviewDrawerProps> = ({
       // Simuler l'ajout d'un participant (dans un vrai cas, il faudrait récupérer ou créer l'utilisateur)
       const dummyUserId = `user-${Math.random().toString(36).substring(2, 10)}`;
       
-      const success = await addParticipant({
-        interviewId: interview.id,
-        userId: dummyUserId,
-        role: newParticipantRole
+      await addParticipant(interview.id, dummyUserId, newParticipantRole);
+      
+      // Rafraîchir la liste des participants
+      const updatedParticipants = await getParticipantsByInterviewId(interview.id);
+      setParticipants(updatedParticipants);
+      
+      toast({
+        title: "Participant ajouté",
+        description: `${newParticipantEmail} a été ajouté comme ${newParticipantRole}`,
       });
       
-      if (success) {
-        // Rafraîchir la liste des participants
-        const updatedParticipants = await getParticipantsByInterviewId(interview.id);
-        setParticipants(updatedParticipants);
-        
-        toast({
-          title: "Participant ajouté",
-          description: `${newParticipantEmail} a été ajouté comme ${newParticipantRole}`,
-        });
-        
-        // Réinitialiser le formulaire
-        setNewParticipantEmail('');
-        setNewParticipantRole('Participant');
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ajouter le participant",
-          variant: "destructive",
-        });
-      }
+      // Réinitialiser le formulaire
+      setNewParticipantEmail('');
+      setNewParticipantRole('Participant');
     } catch (error) {
       console.error('Error adding participant:', error);
       toast({
