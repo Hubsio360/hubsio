@@ -104,7 +104,6 @@ export function useCompanies() {
     }
   }, []);
 
-  // Ajout de la fonction updateCompany
   const updateCompany = useCallback(async (id: string, companyData: Partial<AddCompanyParams>): Promise<Company> => {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, updateCompany: true });
     setError(null);
@@ -153,7 +152,7 @@ export function useCompanies() {
     }
   }, []);
 
-  const enrichCompanyData = useCallback(async (companyId: string): Promise<Company> => {
+  const enrichCompanyData = useCallback(async (companyId: string, organizationContext?: string): Promise<Company> => {
     setLoading(prev => typeof prev === 'boolean' ? true : { ...prev, enrichCompany: true });
     setError(null);
     
@@ -167,11 +166,11 @@ export function useCompanies() {
       }
 
       // Appeler l'edge function pour enrichir les données de l'entreprise
-      const response = await supabase.functions.invoke('enrich-company', {
+      const response = await supabase.functions.invoke('ai-risk-analysis', {
         body: {
           companyId: companyId,
           companyName: company.name,
-          description: company.activity
+          description: organizationContext || company.activity
         }
       });
 
