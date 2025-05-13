@@ -31,7 +31,7 @@ serve(async (req) => {
     const prompt = `
 Fais une recherche sur internet pour cette la société  "${companyName}" et crée une fiche de synthèse. L'entreprise a partagé cette description: "${description || "Aucune description fournie."}".
 
-Retourne un objet JSON avec ce format exact, en utilisant que des valeurs réalistes basées sur le nom et la description:
+Retourne uniquement un objet JSON avec ce format exact, sans texte d'explication, sans code block markdown:
 {
   "activity": "Description de l'activité principale (max 200 caractères)",
   "creationYear": "Année de création (un nombre entre 1990 et 2023)",
@@ -51,7 +51,7 @@ Retourne un objet JSON avec ce format exact, en utilisant que des valeurs réali
       body: JSON.stringify({
         model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: 'Tu es un expert en analyse d\'entreprises qui génère des profils d\'entreprise réalistes.' },
+          { role: 'system', content: 'Tu es un expert en analyse d\'entreprises qui génère des profils d\'entreprise réalistes. Réponds uniquement avec du JSON sans explications ni formatage markdown.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.7,
@@ -69,15 +69,19 @@ Retourne un objet JSON avec ce format exact, en utilisant que des valeurs réali
     
     let enrichedData;
     try {
-      // Extraire le JSON de la réponse
-      enrichedData = JSON.parse(generatedText.replace(/```json|```/g, '').trim());
+      // Improved JSON extraction logic
+      const jsonString = generatedText.trim();
+      let processedString = jsonString;
+      
+      // Remove any markdown code block syntax if present
+      processedString = processedString.replace(/```json|```/g, '').trim();
+      
+      enrichedData = JSON.parse(processedString);
       
       // Convertir creationYear en nombre
       if (enrichedData.creationYear) {
-        enrichedData.creationYear = parseInt(enrichedData.creationYear);
-        if (isNaN(enrichedData.creationYear)) {
-          enrichedData.creationYear = null;
-        }
+        const yearValue = parseInt(enrichedData.creationYear);
+        enrichedData.creationYear = !isNaN(yearValue) ? yearValue : null;
       }
       
       console.log('Enriched data generated:', enrichedData);
