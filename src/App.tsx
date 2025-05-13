@@ -2,10 +2,8 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { DataProvider } from "@/contexts/DataContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navbar from "@/components/Navbar";
 import Login from "@/pages/Login";
@@ -23,9 +21,6 @@ import NewRiskScenario from "@/pages/NewRiskScenario";
 import CTI from "@/pages/CTI";
 import NotFound from "@/pages/NotFound";
 import { useEffect } from "react";
-
-// Create a QueryClient instance outside of the component
-const queryClient = new QueryClient();
 
 // Composant pour les routes protégées
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -59,7 +54,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Définition des routes de l'application (déplacée à l'intérieur de l'AuthProvider)
+// Définition des routes de l'application
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -148,21 +143,15 @@ const AppRoutes = () => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider defaultTheme="light">
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AuthProvider>
-              <DataProvider>
-                <AppRoutes />
-              </DataProvider>
-            </AuthProvider>
-          </TooltipProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="light">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 };
 

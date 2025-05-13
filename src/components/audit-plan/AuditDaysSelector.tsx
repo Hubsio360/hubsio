@@ -1,16 +1,14 @@
 
-import React, { useMemo, useEffect } from 'react';
-import { Calendar } from '@/components/ui/calendar';
-import { fr } from 'date-fns/locale';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { addDays, format, isWeekend, parse } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
-import { format, isBefore, isAfter, parseISO } from 'date-fns';
-import { AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { fr } from 'date-fns/locale';
 
 interface AuditDaysSelectorProps {
-  startDate: string;
-  endDate: string;
+  startDate: string;  // Format 'yyyy-MM-dd'
+  endDate: string;    // Format 'yyyy-MM-dd'
   selectedDays: string[];
   onSelectedDaysChange: (days: string[]) => void;
   requiredHours: number;
@@ -23,102 +21,91 @@ const AuditDaysSelector: React.FC<AuditDaysSelectorProps> = ({
   selectedDays,
   onSelectedDaysChange,
   requiredHours,
-  availableHoursPerDay
+  availableHoursPerDay,
 }) => {
-  const auditStart = useMemo(() => parseISO(startDate), [startDate]);
-  const auditEnd = useMemo(() => parseISO(endDate), [endDate]);
+  // Parse date strings to Date objects
+  const startDateObj = parse(startDate, 'yyyy-MM-dd', new Date());
+  const endDateObj = parse(endDate, 'yyyy-MM-dd', new Date());
   
-  const requiredDays = useMemo(() => {
-    return Math.ceil(requiredHours / availableHoursPerDay);
-  }, [requiredHours, availableHoursPerDay]);
-  
-  const needsMoreDays = selectedDays.length < requiredDays;
-  
-  // Effect to clear selected days that are outside the new date range if dates change
-  useEffect(() => {
-    if (startDate && endDate && selectedDays.length > 0) {
-      const start = parseISO(startDate);
-      const end = parseISO(endDate);
-      
-      // Filter out days that are now outside the range
-      const validDays = selectedDays.filter(day => {
-        const date = new Date(day);
-        return !isBefore(date, start) && !isAfter(date, end);
-      });
-      
-      // Only update if we actually removed days
-      if (validDays.length !== selectedDays.length) {
-        onSelectedDaysChange(validDays);
-      }
+  // Generate array of dates between start and end
+  const generateDateRange = () => {
+    const dates = [];
+    let currentDate = startDateObj;
+    
+    while (currentDate <= endDateObj) {
+      dates.push(format(currentDate, 'yyyy-MM-dd'));
+      currentDate = addDays(currentDate, 1);
     }
-  }, [startDate, endDate, selectedDays, onSelectedDaysChange]);
+    
+    return dates;
+  };
+  
+  const dateRange = generateDateRange();
+  
+  // Calculate how many days we need based on required hours
+  const requiredDays = Math.ceil(requiredHours / availableHoursPerDay);
+  
+  // Toggle day selection
+  const toggleDay = (day: string) => {
+    if (selectedDays.includes(day)) {
+      onSelectedDaysChange(selectedDays.filter(d => d !== day));
+    } else {
+      onSelectedDaysChange([...selectedDays, day]);
+    }
+  };
   
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Jours d'audit</CardTitle>
-        <CardDescription>
-          Sélectionnez les jours pendant lesquels vous souhaitez planifier des entretiens
-          (période d'audit: {format(auditStart, 'dd/MM/yyyy', { locale: fr })} - {format(auditEnd, 'dd/MM/yyyy', { locale: fr })})
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pb-2 space-y-4">
-        {needsMoreDays && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              {selectedDays.length === 0 ? (
-                `Vous devez sélectionner au moins ${requiredDays} jour(s) pour couvrir toutes les thématiques (${requiredHours} heures d'interviews).`
-              ) : (
-                `Vous avez sélectionné ${selectedDays.length} jour(s), mais il vous en faut au moins ${requiredDays} pour couvrir les ${requiredHours} heures d'interviews prévues.`
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-muted-foreground">
+          Sélectionnez les jours d'audit ({selectedDays.length} sur {requiredDays} jours nécessaires)
+        </span>
         
-        <div className="flex flex-wrap gap-2">
-          {selectedDays.map(day => (
-            <Badge 
-              key={day}
-              variant="outline"
-              className="flex items-center px-3 py-1 text-sm"
-            >
-              <span>{format(new Date(day), 'EEEE dd MMMM', { locale: fr })}</span>
-              <button
-                className="ml-2 text-muted-foreground hover:text-destructive"
-                onClick={() => onSelectedDaysChange(selectedDays.filter(d => d !== day))}
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            const workingDays = dateRange.filter(date => {
+              const dateObj = parse(date, 'yyyy-MM-dd', new Date());
+              return !isWeekend(dateObj);
+            }).slice(0, requiredDays);
+            
+            onSelectedDaysChange(workingDays);
+          }}
+        >
+          Sélection automatique
+        </Button>
+      </div>
+      
+      <Card className="p-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          {dateRange.map(day => {
+            const dateObj = parse(day, 'yyyy-MM-dd', new Date());
+            const isWeekendDay = isWeekend(dateObj);
+            
+            return (
+              <Button
+                key={day}
+                variant={selectedDays.includes(day) ? "default" : "outline"}
+                className={`justify-start ${isWeekendDay ? 'opacity-50' : ''}`}
+                onClick={() => toggleDay(day)}
+                size="sm"
               >
-                &times;
-              </button>
-            </Badge>
-          ))}
+                <div className="flex flex-col items-start">
+                  <span>{format(dateObj, 'EEEE', { locale: fr })}</span>
+                  <span className="text-xs">{format(dateObj, 'dd/MM', { locale: fr })}</span>
+                </div>
+                {isWeekendDay && (
+                  <Badge variant="outline" className="ml-auto text-xs">
+                    Weekend
+                  </Badge>
+                )}
+              </Button>
+            );
+          })}
         </div>
-        
-        <div className="border rounded-md p-3">
-          <Calendar
-            mode="multiple"
-            selected={selectedDays.map(day => new Date(day))}
-            onSelect={(days) => {
-              if (!days) return;
-              onSelectedDaysChange(days.map(day => day.toISOString()));
-            }}
-            className="mx-auto pointer-events-auto"
-            locale={fr}
-            fromDate={auditStart}
-            toDate={auditEnd}
-            disabled={(date) => {
-              // Disable days outside audit range
-              return isBefore(date, auditStart) || isAfter(date, auditEnd);
-            }}
-          />
-        </div>
-        
-        <div className="text-sm flex justify-between text-muted-foreground">
-          <div>Jours sélectionnés: {selectedDays.length}</div>
-          <div>Jours requis: {requiredDays}</div>
-        </div>
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };
 
