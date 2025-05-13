@@ -1,3 +1,4 @@
+
 // Types pour les clauses standards et thèmes d'audit
 export interface StandardClause {
   id: string;
@@ -304,8 +305,15 @@ export interface RiskScenarioAsset {
   assetId: string;
 }
 
+// Export RiskScenarioTemplate type
+export interface RiskScenarioTemplate {
+  id: string;
+  scenario_description: string;
+  domain: string;
+}
+
 // Exported from risk-scales.ts
-export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskAssessment } from './risk-scales';
+export type { RiskScaleType, CompanyRiskScale, RiskScaleLevel, RiskScaleWithLevels, RiskScales, RiskAssessment } from './risk-scales';
 
 // Types for CTI (Cyber Threat Intelligence)
 export interface CtiResult {
